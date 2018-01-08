@@ -23,9 +23,26 @@ class ASCIIConnection(object):
         handshake_poll_interval (int): interval in milliseconds to wait after
             receiving a non-handshake character before trying again.
         handshake_rx_char (str): the handshake character to recognize in RX
-            before sending handshake_tx_char to establish a handshake.
+            before sending `handshake_tx_char` to establish a handshake.
         handshake_tx_char (str): the handshake character to send in TX to
             establish a handshake.
+
+    Args:
+        ser: an already-opened serial port. Default: `None`, so port and
+            baudrate will be used to create a new serial port.
+        port: if `ser` is None, specifies which serial port to open. Default:
+            `/dev/ttyACM0`, which is the default on Linux.
+        baudrate: the serial connection baud rate. Default: 115200.
+        connect_poll_interval: interval in milliseconds to wait after a failed
+            attempt to open the serial port before trying again.
+            Default: 200 ms.
+        handshake_poll_interval: interval in milliseconds to wait after
+            receiving a non-handshake character before trying again.
+            Default: 200 ms.
+        handshake_rx_char: the handshake character to recognize in RX before
+            sending `handshake_tx_char` to establish a handshake. Default: '~'.
+        handshake_tx_char: the handshake character to send in TX to establish
+            a handshake. Default: '\n'.
     """
     def __init__(
         self, ser: serial.Serial=None,
@@ -33,26 +50,6 @@ class ASCIIConnection(object):
         connect_poll_interval: int=200, handshake_poll_interval: int=200,
         handshake_rx_char: str='~', handshake_tx_char: str='\n'
     ) -> None:
-        """Set up an ASCII-based connection without opening the serial port.
-
-        Args:
-            ser: an already-opened serial port. Default: None, so port and
-                baudrate will be used to create a new serial port.
-            port: if ser is None, specifies which serial port to open. Default:
-                '/dev/ttyACM0', which is the default on Linux.
-            baudrate: the serial connection baud rate. Default: 115200.
-            connect_poll_interval: interval in milliseconds to wait after a
-                failed attempt to open the serial port before trying again.
-                Default: 200 ms.
-            handshake_poll_interval: interval in milliseconds to wait after
-                receiving a non-handshake character before trying again.
-                Default: 200 ms.
-            handshake_rx_char: the handshake character to recognize in RX
-                before sending handshake_tx_char to establish a handshake.
-                Default: '~'.
-            handshake_tx_char: the handshake character to send in TX to
-                establish a handshake. Default: '\n'.
-        """
         # Serial port
         if ser is not None:
             port = ser.port
@@ -155,8 +152,8 @@ class ASCIIConnection(object):
 
         Args:
             line: a line which can be passed into a string format.
-            end: a string or character to add to the end of the line. Default: a
-                newline character.
+            end: a string or character to add to the end of the line. Default:
+                `\n`.
         """
         self.ser.write(('{}{}'.format(line, end)).encode('utf-8'))
 
@@ -171,15 +168,13 @@ class ASCIIMonitor(object):
         listeners (:obj:`list` of :obj:`ASCIIRXListener`): the line RX event
             listeners. Add and remove listeners to this attribute to update
             what listens for new lines in RX.
+
+    Args:
+        connection: a valid ASCII connection for an open serial port.
+        listeners: any listeners immediately register.
     """
     def __init__(self, connection: ASCIIConnection,
                  listeners: Iterable[ASCIIRXListener]=[]) -> None:
-        """Set up everything needed for monitoring.
-
-        Args:
-            connection: a valid ASCII connection for an open serial port.
-            listeners: any listeners immediately register.
-        """
         self._connection = connection
 
         # Event-driven RX
@@ -197,8 +192,8 @@ class ASCIIMonitor(object):
         """Start the RX monitoring event loop and broadcast to listeners.
 
         Blocks the thread of the caller until a new line is received and
-        stop_read_lines is called or an exception (such as KeyboardInterrupt
-        or an interrupt from a listener) is encountered.
+        `stop_read_lines` is called or an exception (such as a
+        `KeyboardInterrupt` or an interrupt from a listener) is encountered.
         """
         self._monitoring = True
         try:
@@ -211,7 +206,7 @@ class ASCIIMonitor(object):
             raise
 
     def stop_read_lines(self) -> None:
-        """Make start_read_lines quit after the current line.
+        """Make `start_read_lines` quit after the current line.
 
         This needs to be called from a separate thread than the one running
         start_read_lines.
@@ -239,35 +234,33 @@ class ASCIIMonitor(object):
         self._thread.join(timeout=timeout / 1000)
 
 class ASCIIRXListener(object):
-    """Interface for event listeners for an ASCIIMonitor."""
+    """Interface for event listeners for an `ASCIIMonitor`."""
 
     def on_read_line(self, line: str) -> :
         """Event handler for a new line received over RX."""
         pass
 
 class ASCIIConsole(object):
-    """Line-based ASCII serial command-line console for an ASCIIConnection.
+    """Line-based ASCII serial command-line console for an `ASCIIConnection`.
 
     Provides mostly-equivalent functionality to Arduino IDE's Serial Monitor.
+
+    Args:
+        connection: a valid ASCII connection for an open serial port.
+            Default: `None`, so a new ASCII connection will be instantiated
+            with default parameters.
+        monitor: a valid ASCII monitor. This is expected to use the same ASCII
+            connection as provided by connection. If connection is `None`, this
+            will be ignored and a new ASCII monitor will be instantiated.
+            Default: `None`, so a new ASCII monitor will be instantiated with
+            default init parameters for the ASCII connection specified by
+            connection.
+        add_as_listener: whether to add the ASCII console as a RX listener to
+            the monitor.
     """
     def __init__(self, connection: ASCIIConnection=None,
                  monitor: ASCIIMonitor=None,
                  add_as_listener: bool=True) -> None:
-        """Set up everything needed for the console.
-
-        Args:
-            connection: a valid ASCII connection for an open serial port.
-                Default: None, so a new ASCII connection will be instantiated
-                with default init parameters.
-            monitor: a valid ASCII monitor. This is expected to use the same
-                ASCII connection as provided by connection. If connection is
-                None, this will be ignored and a new ASCII monitor will be
-                instantiated. Default: None, so a new ASCII monitor will be
-                instantiated with defualt init parameters for the ASCII
-                connection specified by connection.
-            add_as_listener: whether to add the ASCII console as a RX listener
-                to the monitor.
-        """
         if connection is None:
             self._connection = ASCIIConnection()
         else:
@@ -289,7 +282,7 @@ class ASCIIConsole(object):
         Input on the command-line is sent to the Arduino by TX, while lines
         from the Arduino on RX are printed to the command-line. RX monitoring
         occurs on a separate thread, while TX monitoring blocks on the calling
-        thread and must be interrupted with a KeyboardInterrupt.
+        thread and must be interrupted with a `KeyboardInterrupt`.
         """
         self._monitor.start_thread()
         try:
