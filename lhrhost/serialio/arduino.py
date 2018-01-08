@@ -157,6 +157,13 @@ class ASCIIConnection(object):
         """
         self.ser.write(('{}{}'.format(line, end)).encode('utf-8'))
 
+class ASCIIRXListener(object):
+    """Interface for event listeners for an :class:`ASCIIMonitor`."""
+
+    def on_read_line(self, line: str) -> None:
+        """Event handler for a new line received over RX."""
+        pass
+
 class ASCIIMonitor(object):
     """Monitors an ASCIIConnection for new lines in RX.
 
@@ -165,7 +172,7 @@ class ASCIIMonitor(object):
     Supports thread-based concurrency for receiving lines.
 
     Attributes:
-        listeners (:obj:`list` of :obj:`ASCIIRXListener`): the line RX event
+        listeners (:obj:`list` of :class:`ASCIIRXListener`): the line RX event
             listeners. Add and remove listeners to this attribute to update
             what listens for new lines in RX.
 
@@ -233,15 +240,8 @@ class ASCIIMonitor(object):
         self.stop_read_lines()
         self._thread.join(timeout=timeout / 1000)
 
-class ASCIIRXListener(object):
-    """Interface for event listeners for an `ASCIIMonitor`."""
-
-    def on_read_line(self, line: str) -> :
-        """Event handler for a new line received over RX."""
-        pass
-
 class ASCIIConsole(object):
-    """Line-based ASCII serial command-line console for an `ASCIIConnection`.
+    """ASCII serial command-line console for an :class:`ASCIIConnection`.
 
     Provides mostly-equivalent functionality to Arduino IDE's Serial Monitor.
 
@@ -282,7 +282,7 @@ class ASCIIConsole(object):
         Input on the command-line is sent to the Arduino by TX, while lines
         from the Arduino on RX are printed to the command-line. RX monitoring
         occurs on a separate thread, while TX monitoring blocks on the calling
-        thread and must be interrupted with a `KeyboardInterrupt`.
+        thread and must be interrupted with a :exc:`KeyboardInterrupt`.
         """
         self._monitor.start_thread()
         try:
