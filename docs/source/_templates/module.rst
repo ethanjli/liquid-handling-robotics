@@ -5,63 +5,107 @@
 
 .. automodule:: {{ fullname }}
     {% if members -%}
-    :members: {{ members|join(", ") }}
-    :undoc-members:
     :show-inheritance:
-    :member-order: bysource
 
     Summary
     -------
 
     {%- if exceptions %}
-    Exceptions:
+
+    .. rubric:: Exceptions
 
     .. autosummary::
         :nosignatures:
-    {% for item in exceptions %}
+{% for item in exceptions %}
         {{ item }}
-    {%- endfor %}
+{%- endfor %}
     {%- endif %}
 
     {%- if classes %}
-    Classes:
 
+    .. rubric:: Classes
     .. autosummary::
         :nosignatures:
-    {% for item in classes %}
+{% for item in classes %}
         {{ item }}
-    {%- endfor %}
+{%- endfor %}
     {%- endif %}
 
     {%- if functions %}
-    Functions:
 
+    .. rubric:: Functions
     .. autosummary::
         :nosignatures:
-    {% for item in functions %}
+{% for item in functions %}
         {{ item }}
-    {%- endfor %}
+{%- endfor %}
     {%- endif %}
-    {%- endif %}
+{%- endif %}
 
     {%- if data %}
-    Data:
+
+    .. rubric:: Data
 
     .. autosummary::
         :nosignatures:
-    {% for item in data %}
+{% for item in data %}
         {{ item }}
-    {%- endfor %}
+{%- endfor %}
     {%- endif %}
 
-    {% if all_refs %}
+{% if all_refs %}
     ``__all__``: {{ all_refs|join(", ") }}
-    {%- endif %}
-
+{%- endif %}
 
 {% if members %}
-    Reference
-    ---------
+
+    {%- if exceptions %}
+
+{% for item in exceptions %}
+
+    {{ item }}
+    {% for underline in range(item|length) -%}-{%- endfor %}
+    .. autoexception:: {{ item }}
+        :members:
+        :undoc-members:
+        :show-inheritance:
+        :member-order: bysource
+{%- endfor %}
+    {%- endif %}
+
+
+    {%- if classes %}
+{% for item in classes %}
+
+    {{ item }}
+    {% for underline in range(item|length) -%}-{%- endfor %}
+    .. autoclass:: {{ item }}
+        :members:
+        :undoc-members:
+        :show-inheritance:
+        :member-order: bysource
+{%- endfor %}
+    {%- endif %}
+
+
+    {%- if functions %}
+{% for item in functions %}
+
+    {{ item }}
+    {% for underline in range(item|length) -%}-{%- endfor %}
+    .. autofunction:: {{ item }}
+{%- endfor %}
+    {%- endif %}
+
+
+    {%- if data %}
+{% for item in data %}
+
+    {{ item }}
+    {% for underline in range(item|length) -%}-{%- endfor %}
+    .. autodata:: {{ item }}
+{%- endfor %}
+    {%- endif %}
 
 {%- endif %}
 

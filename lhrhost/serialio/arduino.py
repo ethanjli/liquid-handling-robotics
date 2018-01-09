@@ -17,22 +17,13 @@ class ASCIIConnection(object):
     Provides interfaces to transmit strings and lines to the Arduino,
     and to receive lines from the Arduino.
 
-    Attributes:
-        connect_poll_interval (int): interval in milliseconds to wait after a
-            failed attempt to open the serial port before trying again.
-        handshake_poll_interval (int): interval in milliseconds to wait after
-            receiving a non-handshake character before trying again.
-        handshake_rx_char (str): the handshake character to recognize in RX
-            before sending `handshake_tx_char` to establish a handshake.
-        handshake_tx_char (str): the handshake character to send in TX to
-            establish a handshake.
-
     Args:
         ser: an already-opened serial port. Default: `None`, so port and
             baudrate will be used to create a new serial port.
-        port: if `ser` is None, specifies which serial port to open. Default:
-            `/dev/ttyACM0`, which is the default on Linux.
-        baudrate: the serial connection baud rate. Default: 115200.
+        port: if `ser` is `None`, specifies which serial port to open.
+            Otherwise, it's ignored. Default: `/dev/ttyACM0`.
+        baudrate: if `ser` is `None`, the serial connection baud rate.
+            Otherwise, it's ignored. Default: 115200.
         connect_poll_interval: interval in milliseconds to wait after a failed
             attempt to open the serial port before trying again.
             Default: 200 ms.
@@ -42,7 +33,17 @@ class ASCIIConnection(object):
         handshake_rx_char: the handshake character to recognize in RX before
             sending `handshake_tx_char` to establish a handshake. Default: '~'.
         handshake_tx_char: the handshake character to send in TX to establish
-            a handshake. Default: '\n'.
+            a handshake. Default: newline character.
+
+    Attributes:
+        connect_poll_interval (int): interval in milliseconds to wait after a
+            failed attempt to open the serial port before trying again.
+        handshake_poll_interval (int): interval in milliseconds to wait after
+            receiving a non-handshake character before trying again.
+        handshake_rx_char (str): the handshake character to recognize in RX
+            before sending `handshake_tx_char` to establish a handshake.
+        handshake_tx_char (str): the handshake character to send in TX to
+            establish a handshake.
     """
     def __init__(
         self, ser: serial.Serial=None,
@@ -105,7 +106,7 @@ class ASCIIConnection(object):
                 return
             time.sleep(self.handshake_poll_interval / 1000)
 
-    def setup(self) -> None:
+    def open(self) -> None:
         """Connect and establish a handshake with an Arduino board.
 
         Blocks until the handshake is established.
@@ -152,8 +153,8 @@ class ASCIIConnection(object):
 
         Args:
             line: a line which can be passed into a string format.
-            end: a string or character to add to the end of the line. Default:
-                `\n`.
+            end: a string or character to add to the end of the line.  Default
+                is a newline character.
         """
         self.ser.write(('{}{}'.format(line, end)).encode('utf-8'))
 
@@ -190,16 +191,16 @@ class ASCIIMonitor(object):
 
         # Threading
         self._thread = threading.Thread(
-            name=self.__name__, target=self.start_read_lines, daemon=True
+            name=self.__name__, target=self.start_reading_lines, daemon=True
         )
 
     # Monitoring
 
-    def start_read_lines(self) -> None:
+    def start_reading_lines(self) -> None:
         """Start the RX monitoring event loop and broadcast to listeners.
 
         Blocks the thread of the caller until a new line is received and
-        `stop_read_lines` is called or an exception (such as a
+        `stop_reading_lines` is called or an exception (such as a
         `KeyboardInterrupt` or an interrupt from a listener) is encountered.
         """
         self._monitoring = True
@@ -212,11 +213,11 @@ class ASCIIMonitor(object):
             self._monitoring = False
             raise
 
-    def stop_read_lines(self) -> None:
-        """Make `start_read_lines` quit after the current line.
+    def stop_reading_lines(self) -> None:
+        """Make `start_reading_lines` quit after the current line.
 
         This needs to be called from a separate thread than the one running
-        start_read_lines.
+        start_reading_lines.
         """
         self._monitoring = False
 
@@ -237,7 +238,7 @@ class ASCIIMonitor(object):
         Currently non-functional because the thread will block on read_line.
         As a workaround, the thread is daemonic.
         """
-        self.stop_read_lines()
+        self.stop_reading_lines()
         self._thread.join(timeout=timeout / 1000)
 
 class ASCIIConsole(object):
@@ -272,9 +273,15 @@ class ASCIIConsole(object):
         if add_as_listener:
             self._monitor.listeners.append(self)
 
-    def setup(self) -> None:
+    def open(self) -> None:
         """Set up the ASCII connection."""
-        self._arduino.setup()
+        self._arduino.open()
+
+    def close(self) -> None:
+        """Reset the ASCII connection."""
+        print()
+        print('Quitting...')
+        self._arduino.reset()
 
     def start(self) -> None:
         """Monitor the connection for RX and the command-line for TX.
@@ -296,15 +303,10 @@ class ASCIIConsole(object):
         """Print the received line."""
         print(line)
 
-    def teardown(self) -> None:
-        """Reset the ASCII connection."""
-        print()
-        print('Quitting...')
-        self._arduino.reset()
-
-def main():
+def main() -> None:
+    """Runs a command-line serial console for an Arduino over USB."""
     console = Console()
-    console.setup()
+    console.open()
     console.start()
 
 if __name__ == '__main__':

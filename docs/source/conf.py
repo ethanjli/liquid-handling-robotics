@@ -42,7 +42,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
-    'sphinx_autodoc_napoleon_typehints'
+    'sphinx_autodoc_typehints'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -185,5 +185,9 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
 
-# Sort members by type
-autodoc_member_order = 'groupwise'
+# Autodoc parameters
+autoclass_content = 'class'
+autodoc_member_order = 'bysource'
+
+# Autosummary parameters
+autosummary_generate = False
