@@ -92,6 +92,7 @@
         :members:
         :undoc-members:
         :show-inheritance:
+        :inherited-members:
         :member-order: bysource
 {%- endfor %}
     {%- endif %}
@@ -106,6 +107,7 @@
         :members:
         :undoc-members:
         :show-inheritance:
+        :inherited-members:
         :member-order: bysource
 {%- endfor %}
     {%- endif %}

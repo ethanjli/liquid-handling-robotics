@@ -1,4 +1,5 @@
-""" Device communication over USB serial.
+#!/usr/bin/env python3
+"""Device communication over USB serial.
 
 This module implements event-driven communication protocols with devices
 over USB serial connections. The protocol should be chosen to match the
@@ -8,18 +9,78 @@ protocol selected for the device board.
 # Standard imports
 import time
 import threading
+from abc import abstractmethod
 from typing import Any, Iterable
 
 # External imports
 import serial
 
+# Local package imports
+from lhrhost.util.interfaces import InterfaceClass
+
+class Connection(object, metaclass=InterfaceClass):
+    """Interface for a connection with a serial device."""
+
+    @property
+    @abstractmethod
+    def port(self) -> str:
+        """str: The port of the serial connection."""
+        pass
+
+    @property
+    @abstractmethod
+    def baudrate(self) -> int:
+        """str: The port of the serial connection."""
+        pass
+
+    @abstractmethod
+    def _connect(self) -> None:
+        """Establish a serial connection to the device.
+
+        Blocks until the serial connection is established.
+        """
+        pass
+
+    @abstractmethod
+    def _wait_for_handshake(self) -> None:
+        """Establish a serial connection handshake with the device.
+
+        Blocks until the handshake is established.
+        """
+        pass
+
+    @abstractmethod
+    def open(self) -> None:
+        """Connect and establish a handshake with the device.
+
+        Blocks until the handshake is established.
+        """
+        self._connect()
+        self._wait_for_handshake()
+
+    @abstractmethod
+    def close(self) -> None:
+        """Close the connection to the device.
+
+        Blocks until the connection is closed.
+        """
+        pass
+
+    @abstractmethod
+    def reset(self) -> None:
+        """Force the connected device to reset.
+
+        Blocks until the connection is reset.
+        """
+        pass
+
 # ASCII Connections
 
-class ASCIIConnection(object):
+class ASCIIConnection(Connection):
     """ASCII-based connection with a serial device.
 
-    Provides interfaces to transmit strings and lines to the device,
-    and to receive lines from the device.
+    Provides functionality to transmit strings and lines to the device, and to
+    receive lines from the device.
 
     Args:
         ser (:obj:`serial.Serial`, optional): an already-opened serial port.
@@ -70,7 +131,7 @@ class ASCIIConnection(object):
         self.handshake_rx_char: str = handshake_rx_char
         self.handshake_tx_char: str = handshake_tx_char
 
-    # Serial properties
+    # Implement Connection
 
     @property
     def port(self) -> str:
@@ -79,16 +140,10 @@ class ASCIIConnection(object):
 
     @property
     def baudrate(self) -> int:
-        """int: The baud rate of the serial connection."""
+        """str: The port of the serial connection."""
         return self._baudrate
 
-    # Setup
-
     def _connect(self) -> None:
-        """Establish a serial connection to the device.
-
-        Blocks until the serial connection is established.
-        """
         print('Please connect the device now...')
         while True:
             try:
@@ -99,10 +154,6 @@ class ASCIIConnection(object):
         print('Connected!')
 
     def _wait_for_handshake(self) -> None:
-        """Establish a serial connection handshake with the device.
-
-        Blocks until the handshake is established.
-        """
         while True:
             char = self.ser.read().decode('utf-8')
             if char == self.handshake_rx_char:
@@ -111,28 +162,10 @@ class ASCIIConnection(object):
                 return
             time.sleep(self.handshake_poll_interval / 1000)
 
-    def open(self) -> None:
-        """Connect and establish a handshake with the device.
-
-        Blocks until the handshake is established.
-        """
-        self._connect()
-        self._wait_for_handshake()
-
-    # Teardown
-
     def close(self) -> None:
-        """Close the connection to the device.
-
-        Blocks until the connection is closed.
-        """
         self.ser.close()
 
     def reset(self) -> None:
-        """Force the connected device to reset.
-
-        Blocks until the Serial connection is reset.
-        """
         if self.ser.isOpen():
             self.ser.close()
         self.ser.open()
@@ -167,24 +200,28 @@ class ASCIIRXListener(object):
     """Interface for event listeners for an :class:`ASCIIMonitor`."""
 
     def on_read_line(self, line: str) -> None:
-        """Event handler for a new line received over RX."""
+        """Event handler for a new line received over RX.
+
+        Args:
+            line: an ASCII line received over RX
+        """
         pass
 
 class ASCIIMonitor(object):
     """Monitors an :class:`ASCIIConnection` for new lines in RX.
 
-    Provides event-driven interface to receive lines from the device and
-    broadcast those received lines to listeners.
+    Provides message loop to receive lines from the device and broadcast those
+    received lines to listeners.
     Supports thread-based concurrency for receiving lines.
+
+    Args:
+        connection: a valid ASCII connection for an open serial port.
+        listeners: any listeners immediately register.
 
     Attributes:
         listeners (:obj:`list` of :class:`ASCIIRXListener`): the line RX event
             listeners. Add and remove listeners to this attribute to update
             what listens for new lines in RX.
-
-    Args:
-        connection: a valid ASCII connection for an open serial port.
-        listeners: any listeners immediately register.
     """
     def __init__(self, connection: ASCIIConnection,
                  listeners: Iterable[ASCIIRXListener]=[]) -> None:
@@ -304,8 +341,9 @@ class ASCIIConsole(ASCIIRXListener):
             pass
         self.teardown()
 
+    # Implement ASCIIRXListener
+
     def on_read_line(self, line: str) -> None:
-        """Print the received line."""
         print(line)
 
 def main() -> None:
