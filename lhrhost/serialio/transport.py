@@ -116,7 +116,7 @@ class ASCIIConnection(Connection):
         port: str='/dev/ttyACM0', baudrate: int=115200,
         connect_poll_interval: int=200, handshake_poll_interval: int=200,
         handshake_rx_char: str='~', handshake_tx_char: str='\n'
-    ) -> None:
+    ):
         # Serial port
         if ser is not None:
             port = ser.port
@@ -191,8 +191,8 @@ class ASCIIConnection(Connection):
 
         Args:
             line: a line which can be passed into a string format.
-            end: a string or character to add to the end of the line.  Default
-                is a newline character.
+            end: a string or character to add to the end of the line. Default:
+                newline character.
         """
         self.ser.write(('{}{}'.format(line, end)).encode('utf-8'))
 
@@ -216,7 +216,7 @@ class ASCIIMonitor(object):
 
     Args:
         connection: a valid ASCII connection for an open serial port.
-        listeners: any listeners immediately register.
+        listeners: any listeners to immediately register.
 
     Attributes:
         listeners (:obj:`list` of :class:`ASCIIRXListener`): the line RX event
@@ -224,7 +224,7 @@ class ASCIIMonitor(object):
             what listens for new lines in RX.
     """
     def __init__(self, connection: ASCIIConnection,
-                 listeners: Iterable[ASCIIRXListener]=[]) -> None:
+                 listeners: Iterable[ASCIIRXListener]=[]):
         self._connection = connection
 
         # Event-driven RX
@@ -242,8 +242,8 @@ class ASCIIMonitor(object):
         """Start the RX monitoring event loop and broadcast to listeners.
 
         Blocks the thread of the caller until a new line is received and
-        `stop_reading_lines` is called or an exception (such as a
-        `KeyboardInterrupt` or an interrupt from a listener) is encountered.
+        :meth:`stop_reading_lines` is called or an exception (such as a
+        :exc:`KeyboardInterrupt` or an interrupt from a listener) is encountered.
         """
         self._monitoring = True
         try:
@@ -259,7 +259,7 @@ class ASCIIMonitor(object):
         """Make `start_reading_lines` quit after the current line.
 
         This needs to be called from a separate thread than the one running
-        start_reading_lines.
+        :meth:`start_reading_lines`.
         """
         self._monitoring = False
 
@@ -289,21 +289,21 @@ class ASCIIConsole(ASCIIRXListener):
     Provides mostly-equivalent functionality to Arduino IDE's Serial Monitor.
 
     Args:
-        connection: a valid ASCII connection for an open serial port.
-            Default: `None`, so a new ASCII connection will be instantiated
-            with default parameters.
-        monitor: a valid ASCII monitor. This is expected to use the same ASCII
-            connection as provided by connection. If connection is `None`, this
-            will be ignored and a new ASCII monitor will be instantiated.
-            Default: `None`, so a new ASCII monitor will be instantiated with
-            default init parameters for the ASCII connection specified by
-            connection.
+        connection (:obj:`ASCIIConnection`, optional): a valid ASCII connection
+            for an open serial port. Default: `None`, so a new connection will
+            be instantiated with default parameters.
+        monitor (:obj:`ASCIIMonitor`, optional): a valid ASCII monitor. This is
+            expected to use the same ASCII connection as provided by
+            `connection`. If connection is `None`, this will be ignored and a
+            new ASCII monitor will be instantiated.  Default: `None`, so a new
+            ASCII monitor will be instantiated with default init parameters for
+            the ASCII connection specified by connection.
         add_as_listener: whether to add the ASCII console as a RX listener to
             the monitor.
     """
     def __init__(self, connection: ASCIIConnection=None,
                  monitor: ASCIIMonitor=None,
-                 add_as_listener: bool=True) -> None:
+                 add_as_listener: bool=True):
         if connection is None:
             self._connection = ASCIIConnection()
         else:
