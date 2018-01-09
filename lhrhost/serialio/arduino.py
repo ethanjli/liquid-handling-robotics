@@ -1,25 +1,30 @@
-""" Arduino communication over USB serial.
+""" Device communication over USB serial.
 
-This module implements event-driven communication protocols with Arduino boards
+This module implements event-driven communication protocols with devices
 over USB serial connections. The protocol should be chosen to match the
-protocol selected for the Arduino board.
+protocol selected for the device board.
 """
 
+# Standard imports
 import time
 import threading
 from typing import Any, Iterable
 
+# External imports
 import serial
 
-class ASCIIConnection(object):
-    """ASCII-based serial connection with an Arduino board.
+# ASCII Connections
 
-    Provides interfaces to transmit strings and lines to the Arduino,
-    and to receive lines from the Arduino.
+class ASCIIConnection(object):
+    """ASCII-based connection with a serial device.
+
+    Provides interfaces to transmit strings and lines to the device,
+    and to receive lines from the device.
 
     Args:
-        ser: an already-opened serial port. Default: `None`, so port and
-            baudrate will be used to create a new serial port.
+        ser (:obj:`serial.Serial`, optional): an already-opened serial port.
+            Default: `None`, so port and baudrate will be used to create a new
+            serial port.
         port: if `ser` is `None`, specifies which serial port to open.
             Otherwise, it's ignored. Default: `/dev/ttyACM0`.
         baudrate: if `ser` is `None`, the serial connection baud rate.
@@ -55,32 +60,32 @@ class ASCIIConnection(object):
         if ser is not None:
             port = ser.port
             baudrate = ser.baudrate
-        self._port = port
-        self._baudrate = baudrate
-        self._ser = ser
+        self._port: str = port
+        self._baudrate: int = baudrate
+        self._ser: serial.Serial = ser
 
         # Serial connection parameters
-        self.connect_poll_interval = connect_poll_interval
-        self.handshake_poll_interval = handshake_poll_interval
-        self.handshake_rx_char = '~'
-        self.handshake_tx_char = '\n'
+        self.connect_poll_interval: int = connect_poll_interval
+        self.handshake_poll_interval: int = handshake_poll_interval
+        self.handshake_rx_char: str = handshake_rx_char
+        self.handshake_tx_char: str = handshake_tx_char
 
     # Serial properties
 
     @property
     def port(self) -> str:
-        """The port of the serial connection."""
+        """str: The port of the serial connection."""
         return self._port
 
     @property
     def baudrate(self) -> int:
-        """The baud rate of the serial connection."""
+        """int: The baud rate of the serial connection."""
         return self._baudrate
 
     # Setup
 
-    def connect(self) -> None:
-        """Establish a serial connection to the Arduino board.
+    def _connect(self) -> None:
+        """Establish a serial connection to the device.
 
         Blocks until the serial connection is established.
         """
@@ -93,8 +98,8 @@ class ASCIIConnection(object):
                 time.sleep(self.connect_poll_interval / 1000)
         print('Connected!')
 
-    def wait_for_handshake(self) -> None:
-        """Establish a serial connection handshake with the Arduino board.
+    def _wait_for_handshake(self) -> None:
+        """Establish a serial connection handshake with the device.
 
         Blocks until the handshake is established.
         """
@@ -107,24 +112,24 @@ class ASCIIConnection(object):
             time.sleep(self.handshake_poll_interval / 1000)
 
     def open(self) -> None:
-        """Connect and establish a handshake with an Arduino board.
+        """Connect and establish a handshake with the device.
 
         Blocks until the handshake is established.
         """
-        self.connect()
-        self.wait_for_handshake()
+        self._connect()
+        self._wait_for_handshake()
 
     # Teardown
 
     def close(self) -> None:
-        """Close the connection to the connected Arduino.
+        """Close the connection to the device.
 
         Blocks until the connection is closed.
         """
         self.ser.close()
 
     def reset(self) -> None:
-        """Force the connected Arduino to reset.
+        """Force the connected device to reset.
 
         Blocks until the Serial connection is reset.
         """
@@ -136,7 +141,7 @@ class ASCIIConnection(object):
     # RX/TX
 
     def read_line(self) -> str:
-        """Reads a full line from the Arduino.
+        """Reads a full line from the device.
 
         Blocks until a newline is received.
 
@@ -147,7 +152,7 @@ class ASCIIConnection(object):
         return str(self.ser.readline(), 'ascii').rstrip()
 
     def write_line(self, line: Any, end: str='\n') -> None:
-        """Writes a string or line to the Arduino.
+        """Writes a string or line to the device.
 
         Blocks until the line is fully written.
 
@@ -166,9 +171,9 @@ class ASCIIRXListener(object):
         pass
 
 class ASCIIMonitor(object):
-    """Monitors an ASCIIConnection for new lines in RX.
+    """Monitors an :class:`ASCIIConnection` for new lines in RX.
 
-    Provides event-driven interface to receive lines from the Arduino and
+    Provides event-driven interface to receive lines from the device and
     broadcast those received lines to listeners.
     Supports thread-based concurrency for receiving lines.
 
@@ -223,7 +228,7 @@ class ASCIIMonitor(object):
 
     @property
     def reading_lines(self) -> bool:
-        """Whether the RX monitoring event loop will continue monitoring RX."""
+        """bool: Whether the RX monitoring event loop will continue."""
         return self._monitoring
 
     # Threading
@@ -241,7 +246,7 @@ class ASCIIMonitor(object):
         self.stop_reading_lines()
         self._thread.join(timeout=timeout / 1000)
 
-class ASCIIConsole(object):
+class ASCIIConsole(ASCIIRXListener):
     """ASCII serial command-line console for an :class:`ASCIIConnection`.
 
     Provides mostly-equivalent functionality to Arduino IDE's Serial Monitor.
@@ -275,26 +280,26 @@ class ASCIIConsole(object):
 
     def open(self) -> None:
         """Set up the ASCII connection."""
-        self._arduino.open()
+        self._device.open()
 
     def close(self) -> None:
         """Reset the ASCII connection."""
         print()
         print('Quitting...')
-        self._arduino.reset()
+        self._device.reset()
 
     def start(self) -> None:
         """Monitor the connection for RX and the command-line for TX.
 
-        Input on the command-line is sent to the Arduino by TX, while lines
-        from the Arduino on RX are printed to the command-line. RX monitoring
+        Input on the command-line is sent to the device by TX, while lines
+        from the device on RX are printed to the command-line. RX monitoring
         occurs on a separate thread, while TX monitoring blocks on the calling
         thread and must be interrupted with a :exc:`KeyboardInterrupt`.
         """
         self._monitor.start_thread()
         try:
             while True:
-                self._arduino.write_line(input())
+                self._device.write_line(input())
         except KeyboardInterrupt:
             pass
         self.teardown()
@@ -304,7 +309,7 @@ class ASCIIConsole(object):
         print(line)
 
 def main() -> None:
-    """Runs a command-line serial console for an Arduino over USB."""
+    """Runs a command-line serial console for a device over USB."""
     console = Console()
     console.open()
     console.start()

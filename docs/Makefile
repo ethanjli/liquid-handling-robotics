@@ -24,6 +24,11 @@ api:
 	@echo "Auto-generation of API documentation finished." \
 		"The generated api files are in $(APIDIR)."
 
+# Remove auto-generated files
+clean:
+	@rm -rf "$(SPHINXBUILD)"
+	@rm -rf "$(APIDIR)"
+
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
