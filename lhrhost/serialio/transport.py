@@ -281,51 +281,22 @@ class ASCIIConsole(ASCIIRXListener):
     Provides mostly-equivalent functionality to Arduino IDE's Serial Monitor.
 
     Args:
-        connection (:obj:`ASCIIConnection`, optional): a valid ASCII connection
-            for an open serial port. Default: `None`, so a new connection will
-            be instantiated with default parameters.
-        monitor (:obj:`ASCIIMonitor`, optional): a valid ASCII monitor. This is
-            expected to use the same ASCII connection as provided by
-            `connection`. If connection is `None`, this will be ignored and a
-            new ASCII monitor will be instantiated.  Default: `None`, so a new
-            ASCII monitor will be instantiated with default init parameters for
-            the ASCII connection specified by connection.
+        connection (:obj:`ASCIIConnection`): a valid and open ASCII connection
+            for a serial port.
         add_as_listener: whether to add the ASCII console as a RX listener to
             the monitor.
     """
-    def __init__(self, connection: ASCIIConnection=None,
-                 monitor: ASCIIMonitor=None,
-                 add_as_listener: bool=True):
-        if connection is None:
-            self._connection = ASCIIConnection()
-        else:
-            self._connection = connection
-        if connection is None or monitor is None:
-            self._monitor = ASCIIMonitor(self._connection)
-        else:
-            self._monitor = monitor
-        if add_as_listener:
-            self._monitor.listeners.append(self)
+    def __init__(self, connection: ASCIIConnection):
+        self._connection = connection
 
-    def open(self) -> None:
-        """Set up the ASCII connection."""
-        self._connection.open()
-
-    def close(self) -> None:
-        """Reset the ASCII connection."""
-        print()
-        print('Quitting...')
-        self._connection.reset()
-
-    def start(self) -> None:
-        """Monitor the connection for RX and the command-line for TX.
+    def start_input_loop(self) -> None:
+        """Monitor the command-line for messages to send as TX.
 
         Input on the command-line is sent to the device by TX, while lines
-        from the device on RX are printed to the command-line. RX monitoring
-        occurs on a separate thread, while TX monitoring blocks on the calling
-        thread and must be interrupted with a :exc:`KeyboardInterrupt`.
+        from the device on RX are printed to the command-line. TX monitoring
+        blocks on the calling thread and must be interrupted with a
+        :exc:`KeyboardInterrupt`.
         """
-        self._monitor.start_thread()
         try:
             while True:
                 self._connection.write_line(input())
@@ -339,10 +310,16 @@ class ASCIIConsole(ASCIIRXListener):
 
 def main() -> None:
     """Runs a command-line serial console for a device over USB."""
-    console = ASCIIConsole()
-    console.open()
-    console.start()
-    console.close()
+    connection = ASCIIConnection()
+    monitor = ASCIIMonitor(connection)
+    console = ASCIIConsole(connection)
+
+    monitor.listeners.append(console)
+
+    connection.open()
+    monitor.start_thread()
+    console.start_input_loop()
+    connection.close()
 
 if __name__ == '__main__':
     main()

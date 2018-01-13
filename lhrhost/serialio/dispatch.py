@@ -14,6 +14,7 @@ import re
 
 # Local package imports
 from lhrhost.util.interfaces import InterfaceClass
+from lhrhost.serialio.transport import ASCIIRXListener
 
 class Message(object):
     """A message sent over a serial connection.
@@ -29,6 +30,9 @@ class Message(object):
     def __init__(self, channel: str, payload: Any):
         self.channel = channel
         self.payload = payload
+
+    def __repr__(self):
+        return 'Message("{}", {})'.format(self.channel, self.payload)
 
 # Message Translation
 
@@ -86,44 +90,77 @@ class Translator(object, metaclass=InterfaceClass):
 
 # ASCII Protocol
 
-class ASCIITranslator(Translator):
+class ASCIITranslator(Translator, ASCIIRXListener):
     """A :class:`Translator` for a :class:`transport.ASCIIConnection`.
 
+    Auto-translates any RX line from `on_read_line` and broadcasts the
+    the corresponding :class:`Message` to listeners.
+
     Args:
-        channel_start: delimiter to start the channel id of a line.
-        channel_end: delimiter to end the channel id of a line.
+        listeners: any listeners to immediately register.
+        channel_max_len (int): max allowed length of a channel id.
+        channel_start: delimiter to start the channel id of a line. If `None`
+            and `channel_end` is also `None`, the channel id will be excluded
+            from the line.
+        channel_end: delimiter to end the channel id of a line. If `None`
+            and `channel_start` is also `None`, the channel id will be excluded
+            from the line.
         payload_start: delimiter to start the payload of a line.
         payload_end: delimiter to end the payload of a line.
 
     Attributes:
-        channel_start (str): delimiter to start the channel id of a line.
-        channel_end (str): delimiter to end the channel id of a line.
-        payload_start (str): delimiter to start the payload of a line.
-        payload_end (str): delimiter to end the payload of a line.
+        listeners (:obj:`list` of :class:`transport.ASCIIRXListener`): the
+            received :obj:`Message` listeners. Add and remove listeners to this
+            attribute to update what listens for new received :obj:`Message`s.
     """
-    def __init__(self, channel_start: str='<', channel_end: str='>',
+    def __init__(self, listeners: Iterable[ASCIIRXListener]=[],
+                 channel_max_len: int=8,
+                 channel_start: str='<', channel_end: str='>',
                  payload_start: str='[', payload_end: str=']'):
+        self.listeners = [listener for listener in listeners]
+
+        self._channel_max_len = channel_max_len
         # Delimiters
-        self.channel_start = channel_start
-        self.channel_end = channel_end
-        self.payload_start = payload_start
-        self.payload_end = payload_end
+        self._channel_start = channel_start
+        self._channel_end = channel_end
+        self._payload_start = payload_start
+        self._payload_end = payload_end
 
         # Pattern matching
-        pattern = (r'\s*' r'\{}' r'([a-zA-Z]+)' r'\{}' r'\s*'
-                   r'\{}' r'([-+]?\d+(\.\d*)?)' r'\{}' r'\s*').format(
-            self.channel_start, self.channel_end,
-            self.payload_start, self.payload_end
-        )
+        if self.exclude_channel_id:
+            channel_id_pattern_template = '()'
+        else:
+            channel_id_pattern_template = ''.join([
+                r'\s*', '\\', self._channel_start,
+                '([a-zA-Z0-9]{0,', str(self._channel_max_len), '})',
+                '\\', self._channel_end
+            ])
+        payload_pattern_template = ''.join([
+            r'\s*', '\\', self._payload_start,
+            r'([-+]?\d+(\.\d*)?)',
+            '\\', self._payload_end, r'\s*'
+        ])
+        pattern = channel_id_pattern_template + payload_pattern_template
+        print(pattern)
         self._regex = re.compile(pattern)
+
+    @property
+    def exclude_channel_id(self) -> bool:
+        """Whether the translator omits/ignores channel ids."""
+        return self._channel_start is None and self._channel_end is None
 
     # Implement Translator
 
     def encode(self, message: Message) -> str:
-        return '{}{}{}{}{}{}'.format(
-            self.channel_start, message.channel, self.channel_end,
-            self.payload_start, message.payload, self.payload_end
-        )
+        encoded_elements = []
+        if not self.exclude_channel_id:
+            encoded_elements += [
+                self._channel_start, message.channel, self._channel_end
+            ]
+        encoded_elements += [
+            self._payload_start, str(message.payload), self._payload_end
+        ]
+        return ''.join(encoded_elements)
 
     def valid_encoding(self, encoded: str) -> bool:
         return self._regex.fullmatch(encoded) is not None
@@ -135,6 +172,16 @@ class ASCIITranslator(Translator):
             return Message(groups[0], groups[1])
         except AttributeError:
             raise InvalidEncodingError("Malformed message {}".format(encoded))
+
+    # Implement transport.ASCIIRXListener
+
+    def on_read_line(self, line: str) -> None:
+        try:
+            message = self.decode(line)
+        except InvalidEncodingError as exc:
+            print(exc)
+        for listener in self.listeners:
+            listener.on_message(message)
 
 # Message Dispatch
 
