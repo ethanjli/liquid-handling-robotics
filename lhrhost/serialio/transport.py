@@ -9,6 +9,7 @@ protocol selected for the device board.
 # Standard imports
 import time
 import threading
+from abc import abstractmethod
 from typing import Any, Iterable
 
 # External imports
@@ -21,15 +22,18 @@ class Connection(object, metaclass=InterfaceClass):
     """Interface for a connection with a serial device."""
 
     @property
+    @abstractmethod
     def port(self) -> str:
         """str: The port of the serial connection."""
         pass
 
     @property
+    @abstractmethod
     def baudrate(self) -> int:
         """str: The port of the serial connection."""
         pass
 
+    @abstractmethod
     def _connect(self) -> None:
         """Establish a serial connection to the device.
 
@@ -37,6 +41,7 @@ class Connection(object, metaclass=InterfaceClass):
         """
         pass
 
+    @abstractmethod
     def _wait_for_handshake(self) -> None:
         """Establish a serial connection handshake with the device.
 
@@ -52,6 +57,7 @@ class Connection(object, metaclass=InterfaceClass):
         self._connect()
         self._wait_for_handshake()
 
+    @abstractmethod
     def close(self) -> None:
         """Close the connection to the device.
 
@@ -59,6 +65,7 @@ class Connection(object, metaclass=InterfaceClass):
         """
         pass
 
+    @abstractmethod
     def reset(self) -> None:
         """Force the connected device to reset.
 
@@ -188,10 +195,11 @@ class ASCIIConnection(Connection):
         """
         self.ser.write(('{}{}'.format(line, end)).encode('utf-8'))
 
-class ASCIIRXListener(object):
+class ASCIILineReceiver(object, metaclass=InterfaceClass):
     """Interface for event listeners for an :class:`ASCIIMonitor`."""
 
-    def on_read_line(self, line: str) -> None:
+    @abstractmethod
+    def on_line(self, line: str) -> None:
         """Event handler for a new line received over RX.
 
         Args:
@@ -199,28 +207,33 @@ class ASCIIRXListener(object):
         """
         pass
 
-class ASCIIMonitor(object):
+class ASCIIMonitor(ASCIILineReceiver):
     """Monitors an :class:`ASCIIConnection` for new lines in RX.
 
     Provides message loop to receive lines from the device and broadcast those
     received lines to listeners.
     Supports thread-based concurrency for receiving lines.
+    Listens for lines and writes them to the connection.
 
     Args:
         connection: a valid ASCII connection for an open serial port.
-        listeners: any listeners to immediately register.
+        intercept_logging: whether to intercept logging messages and display
+            them instead of passing them to listeners.
 
     Attributes:
-        listeners (:obj:`list` of :class:`ASCIIRXListener`): the line RX event
-            listeners. Add and remove listeners to this attribute to update
-            what listens for new lines in RX.
+        listeners (:obj:`list` of :class:`ASCIILineReceiver`): the line RX
+            event listeners. Add and remove listeners to this attribute to
+            update what listens for new lines in RX.
+        intercept_logging (bool): whether to intercept logging messages and
+            display them instead of passing them to listeners.
     """
     def __init__(self, connection: ASCIIConnection,
-                 listeners: Iterable[ASCIIRXListener]=[]):
+                 intercept_logging: bool=True):
         self._connection = connection
+        self.intercept_logging = intercept_logging
 
         # Event-driven RX
-        self.listeners = [listener for listener in listeners]
+        self.listeners = []
         self._monitoring = False
 
         # Threading
@@ -235,14 +248,22 @@ class ASCIIMonitor(object):
 
         Blocks the thread of the caller until a new line is received and
         :meth:`stop_reading_lines` is called or an exception (such as a
-        :exc:`KeyboardInterrupt` or an interrupt from a listener) is encountered.
+        :exc:`KeyboardInterrupt` or an interrupt from a listener) is
+        encountered.
         """
         self._monitoring = True
         try:
             while self._monitoring:
                 line = self._connection.read_line()
+                if self.intercept_logging:
+                    if line.startswith('E: '):
+                        print('Error: {}'.format(line[3:]))
+                        continue
+                    elif line.startswith('W: '):
+                        print('Warning: {}'.format(line[3:]))
+                        continue
                 for listener in self.listeners:
-                    listener.on_read_line(line)
+                    listener.on_line(line)
         except Exception:
             self._monitoring = False
             raise
@@ -275,7 +296,12 @@ class ASCIIMonitor(object):
         self.stop_reading_lines()
         self._thread.join(timeout=timeout / 1000)
 
-class ASCIIConsole(ASCIIRXListener):
+    # Implement ASCIILineReceiver
+
+    def on_line(self, line):
+        self._connection.write_line(line)
+
+class ASCIIConsole(ASCIILineReceiver):
     """ASCII serial command-line console for an :class:`ASCIIConnection`.
 
     Provides mostly-equivalent functionality to Arduino IDE's Serial Monitor.
@@ -303,9 +329,9 @@ class ASCIIConsole(ASCIIRXListener):
         except KeyboardInterrupt:
             return
 
-    # Implement ASCIIRXListener
+    # Implement ASCIILineReceiver
 
-    def on_read_line(self, line: str) -> None:
+    def on_line(self, line: str) -> None:
         print(line)
 
 def main() -> None:
@@ -319,7 +345,7 @@ def main() -> None:
     connection.open()
     monitor.start_thread()
     console.start_input_loop()
-    connection.close()
+    connection.reset()
 
 if __name__ == '__main__':
     main()

@@ -8,23 +8,23 @@ to event handlers on the host.
 
 # Standard imports
 from collections import defaultdict
+import re
 from abc import abstractmethod
 from typing import Any, Mapping, Iterable
-import re
 
 # Local package imports
 from lhrhost.util.interfaces import InterfaceClass
-from lhrhost.serialio.transport import ASCIIRXListener
+from lhrhost.serialio.transport import ASCIILineReceiver
 
 class Message(object):
     """A message sent over a serial connection.
 
     Args:
-        channels: the channels which the message belongs to.
+        channel: the id of the channel which the message belongs to.
         payload: the content which the message carries.
 
     Attributes:
-        channels (str): the channel which the message belongs to.
+        channels (str): the id of the channel which the message belongs to.
         payload: the content which the message carries.
     """
     def __init__(self, channel: str, payload: Any):
@@ -33,6 +33,36 @@ class Message(object):
 
     def __repr__(self):
         return 'Message("{}", {})'.format(self.channel, self.payload)
+
+# Message Dispatch
+
+class MessageReceiver(object, metaclass=InterfaceClass):
+    """Interface for receiving messages on some channels(s)."""
+
+    @abstractmethod
+    def on_message(self, message: Message) -> None:
+        """Event handler for a new message received from somewhere."""
+        pass
+
+class Dispatcher(MessageReceiver):
+    """Dispatcher to demux messages on different channels to their receivers.
+
+    Broadcasts every received message to all receivers registered on the
+    channel of the message.
+
+    Attributes:
+        receivers (:obj:`collections.defaultdict` of :obj:`str` to :obj:`list` of :obj:`MessageReceiver`):
+            receivers for messages for each stream, keyed by stream ids.
+    """
+    def __init__(self):
+        self.receivers = defaultdict(list)
+
+    # Implement MessageReceiver
+
+    def on_message(self, message: Message) -> None:
+        for receiver in self.receivers[message.channel]:
+            receiver.on_message(message)
+
 
 # Message Translation
 
@@ -90,14 +120,15 @@ class Translator(object, metaclass=InterfaceClass):
 
 # ASCII Protocol
 
-class ASCIITranslator(Translator, ASCIIRXListener):
+class ASCIITranslator(Translator, MessageReceiver, ASCIILineReceiver):
     """A :class:`Translator` for a :class:`transport.ASCIIConnection`.
 
-    Auto-translates any RX line from `on_read_line` and broadcasts the
-    the corresponding :class:`Message` to listeners.
+    Auto-translates any RX line from `on_line` and broadcasts the
+    the decoded :class:`Message` to `message_listeners`.
+    Auto-translates any :class:`Message` from `on_message` and broadcasts the
+    encoded line to `line_listeners`.
 
     Args:
-        listeners: any listeners to immediately register.
         channel_max_len (int): max allowed length of a channel id.
         channel_start: delimiter to start the channel id of a line. If `None`
             and `channel_end` is also `None`, the channel id will be excluded
@@ -109,15 +140,15 @@ class ASCIITranslator(Translator, ASCIIRXListener):
         payload_end: delimiter to end the payload of a line.
 
     Attributes:
-        listeners (:obj:`list` of :class:`transport.ASCIIRXListener`): the
+        listeners (:obj:`list` of :class:`transport.ASCIILineReceiver`): the
             received :obj:`Message` listeners. Add and remove listeners to this
             attribute to update what listens for new received :obj:`Message`s.
     """
-    def __init__(self, listeners: Iterable[ASCIIRXListener]=[],
-                 channel_max_len: int=8,
+    def __init__(self, channel_max_len: int=8,
                  channel_start: str='<', channel_end: str='>',
                  payload_start: str='[', payload_end: str=']'):
-        self.listeners = [listener for listener in listeners]
+        self.line_listeners = []
+        self.message_listeners = []
 
         self._channel_max_len = channel_max_len
         # Delimiters
@@ -137,11 +168,10 @@ class ASCIITranslator(Translator, ASCIIRXListener):
             ])
         payload_pattern_template = ''.join([
             r'\s*', '\\', self._payload_start,
-            r'([-+]?\d+(\.\d*)?)',
+            r'(([-+]?\d+(\.\d*)?)|(\w*))',
             '\\', self._payload_end, r'\s*'
         ])
         pattern = channel_id_pattern_template + payload_pattern_template
-        print(pattern)
         self._regex = re.compile(pattern)
 
     @property
@@ -173,47 +203,20 @@ class ASCIITranslator(Translator, ASCIIRXListener):
         except AttributeError:
             raise InvalidEncodingError("Malformed message {}".format(encoded))
 
-    # Implement transport.ASCIIRXListener
+    # Implement transport.ASCIILineReceiver
 
-    def on_read_line(self, line: str) -> None:
+    def on_line(self, line: str) -> None:
         try:
             message = self.decode(line)
         except InvalidEncodingError as exc:
             print(exc)
-        for listener in self.listeners:
+        for listener in self.message_listeners:
             listener.on_message(message)
 
-# Message Dispatch
+    # Implement MessageReceiver
 
-class MessageReceiver(object, metaclass=InterfaceClass):
-    """Interface for receiving messages on some channels(s)."""
-
-    @abstractmethod
-    def on_message(message: Message) -> None:
-        """Event handler for a new message received from somewhere."""
-        pass
-
-class Dispatcher(object):
-    """Dispatcher to demux messages on different channels to their receivers.
-
-    Args:
-        receivers: any receivers to immediately register.
-
-    Attributes:
-        receivers (:obj:`collections.defaultdict` of :obj:`str` to :obj:`list` of :obj:`MessageReceiver`):
-            receivers for messages for each stream, keyed by stream ids.
-    """
-    def __init__(self, receivers: Mapping[str, Iterable[MessageReceiver]]={}):
-        self.receivers = defaultdict(list)
-        for (channel, receivers) in receivers:
-            self.receivers[channel] = [receiver for receiver in receivers]
-
-    def dispatch(self, message: Message) -> None:
-        """Broadcast a message to all receivers on the channel.
-
-        Args:
-            message: the message to broadcast.
-        """
-        for receiver in self.receivers[message.channel]:
-            receiver.on_message(message)
+    def on_message(self, message: Message) -> None:
+        line = self.encode(message)
+        for listener in self.line_listeners:
+            listener.on_line(line)
 
