@@ -9,7 +9,6 @@ protocol selected for the device board.
 # Standard imports
 import time
 import threading
-from abc import abstractmethod
 from typing import Any, Iterable
 
 # External imports
@@ -22,18 +21,15 @@ class Connection(object, metaclass=InterfaceClass):
     """Interface for a connection with a serial device."""
 
     @property
-    @abstractmethod
     def port(self) -> str:
         """str: The port of the serial connection."""
         pass
 
     @property
-    @abstractmethod
     def baudrate(self) -> int:
         """str: The port of the serial connection."""
         pass
 
-    @abstractmethod
     def _connect(self) -> None:
         """Establish a serial connection to the device.
 
@@ -41,7 +37,6 @@ class Connection(object, metaclass=InterfaceClass):
         """
         pass
 
-    @abstractmethod
     def _wait_for_handshake(self) -> None:
         """Establish a serial connection handshake with the device.
 
@@ -49,7 +44,6 @@ class Connection(object, metaclass=InterfaceClass):
         """
         pass
 
-    @abstractmethod
     def open(self) -> None:
         """Connect and establish a handshake with the device.
 
@@ -58,7 +52,6 @@ class Connection(object, metaclass=InterfaceClass):
         self._connect()
         self._wait_for_handshake()
 
-    @abstractmethod
     def close(self) -> None:
         """Close the connection to the device.
 
@@ -66,7 +59,6 @@ class Connection(object, metaclass=InterfaceClass):
         """
         pass
 
-    @abstractmethod
     def reset(self) -> None:
         """Force the connected device to reset.
 
@@ -157,7 +149,7 @@ class ASCIIConnection(Connection):
         while True:
             char = self.ser.read().decode('utf-8')
             if char == self.handshake_rx_char:
-                self.write_string(self.handshake_tx_char)
+                self.write_line(self.handshake_tx_char, end='')
                 print('Completed handshake!')
                 return
             time.sleep(self.handshake_poll_interval / 1000)
@@ -233,7 +225,7 @@ class ASCIIMonitor(object):
 
         # Threading
         self._thread = threading.Thread(
-            name=self.__name__, target=self.start_reading_lines, daemon=True
+            name=self.__class__, target=self.start_reading_lines, daemon=True
         )
 
     # Monitoring
@@ -247,7 +239,7 @@ class ASCIIMonitor(object):
         """
         self._monitoring = True
         try:
-            while self.monitoring:
+            while self._monitoring:
                 line = self._connection.read_line()
                 for listener in self.listeners:
                     listener.on_read_line(line)
@@ -317,13 +309,13 @@ class ASCIIConsole(ASCIIRXListener):
 
     def open(self) -> None:
         """Set up the ASCII connection."""
-        self._device.open()
+        self._connection.open()
 
     def close(self) -> None:
         """Reset the ASCII connection."""
         print()
         print('Quitting...')
-        self._device.reset()
+        self._connection.reset()
 
     def start(self) -> None:
         """Monitor the connection for RX and the command-line for TX.
@@ -336,10 +328,9 @@ class ASCIIConsole(ASCIIRXListener):
         self._monitor.start_thread()
         try:
             while True:
-                self._device.write_line(input())
+                self._connection.write_line(input())
         except KeyboardInterrupt:
-            pass
-        self.teardown()
+            return
 
     # Implement ASCIIRXListener
 
@@ -348,9 +339,10 @@ class ASCIIConsole(ASCIIRXListener):
 
 def main() -> None:
     """Runs a command-line serial console for a device over USB."""
-    console = Console()
+    console = ASCIIConsole()
     console.open()
     console.start()
+    console.close()
 
 if __name__ == '__main__':
     main()
