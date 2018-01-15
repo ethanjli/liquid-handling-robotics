@@ -7,6 +7,10 @@ Welcome to liquid-handling-robotics's documentation!
 
    readme
 
+   assembly/index
+
+   design/index
+
    api/lhrhost
 
 

@@ -5,9 +5,8 @@ lhrhost.serialio package
     
 
 
-    .. rubric:: Submodules
-
     .. toctree::
+       :caption: Submodules:
        :maxdepth: 2
 
        lhrhost.serialio.dispatch

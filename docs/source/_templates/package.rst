@@ -7,9 +7,8 @@
     {%- endif %}
 
 {% if submodules %}
-    .. rubric:: Submodules
-
     .. toctree::
+       :caption: Submodules:
        :maxdepth: 2
 {% for item in submodules %}
        {{ fullname }}.{{ item }}
@@ -17,9 +16,8 @@
     {%- endif -%}
 
 {% if subpackages %}
-    .. rubric:: Subpackages
-
     .. toctree::
+       :caption: Subpackages:
        :maxdepth: 2
 {% for item in subpackages %}
        {{ fullname }}.{{ item }}

@@ -5,9 +5,8 @@ lhrhost package
     
 
 
-    .. rubric:: Subpackages
-
     .. toctree::
+       :caption: Subpackages:
        :maxdepth: 2
 
        lhrhost.serialio
