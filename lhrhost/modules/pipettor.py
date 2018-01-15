@@ -10,7 +10,7 @@ from lhrhost.serialio.dispatch import (
     Message, MessageReceiver, Dispatcher,
     ASCIITranslator
 )
-from lhrhost.util.math import map_range
+from lhrhost.util.math import map_value
 
 class Pipettor(MessageReceiver):
     def __init__(self):
@@ -45,13 +45,13 @@ class Pipettor(MessageReceiver):
     # Unit conversion
 
     def to_mL_mark(self, unitless_position):
-        return map_range(
+        return map_value(
             unitless_position, self.bottom_position, self.top_position,
             self.bottom_mark, self.top_mark
         )
 
     def to_unitless_position(self, mL_mark):
-        return int(map_range(
+        return int(map_value(
             mL_mark, self.bottom_mark, self.top_mark,
             self.bottom_position, self.top_position
         ))

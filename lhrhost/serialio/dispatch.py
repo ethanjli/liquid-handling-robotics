@@ -51,7 +51,7 @@ class Dispatcher(MessageReceiver):
     channel of the message.
 
     Attributes:
-        receivers (:obj:`collections.defaultdict` of :obj:`str` to :obj:`list` of :obj:`MessageReceiver`):
+        receivers (:class:`collections.defaultdict` of :class:`str` to :class:`list` of :class:`MessageReceiver`):
             receivers for messages for each stream, keyed by stream ids.
     """
     def __init__(self):
@@ -81,11 +81,11 @@ class Translator(object, metaclass=InterfaceClass):
         """Encode a message so that it can be written to serial TX.
 
         Args:
-            message: the :obj:`Message` to encode.
+            message: the :class:`Message` to encode.
 
         Returns:
             The encoded message, ready to be sent over serial TX by a
-            :obj:`transport.Connection`.
+            :class:`transport.Connection`.
         """
         pass
 
@@ -123,10 +123,10 @@ class Translator(object, metaclass=InterfaceClass):
 class ASCIITranslator(Translator, MessageReceiver, ASCIILineReceiver):
     """A :class:`Translator` for a :class:`transport.ASCIIConnection`.
 
-    Auto-translates any RX line from `on_line` and broadcasts the
-    the decoded :class:`Message` to `message_listeners`.
-    Auto-translates any :class:`Message` from `on_message` and broadcasts the
-    encoded line to `line_listeners`.
+    Auto-translates any RX line from :meth:`on_line` and broadcasts the
+    the decoded :class:`Message` to all listeners in :attr:`message_listeners`.
+    Auto-translates any :class:`Message` from :meth:`on_message` and broadcasts
+    the encoded line to all listeners in :attr:`line_listeners`.
 
     Args:
         channel_max_len (int): max allowed length of a channel id.
@@ -140,9 +140,15 @@ class ASCIITranslator(Translator, MessageReceiver, ASCIILineReceiver):
         payload_end: delimiter to end the payload of a line.
 
     Attributes:
-        listeners (:obj:`list` of :class:`transport.ASCIILineReceiver`): the
-            received :obj:`Message` listeners. Add and remove listeners to this
-            attribute to update what listens for new received :obj:`Message`s.
+        line_listeners (:class:`list` of :class:`transport.ASCIILineReceiver`):
+            the listeners for every decoded :class:`Message` received through
+            :meth:`on_message`. Add and remove listeners to this attribute to
+            update which listeners will be notified upon every new
+            :class:`Message`.
+        message_listeners (:class:`list` of :class:`Messagereceiver`):
+            the listeners for every encoded :class:`str` line received through
+            :meth:`on_line`. Add and remove listeners to this attribute to
+            update which listeners will be notified upon every new line.
     """
     def __init__(self, channel_max_len: int=8,
                  channel_start: str='<', channel_end: str='>',

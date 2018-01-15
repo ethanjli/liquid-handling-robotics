@@ -15,8 +15,8 @@ lhrhost.serialio.transport module
 
         ASCIIConnection
         ASCIIConsole
+        ASCIILineReceiver
         ASCIIMonitor
-        ASCIIRXListener
         Connection
 
     .. rubric:: Functions
@@ -48,18 +48,18 @@ lhrhost.serialio.transport module
         :inherited-members:
         :member-order: bysource
 
-    ASCIIMonitor
-    ------------
-    .. autoclass:: ASCIIMonitor
+    ASCIILineReceiver
+    -----------------
+    .. autoclass:: ASCIILineReceiver
         :members:
         :undoc-members:
         :show-inheritance:
         :inherited-members:
         :member-order: bysource
 
-    ASCIIRXListener
-    ---------------
-    .. autoclass:: ASCIIRXListener
+    ASCIIMonitor
+    ------------
+    .. autoclass:: ASCIIMonitor
         :members:
         :undoc-members:
         :show-inheritance:
