@@ -28,73 +28,106 @@ void sendMessage(
   Serial.println();
 }
 
-// ChannelParser
+// MessageParser
 
-ChannelParser::ChannelParser(char startDelimiter, char endDelimiter) :
-  startDelimiter(startDelimiter), endDelimiter(endDelimiter) {}
-
-void ChannelParser::setup() {
-  channelBuffer[0] = '\0';
+MessageParser::MessageParser(
+    char channelStartDelimiter, char channelEndDelimiter,
+    char payloadStartDelimiter, char payloadEndDelimiter
+) :
+  channelStartDelimiter(channelStartDelimiter),
+  channelEndDelimiter(channelEndDelimiter),
+  payloadStartDelimiter(payloadStartDelimiter),
+  payloadEndDelimiter(payloadEndDelimiter)
+{
 }
 
-void ChannelParser::update() {
-  justUpdated = false;
+void MessageParser::setup() {
+  channelBuffer[0] = '\0';
+  state.setup(State::awaitingChannel);
+}
+
+void MessageParser::update() {
+  if (state.current() == State::parsedMessage) state.update(State::awaitingChannel);
   while (Serial.available() > 0) {
     char current = Serial.read();
-    if (current == startDelimiter) {
-      bufferPosition = 0;
-      justUpdated = false;
-    } else if (current == endDelimiter) {
-      channelBuffer[bufferPosition] = '\0';
-      bufferPosition = -1;
-      strlcpy(channel, channelBuffer, kChannelMaxLength + 1);
-      justUpdated = true;
-      break;
-    } else if (bufferPosition >= 0) {
-      if (isAlphaNumeric(current)) {
-        if (bufferPosition < kChannelMaxLength) {
-          channelBuffer[bufferPosition] = current;
-          ++bufferPosition;
-        } else {
-          Log.error(F("Channel name overflowed, ignoring extra character %c!" CR), current);
+    switch (state.current()) {
+      case State::awaitingChannel:
+        if (current == channelStartDelimiter) {
+          onParsingChannel();
+          state.update(State::parsingChannel);
         }
-      } else if (!isWhitespace(current) && !isControl(current)) {
-        Log.error(F("Channel name has illegal character %c, ignoring it!" CR), current);
+        break;
+      case State::parsingChannel:
+        if (current == channelEndDelimiter) {
+          state.update(State::awaitingPayload);
+          onAwaitingPayload();
+        } else {
+          parseChannel(current);
+          state.update(State::parsingChannel, true);
+        }
+        break;
+      case State::awaitingPayload:
+        if (current == payloadStartDelimiter) {
+          onParsingPayload();
+          state.update(State::parsingPayload);
+        }
+        break;
+      case State::parsingPayload:
+        if (current == payloadEndDelimiter) {
+          onParsedMessage();
+          state.update(State::parsedMessage);
+          return; // don't parse more messages until the next update() call
+        } else {
+          parsePayload(current);
+          state.update(State::parsingPayload, true);
+        }
+    }
+}
+}
+
+void MessageParser::onParsingChannel() {
+  channelBufferPosition = 0;
+}
+
+void MessageParser::onAwaitingPayload() {
+  channelBuffer[channelBufferPosition] = '\0';
+  channelBufferPosition = -1;
+  strlcpy(channel, channelBuffer, kChannelMaxLength + 1);
+}
+
+void MessageParser::onParsingPayload() {
+  receivedNumber = 0;
+  negative = false;
+}
+
+void MessageParser::onParsedMessage() {
+  if (negative) payload = -1 * receivedNumber;
+  else payload = receivedNumber;
+}
+
+void MessageParser::parseChannel(char current) {
+  if (channelBufferPosition >= 0) {
+    if (isAlphaNumeric(current)) {
+      if (channelBufferPosition < kChannelMaxLength) {
+        channelBuffer[channelBufferPosition] = current;
+        ++channelBufferPosition;
+      } else {
+        Log.error(F("Channel name overflowed, ignoring extra character %c!" CR), current);
       }
+    } else if (!isControl(current)) {
+      Log.warning(F("Channel name has illegal character %c, ignoring it!" CR), current);
     }
   }
 }
 
-// IntParser
-
-IntParser::IntParser(char startDelimiter, char endDelimiter) :
-  startDelimiter(startDelimiter), endDelimiter(endDelimiter) {}
-
-void IntParser::setup() {
-  result.setup(0);
-}
-
-void IntParser::update() {
-  result.update(result.current());
-  justUpdated = false;
-  while (Serial.available() > 0) {
-    char current = Serial.read();
-    received.update(current);
-    if (current == endDelimiter || current == startDelimiter) {
-      if (current == endDelimiter) {
-        if (negative) result.update(-1 * receivedNumber, true);
-        else result.update(receivedNumber, true);
-        justUpdated = true;
-        break;
-      }
-      receivedNumber = 0;
-      negative = false;
-    } else if (current == '-' && received.previous() == startDelimiter) {
-      negative = true;
-    } else if (isDigit(current)) {
-      receivedNumber *= 10;
-      receivedNumber += current - '0';
-    }
+void MessageParser::parsePayload(char current) {
+  if (current == '-' && state.justEntered(State::parsingPayload)) {
+    negative = true;
+  } else if (isDigit(current)) {
+    receivedNumber *= 10;
+    receivedNumber += current - '0';
+  } else if (!isControl(current)) {
+    Log.warning(F("Payload has illegal character %c, ignoring it!" CR), current);
   }
 }
 

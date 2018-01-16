@@ -6,14 +6,14 @@ namespace LiquidHandlingRobotics {
 // Pipettor
 
 Pipettor::Pipettor(
-    ChannelParser &channelParser, IntParser &intParser,
+    MessageParser &messageParser,
     LinearPositionControl::Components::Motors &motors, MotorPort motorPort,
     uint8_t potentiometerPin, int minPosition, int maxPosition,
     double pidKp, double pidKd, double pidKi, int pidSampleTime,
     bool swapMotorPolarity, int feedforward, int brakeThreshold,
     unsigned int convergenceDelay
 ) :
-  channelParser(channelParser), intParser(intParser),
+  messageParser(messageParser),
   actuator(
     motors, motorPort,
     potentiometerPin, minPosition, maxPosition,
@@ -30,10 +30,6 @@ void Pipettor::setup() {
 
 void Pipettor::update() {
   actuator.update();
-
-  if (channelParser.justUpdated && strcmp(channelParser.channel, "pt") == 0) {
-    Serial.println("Need to update setpoint!");
-  }
 
   //actuator.pid.setSetpoint(setpointParser.result.current());
 

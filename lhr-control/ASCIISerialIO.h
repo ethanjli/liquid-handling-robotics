@@ -12,7 +12,8 @@ namespace States {
     awaitingChannel,
     parsingChannel,
     awaitingPayload,
-    parsingPayload
+    parsingPayload,
+    parsedMessage
   };
 }
 
@@ -26,46 +27,6 @@ void sendMessage(
 
 const unsigned int kChannelMaxLength = 8;
 
-class ChannelParser {
-  public:
-    ChannelParser(char startDelimiter = '<', char endDelimiter = '>');
-
-    char channel[kChannelMaxLength + 1];
-    bool justUpdated = false;
-
-    void setup();
-    void update();
-
-  private:
-    char startDelimiter;
-    char endDelimiter;
-
-    int bufferPosition = 0;
-    char channelBuffer[kChannelMaxLength + 1];
-
-    LinearPositionControl::StateVariable<char> received;
-};
-
-class IntParser {
-  public:
-    IntParser(char startDelimiter = '[', char endDelimiter = ']');
-
-    LinearPositionControl::StateVariable<int> result;
-    bool justUpdated = false;
-
-    void setup();
-    void update();
-
-  private:
-    char startDelimiter;
-    char endDelimiter;
-
-    int receivedNumber;
-    bool negative = false;
-
-    LinearPositionControl::StateVariable<char> received;
-};
-
 class MessageParser {
   public:
     MessageParser(
@@ -73,13 +34,15 @@ class MessageParser {
         char payloadStartDelimiter = '[', char payloadEndDelimiter = ']'
     );
 
+    using State = States::Parsing;
+
     LinearPositionControl::StateVariable<States::Parsing> state;
 
     // Channel
     char channel[kChannelMaxLength + 1];
 
     // Payload
-    int result;
+    int payload = 0;
 
     void setup();
     void update();
@@ -99,6 +62,13 @@ class MessageParser {
     bool negative = false;
 
     LinearPositionControl::StateVariable<char> received;
+
+    void onParsingChannel();
+    void parseChannel(char current);
+    void onAwaitingPayload();
+    void onParsingPayload();
+    void parsePayload(char current);
+    void onParsedMessage();
 };
 
 }
