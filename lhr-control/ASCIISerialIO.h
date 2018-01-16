@@ -59,6 +59,7 @@ class MessageParser {
     // Channel
     int channelBufferPosition = 0;
     char channelBuffer[kChannelMaxLength + 1];
+    char *channelBufferString = channelBuffer;
 
     // Payload
     int receivedNumber;
