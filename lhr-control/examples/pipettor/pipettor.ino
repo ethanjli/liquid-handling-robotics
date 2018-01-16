@@ -13,7 +13,7 @@ MessageParser messageParser;
 LinearPositionControl::Components::Motors motors;
 
 // Subsystems
-Pipettor pipettor(messageParser, motors);
+AbsoluteLinearActuator pipettor(messageParser, motors, pipettorParams);
 
 void setup() {
   Serial.begin(115200);

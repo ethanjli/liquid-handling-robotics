@@ -63,7 +63,7 @@ void MessageParser::update() {
           onAwaitingPayload();
         } else if (current == channelStartDelimiter) {
           onParsingChannel();
-          Log.warning(F("Channel name starting with %s was interrupted in the middle by a %c, resetting channel name!" CR), channelBufferString, current);
+          Log.warning(F("Channel name starting with '%s' was interrupted in the middle by a '%c' character. Resetting channel name!" CR), channelBufferString, current);
         } else {
           parseChannel(current);
           state.update(State::parsingChannel, true);
@@ -124,10 +124,10 @@ void MessageParser::parseChannel(char current) {
         channelBuffer[channelBufferPosition] = current;
         ++channelBufferPosition;
       } else {
-        Log.error(F("Channel name starting with %s is too long, ignoring extra character '%c'!" CR), channelBufferString, current);
+        Log.error(F("Channel name starting with '%s' is too long. Ignoring extra character '%c'!" CR), channelBufferString, current);
       }
     } else if (!isControl(current)) {
-      Log.warning(F("Channel name starting with %s has unknown character '%c', ignoring it!" CR), channelBufferString, current);
+      Log.warning(F("Channel name starting with '%s' has unknown character '%c'. Ignoring it!" CR), channelBufferString, current);
     }
   }
 }
@@ -139,7 +139,7 @@ void MessageParser::parsePayload(char current) {
     receivedNumber *= 10;
     receivedNumber += current - '0';
   } else if (!isControl(current)) {
-    Log.warning(F("Payload has unknown character '%c', ignoring it!" CR), current);
+    Log.warning(F("Payload on channel '%s' has unknown character '%c'. Ignoring it!" CR), channelBufferString, current);
   }
 }
 
