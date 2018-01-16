@@ -10,6 +10,7 @@ namespace LiquidHandlingRobotics {
 class Pipettor {
   public:
     Pipettor(
+        ChannelParser &channelParser, IntParser &intParser,
         LinearPositionControl::Components::Motors &motors, MotorPort motorPort = M1,
         uint8_t potentiometerPin = A0, int minPosition = 11, int maxPosition = 999,
         double pidKp = 8, double pidKd = 0.1, double pidKi = 0.1, int pidSampleTime = 20,
@@ -17,8 +18,10 @@ class Pipettor {
         unsigned int convergenceDelay = 100
     );
 
+    ChannelParser &channelParser;
+    IntParser &intParser;
+
     LinearPositionControl::AbsoluteLinearActuator actuator;
-    IntParser setpointParser;
     unsigned int convergenceDelay;
     bool reportedConvergence = false;
     bool streamingPosition = false;
