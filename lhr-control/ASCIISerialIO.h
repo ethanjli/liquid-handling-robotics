@@ -47,6 +47,9 @@ class MessageParser {
     void setup();
     void update();
 
+    bool isChannel(const char queryChannel[]);
+    bool justReceived(const char queryChannel[]);
+
   private:
     char channelStartDelimiter;
     char channelEndDelimiter;

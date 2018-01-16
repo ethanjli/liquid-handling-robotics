@@ -31,11 +31,10 @@ void Pipettor::setup() {
 void Pipettor::update() {
   actuator.update();
 
-  //actuator.pid.setSetpoint(setpointParser.result.current());
-
-  //if (setpointParser.justUpdated) {
-  //  reportedConvergence = false;
-  //}
+  if (messageParser.justReceived("pt")) {
+    actuator.pid.setSetpoint(messageParser.payload);
+    reportedConvergence = false;
+  }
 
   if (converged(convergenceDelay) && !reportedConvergence) reportConvergencePosition();
   if (streamingPosition) reportStreamingPosition();

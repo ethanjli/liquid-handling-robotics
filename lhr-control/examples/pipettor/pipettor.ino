@@ -27,10 +27,5 @@ void setup() {
 
 void loop() {
   messageParser.update();
-  if (messageParser.state.justEntered(MessageParser::State::parsedMessage)) {
-    Serial.print(messageParser.channel);
-    Serial.print('|');
-    Serial.println(messageParser.payload);
-  }
   pipettor.update();
 }

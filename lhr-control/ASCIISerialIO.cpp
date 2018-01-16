@@ -82,7 +82,15 @@ void MessageParser::update() {
           state.update(State::parsingPayload, true);
         }
     }
+  }
 }
+
+bool MessageParser::isChannel(const char queryChannel[]) {
+  return strncmp(queryChannel, channel, kChannelMaxLength + 1) == 0;
+}
+
+bool MessageParser::justReceived(const char queryChannel[]) {
+  return state.justEntered(State::parsedMessage) && isChannel(queryChannel);
 }
 
 void MessageParser::onParsingChannel() {
