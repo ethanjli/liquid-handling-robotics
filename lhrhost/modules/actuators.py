@@ -31,8 +31,8 @@ class AbsoluteLinearActuator(ChannelTreeNode):
     def on_received_converge(self, subchannel, message):
         unitless_position = int(message.payload)
         unit_position = self.to_unit_position(unitless_position)
-        print('Converged at {:.2f} {}!'
-              .format(unit_position, self.physical_unit))
+        print('Converged at {:.2f} {} ({} unitless)!'
+              .format(unit_position, self.physical_unit, unitless_position))
         for listener in self.converged_position_listeners:
             listener.on_converged_position(unitless_position, unit_position)
 

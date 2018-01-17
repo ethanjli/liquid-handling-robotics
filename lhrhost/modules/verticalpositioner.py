@@ -15,27 +15,27 @@ from lhrhost.modules.actuators import (
 )
 from lhrhost.util.math import map_value
 
-class Pipettor(AbsoluteLinearActuator):
+class VerticalPositioner(AbsoluteLinearActuator):
     def __init__(self):
         super().__init__()
         self.running = False
 
-        self.top_position = 15  # unitless
-        self.top_mark = 0.95  # mL mark
-        self.top_limit = 0.25  # mL mark
-        self.bottom_position = 999  # unitless
-        self.bottom_mark = 0.03  # mL mark
-        self.bottom_limit = 0.03  # mL mark
+        self.top_position = 999  # unitless
+        self.top_mark = 5.4  # cm
+        self.top_limit = 4 # cm
+        self.bottom_position = 15  # unitless
+        self.bottom_mark = 0  # cm
+        self.bottom_limit = 2.8 # cm
 
     # Implement ChannelTreeNode
 
     @property
     def node_prefix(self):
-        return 'p'
+        return 'z'
 
     @property
     def physical_unit(self):
-        return 'mL mark'
+        return 'cm'
 
     # Implement AbsoluteLinearActuator
 
@@ -52,16 +52,16 @@ class Pipettor(AbsoluteLinearActuator):
         ))
 
 class InteractiveTargeting(ConvergedPositionReceiver):
-    def __init__(self, pipettor):
-        self.pipettor = pipettor
+    def __init__(self, vertical_positioner):
+        self.vertical_positioner = vertical_positioner
 
     def parse_input(self, user_input):
-        if user_input.lower().endswith('ml'):
+        if user_input.lower().endswith('cm'):
             user_input = user_input[:-2]
         user_input = user_input.strip()
         user_input = float(user_input)
-        if (user_input < self.pipettor.bottom_mark or
-                user_input > self.pipettor.top_mark):
+        if (user_input < self.vertical_positioner.bottom_mark or
+                user_input > self.vertical_positioner.top_mark):
             raise ValueError
         return user_input
 
@@ -72,10 +72,12 @@ class InteractiveTargeting(ConvergedPositionReceiver):
         while need_input:
             try:
                 user_input = input(
-                    'Please specify the next pipettor position to go to between {} {} and {} {}: '
+                    'Please specify the next vertical positioner position to go to between {} {} and {} {}: '
                     .format(
-                        self.pipettor.bottom_mark, self.pipettor.physical_unit,
-                        self.pipettor.top_mark, self.pipettor.physical_unit
+                        self.vertical_positioner.bottom_mark,
+                        self.vertical_positioner.physical_unit,
+                        self.vertical_positioner.top_mark,
+                        self.vertical_positioner.physical_unit
                     )
                 )
                 user_input = self.parse_input(user_input)
@@ -84,24 +86,26 @@ class InteractiveTargeting(ConvergedPositionReceiver):
                 print('Invalid input: {}'.format(user_input))
                 pass
             except EOFError:
-                self.pipettor.running = False
+                self.vertical_positioner.running = False
                 return
-        self.pipettor.set_target_position(user_input, units=self.pipettor.physical_unit)
+        self.vertical_positioner.set_target_position(
+            user_input, units=self.vertical_positioner.physical_unit
+        )
 
 def main():
     connection = ASCIIConnection()
     monitor = ASCIIMonitor(connection)
     translator = ASCIITranslator()
     dispatcher = Dispatcher()
-    pipettor = Pipettor()
-    targeting = InteractiveTargeting(pipettor)
+    vertical_positioner = VerticalPositioner()
+    targeting = InteractiveTargeting(vertical_positioner)
 
     monitor.listeners.append(translator)
     translator.message_listeners.append(dispatcher)
     translator.line_listeners.append(monitor)
-    dispatcher.receivers[None].append(pipettor)
-    pipettor.converged_position_listeners.append(targeting)
-    pipettor.message_listeners.append(translator)
+    dispatcher.receivers[None].append(vertical_positioner)
+    vertical_positioner.converged_position_listeners.append(targeting)
+    vertical_positioner.message_listeners.append(translator)
 
     connection.open()
     monitor.start_reading_lines()
