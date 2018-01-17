@@ -7,81 +7,49 @@ from lhrhost.serialio.transport import (
     ASCIIConnection, ASCIIMonitor
 )
 from lhrhost.serialio.dispatch import (
-    Message, MessageReceiver, Dispatcher,
+    Message, Dispatcher,
     ASCIITranslator
 )
+from lhrhost.modules.actuators import AbsoluteLinearActuator, ConvergedPositionReceiver
 from lhrhost.util.math import map_value
 
-class Pipettor(MessageReceiver):
+class Pipettor(AbsoluteLinearActuator):
     def __init__(self):
-        self.stabilized_position_listeners = []
-        self.message_listeners = []
+        super().__init__()
         self.running = False
 
         self.top_position = 11  # unitless
         self.top_mark = 0.95  # mL mark
         self.bottom_position = 999  # unitless
-        self.bottom_mark = 0.03  # mL mark
+        self.bottom_mark = 0.05  # mL mark
 
-    def on_message(self, message):
-        if message.channel != '':
-            return
-        converged_position = int(message.payload)
-        print('Stabilized at the {:.2f} mL mark!'
-              .format(self.to_mL_mark(converged_position)))
-        for listener in self.stabilized_position_listeners:
-            listener.on_stabilized_position(
-                converged_position, self.to_mL_mark(converged_position)
-            )
+    # Implement ChannelTreeNode
 
-    def set_target_position(self, target_position):
-        message = Message('', target_position)
-        for listener in self.message_listeners:
-            listener.on_message(message)
+    @property
+    def node_prefix(self):
+        return 'p'
 
-    def set_target_mark(self, target_mark):
-        self.set_target_position(self.to_unitless_position(target_mark))
+    @property
+    def physical_unit(self):
+        return 'mL mark'
 
-    # Unit conversion
+    # Implement AbsoluteLinearActuator
 
-    def to_mL_mark(self, unitless_position):
+    def to_unit_position(self, unitless_position):
         return map_value(
             unitless_position, self.bottom_position, self.top_position,
             self.bottom_mark, self.top_mark
         )
 
-    def to_unitless_position(self, mL_mark):
+    def to_unitless_position(self, unit_position):
         return int(map_value(
-            mL_mark, self.bottom_mark, self.top_mark,
+            unit_position, self.bottom_mark, self.top_mark,
             self.bottom_position, self.top_position
         ))
 
-class Targeting(object):
-    def __init__(self, pipettor, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class InteractiveTargeting(ConvergedPositionReceiver):
+    def __init__(self, pipettor):
         self.pipettor = pipettor
-
-    def on_stabilized_position(self, position_unitless, position_mL_mark):
-        pass
-
-class InteractiveTargeting(Targeting):
-    def on_stabilized_position(self, position_unitless, position_mL_mark):
-        need_input = True
-        while need_input:
-            try:
-                user_input = input(
-                    'Please specify the next position to go to between {} mL and {} mL: '
-                    .format(self.pipettor.bottom_mark, self.pipettor.top_mark)
-                )
-                user_input = self.parse_input(user_input)
-                need_input = False
-            except ValueError:
-                print('Invalid input: {}'.format(user_input))
-                pass
-            except EOFError:
-                self.pipettor.running = False
-                return
-        self.pipettor.set_target_mark(user_input)
 
     def parse_input(self, user_input):
         if user_input.lower().endswith('ml'):
@@ -93,10 +61,33 @@ class InteractiveTargeting(Targeting):
             raise ValueError
         return user_input
 
+    # Implement ConvergedPositionReceiver
+
+    def on_converged_position(self, position_unitless, position_mL_mark):
+        need_input = True
+        while need_input:
+            try:
+                user_input = input(
+                    'Please specify the next pipettor position to go to between {} {} and {} {}: '
+                    .format(
+                        self.pipettor.bottom_mark, self.pipettor.physical_unit,
+                        self.pipettor.top_mark, self.pipettor.physical_unit
+                    )
+                )
+                user_input = self.parse_input(user_input)
+                need_input = False
+            except ValueError:
+                print('Invalid input: {}'.format(user_input))
+                pass
+            except EOFError:
+                self.pipettor.running = False
+                return
+        self.pipettor.set_target_position(user_input, units=self.pipettor.physical_unit)
+
 def main():
     connection = ASCIIConnection()
-    monitor = ASCIIMonitor(connection, daemon_thread=False)
-    translator = ASCIITranslator(channel_start=None, channel_end=None)
+    monitor = ASCIIMonitor(connection)
+    translator = ASCIITranslator()
     dispatcher = Dispatcher()
     pipettor = Pipettor()
     targeting = InteractiveTargeting(pipettor)
@@ -104,8 +95,8 @@ def main():
     monitor.listeners.append(translator)
     translator.message_listeners.append(dispatcher)
     translator.line_listeners.append(monitor)
-    dispatcher.receivers[''].append(pipettor)
-    pipettor.stabilized_position_listeners.append(targeting)
+    dispatcher.receivers[None].append(pipettor)
+    pipettor.converged_position_listeners.append(targeting)
     pipettor.message_listeners.append(translator)
 
     connection.open()

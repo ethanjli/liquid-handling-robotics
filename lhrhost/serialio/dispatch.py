@@ -52,7 +52,8 @@ class Dispatcher(MessageReceiver):
 
     Attributes:
         receivers (:class:`collections.defaultdict` of :class:`str` to :class:`list` of :class:`MessageReceiver`):
-            receivers for messages for each stream, keyed by stream ids.
+            receivers for messages for each stream, keyed by stream ids. A
+            receiver keyed with a stream id of None will receive all messages.
     """
     def __init__(self):
         self.receivers = defaultdict(list)
@@ -61,6 +62,8 @@ class Dispatcher(MessageReceiver):
 
     def on_message(self, message: Message) -> None:
         for receiver in self.receivers[message.channel]:
+            receiver.on_message(message)
+        for receiver in self.receivers[None]:
             receiver.on_message(message)
 
 
@@ -214,10 +217,10 @@ class ASCIITranslator(Translator, MessageReceiver, ASCIILineReceiver):
     def on_line(self, line: str) -> None:
         try:
             message = self.decode(line)
+            for listener in self.message_listeners:
+                listener.on_message(message)
         except InvalidEncodingError as exc:
             print(exc)
-        for listener in self.message_listeners:
-            listener.on_message(message)
 
     # Implement MessageReceiver
 
