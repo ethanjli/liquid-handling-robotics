@@ -4,6 +4,8 @@
 #include <AbsoluteLinearPositionControl.h>
 #include <ASCIISerialIO.h>
 
+#include "LinearActuator.h"
+
 namespace LiquidHandlingRobotics {
 
 struct AbsoluteLinearActuatorParams {
@@ -29,13 +31,6 @@ struct AbsoluteLinearActuatorParams {
   int minDuty;
   int maxDuty;
 };
-
-//const char kConstantsChannel = 'k';
-//const char kLimitsChannel = 'l';
-const char kReportingChannel = 'r';
-const char kReportingConvergenceChannel = 'c';
-const char kReportingStreamingChannel = 's';
-const char kTargetingChannel = 't';
 
 class AbsoluteLinearActuator {
   public:
