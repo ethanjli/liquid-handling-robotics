@@ -1,4 +1,3 @@
-#define LIBCALL_ENABLEINTERRUPT
 #include "AbsoluteLinearActuator.h"
 
 namespace LiquidHandlingRobotics {
@@ -14,13 +13,15 @@ AbsoluteLinearActuator::AbsoluteLinearActuator(
     motors, params.motorPort,
     params.potentiometerPin, params.minPosition, params.maxPosition,
     params.pidKp, params.pidKd, params.pidKi, params.pidSampleTime,
-    params.swapMotorPolarity, params.feedforward, params.brakeThreshold
+    params.swapMotorPolarity, params.feedforward,
+    params.brakeLowerThreshold, params.brakeUpperThreshold,
+    params.minDuty, params.maxDuty
   ),
   convergenceDelay(params.convergenceDelay)
 {
-  thresholdChannel[0] = params.actuatorChannelPrefix;
-  convergenceChannel[0] = params.actuatorChannelPrefix;
-  streamingChannel[0] = params.actuatorChannelPrefix;
+  targetingChannel[0] = params.actuatorChannelPrefix;
+  reportingConvergenceChannel[0] = params.actuatorChannelPrefix;
+  reportingStreamingChannel[0] = params.actuatorChannelPrefix;
 }
 
 void AbsoluteLinearActuator::setup() {
@@ -30,7 +31,7 @@ void AbsoluteLinearActuator::setup() {
 void AbsoluteLinearActuator::update() {
   actuator.update();
 
-  if (messageParser.justReceived(thresholdChannel)) {
+  if (messageParser.justReceived(targetingChannel)) {
     actuator.pid.setSetpoint(messageParser.payload);
     reportedConvergence = false;
   }
@@ -45,12 +46,12 @@ bool AbsoluteLinearActuator::converged(unsigned int convergenceTime) {
 }
 
 void AbsoluteLinearActuator::reportConvergencePosition() {
-  sendMessage(convergenceChannel, actuator.pid.getInput());
+  sendMessage(reportingConvergenceChannel, actuator.pid.getInput());
   reportedConvergence = true;
 }
 
 void AbsoluteLinearActuator::reportStreamingPosition() {
-  sendMessage(streamingChannel, actuator.pid.getInput());
+  sendMessage(reportingStreamingChannel, actuator.pid.getInput());
 }
 
 }

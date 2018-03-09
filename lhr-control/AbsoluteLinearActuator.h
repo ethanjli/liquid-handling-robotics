@@ -1,7 +1,6 @@
 #ifndef AbsoluteLinearActuator_h
 #define AbsoluteLinearActuator_h
 
-#define LIBCALL_ENABLEINTERRUPT
 #include <AbsoluteLinearPositionControl.h>
 #include <ASCIISerialIO.h>
 
@@ -21,15 +20,22 @@ struct AbsoluteLinearActuatorParams {
   int pidSampleTime;
 
   int feedforward;
-  int brakeThreshold;
+  int brakeLowerThreshold;
+  int brakeUpperThreshold;
 
   bool swapMotorPolarity;
   int convergenceDelay;
+
+  int minDuty;
+  int maxDuty;
 };
 
-const char kThresholdChannel = 't';
-const char kConvergenceChannel = 'c';
-const char kStreamingChannel = 's';
+//const char kConstantsChannel = 'k';
+//const char kLimitsChannel = 'l';
+const char kReportingChannel = 'r';
+const char kReportingConvergenceChannel = 'c';
+const char kReportingStreamingChannel = 's';
+const char kTargetingChannel = 't';
 
 class AbsoluteLinearActuator {
   public:
@@ -53,9 +59,11 @@ class AbsoluteLinearActuator {
     void reportStreamingPosition();
 
   private:
-    char thresholdChannel[3] = {' ', kThresholdChannel, '\0'};
-    char convergenceChannel[3] = {' ', kConvergenceChannel, '\0'};
-    char streamingChannel[3] = {' ', kStreamingChannel, '\0'};
+    //char constantsChannels[4] = {' ', kConstantsChannel, ' ', '\0'};
+    //char limitsChannels[5] = {' ', kLimitsChannel, ' ', ' ', '\0'};
+    char reportingConvergenceChannel[4] = {' ', kReportingChannel, kReportingConvergenceChannel, '\0'};
+    char reportingStreamingChannel[4] = {' ', kReportingChannel, kReportingStreamingChannel, '\0'};
+    char targetingChannel[3] = {' ', kTargetingChannel, '\0'};
 
 };
 

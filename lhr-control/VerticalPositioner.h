@@ -8,9 +8,10 @@ namespace LiquidHandlingRobotics {
 const AbsoluteLinearActuatorParams verticalPositionerParams = {
   'z',
   M2, A1, 11, 999,
-  8, 0.1, 0.2, 10,
-  8, 80,
-  false, 100
+  6, 0.1, 0.1, 10,
+  0, -60, 100,
+  false, 100,
+  -60, 255
 };
 
 }
