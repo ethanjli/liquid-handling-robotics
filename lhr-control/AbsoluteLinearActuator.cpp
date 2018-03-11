@@ -34,12 +34,16 @@ void AbsoluteLinearActuator::update() {
   if (messageParser.justReceived(targetingChannel)) {
     actuator.pid.setSetpoint(messageParser.payload);
     reportedConvergence = false;
+    actuator.unfreeze();
   }
   if (messageParser.justReceived(reportingStreamingChannel)) {
     streamingPosition = (messageParser.payload > 0);
   }
 
-  if (converged(convergenceDelay) && !reportedConvergence) reportConvergencePosition();
+  if (converged(convergenceDelay) && !reportedConvergence) {
+    actuator.freeze();
+    reportConvergencePosition();
+  }
   if (streamingPosition) reportStreamingPosition();
 }
 
