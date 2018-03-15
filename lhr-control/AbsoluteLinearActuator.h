@@ -4,11 +4,13 @@
 #include <AbsoluteLinearPositionControl.h>
 #include <ASCIISerialIO.h>
 
-#include "LinearActuator.h"
+#include "LinearActuatorModule.h"
 
 namespace LiquidHandlingRobotics {
 
 struct AbsoluteLinearActuatorParams {
+  using LinearActuator = LinearPositionControl::AbsoluteLinearActuator;
+
   char actuatorChannelPrefix;
 
   MotorPort motorPort;
@@ -32,35 +34,7 @@ struct AbsoluteLinearActuatorParams {
   int maxDuty;
 };
 
-class AbsoluteLinearActuator {
-  public:
-    AbsoluteLinearActuator(
-        MessageParser &messageParser, LinearPositionControl::Components::Motors &motors,
-        const AbsoluteLinearActuatorParams &params
-    );
-
-    MessageParser &messageParser;
-
-    LinearPositionControl::AbsoluteLinearActuator actuator;
-    unsigned int convergenceDelay;
-    bool reportedConvergence = false;
-    bool streamingPosition = false;
-
-    void setup();
-    void update();
-
-    bool converged(unsigned int convergenceTime);
-    void reportConvergencePosition();
-    void reportStreamingPosition();
-
-  private:
-    //char constantsChannels[4] = {' ', kConstantsChannel, ' ', '\0'};
-    //char limitsChannels[5] = {' ', kLimitsChannel, ' ', ' ', '\0'};
-    char reportingConvergenceChannel[4] = {' ', kReportingChannel, kReportingConvergenceChannel, '\0'};
-    char reportingStreamingChannel[4] = {' ', kReportingChannel, kReportingStreamingChannel, '\0'};
-    char targetingChannel[3] = {' ', kTargetingChannel, '\0'};
-
-};
+using AbsoluteLinearActuator = LinearActuatorModule<AbsoluteLinearActuatorParams>;
 
 }
 
