@@ -16,6 +16,7 @@ LinearPositionControl::Components::Motors motors;
 AbsoluteLinearActuator pipettor(messageParser, motors, pipettorParams);
 AbsoluteLinearActuator verticalPositioner(messageParser, motors, verticalPositionerParams);
 CumulativeLinearActuator yPositioner(messageParser, motors, yPositionerParams);
+LinearPositionControl::CumulativePositionCalibrator yPositionerCalibrator(yPositioner.actuator);
 
 void setup() {
   Serial.begin(115200);
@@ -26,6 +27,7 @@ void setup() {
   pipettor.setup();
   verticalPositioner.setup();
   yPositioner.setup();
+  yPositionerCalibrator.setup();
   waitForSerialHandshake();
 }
 
@@ -33,5 +35,6 @@ void loop() {
   messageParser.update();
   pipettor.update();
   verticalPositioner.update();
-  yPositioner.update();
+  if (yPositionerCalibrator.state.current() == LinearPositionControl::CumulativePositionCalibrator::State::calibrated) yPositioner.update();
+  else yPositionerCalibrator.update();
 }
