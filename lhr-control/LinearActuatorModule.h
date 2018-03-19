@@ -40,7 +40,7 @@ class LinearActuatorModule {
     typename LinearActuatorParams::LinearActuator actuator;
     unsigned int convergenceDelay;
     bool reportedConvergence = false;
-    bool reportingConvergencePosition = false;
+    bool reportingConvergencePosition = true;
     bool reportingStreamingPosition = false;
     const char moduleChannel = '\0';
 
