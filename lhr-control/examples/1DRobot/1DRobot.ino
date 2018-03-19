@@ -1,3 +1,5 @@
+#include <avr/wdt.h>
+
 //#define DISABLE_LOGGING
 #include <ArduinoLog.h>
 
@@ -29,9 +31,11 @@ void setup() {
   yPositioner.setup();
   yPositionerCalibrator.setup();
   waitForSerialHandshake();
+  wdt_enable(WDTO_1S);
 }
 
 void loop() {
+  wdt_reset();
   messageParser.update();
   pipettor.update();
   verticalPositioner.update();

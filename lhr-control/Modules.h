@@ -26,7 +26,7 @@ const AbsoluteLinearActuatorParams verticalPositionerParams = {
 
 const CumulativeLinearActuatorParams yPositionerParams = {
   'y',
-  M3, 0, 715,
+  M3, 0, 700,
   10, 0.1, 0.1, 10,
   0, -60, 60,
   false, 100,
