@@ -2,9 +2,7 @@
 #include <ArduinoLog.h>
 
 #include <ASCIISerialIO.h>
-#include <Pipettor.h>
-#include <VerticalPositioner.h>
-#include <YPositioner.h>
+#include <Modules.h>
 
 using namespace LiquidHandlingRobotics;
 

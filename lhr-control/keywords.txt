@@ -1,0 +1,26 @@
+#######################################
+# Syntax Coloring Map For ExampleLibrary
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+LiquidHandlingRobotics	KEYWORD1
+AbsoluteLinearActuator	KEYWORD1
+CumulativeLinearActuator	KEYWORD1
+MessageParser	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+waitForSerialHandshake	KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+#######################################
+# Constants (LITERAL1)
+####################################### 
