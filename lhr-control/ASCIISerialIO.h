@@ -17,12 +17,32 @@ namespace States {
   };
 }
 
+const char kChannelStartDelimiter = '<';
+const char kChannelEndDelimiter = '>';
+const char kPayloadStartDelimiter = '[';
+const char kPayloadEndDelimiter = ']';
+
 void waitForSerialHandshake(char handshakeChar = '~', unsigned long waitDelay = 200);
 
 void sendMessage(
     const String &channel, int payload,
-    char channelStartDelimiter = '<', char channelEndDelimiter = '>',
-    char payloadStartDelimiter = '[', char payloadEndDelimiter = ']'
+    char channelStartDelimiter = kChannelStartDelimiter,
+    char channelEndDelimiter = kChannelEndDelimiter,
+    char payloadStartDelimiter = kPayloadStartDelimiter,
+    char payloadEndDelimiter = kPayloadEndDelimiter
+);
+void sendChannelStart(char channelStartDelimiter = kChannelStartDelimiter);
+void sendChannelChar(char channelChar);
+void sendChannelEnd(char channelEndDelimiter = kChannelEndDelimiter);
+void sendChannel(
+    const String &channel,
+    char channelStartDelimiter = kChannelStartDelimiter,
+    char channelEndDelimiter = kChannelEndDelimiter
+);
+void sendPayload(
+    int payload,
+    char payloadStartDelimiter = kPayloadStartDelimiter,
+    char payloadEndDelimiter = kPayloadEndDelimiter
 );
 
 const unsigned int kChannelMaxLength = 8;
@@ -49,6 +69,7 @@ class MessageParser {
 
     bool isChannel(const char queryChannel[]);
     bool justReceived(const char queryChannel[]);
+    bool justReceived();
 
   private:
     char channelStartDelimiter;

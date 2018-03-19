@@ -18,12 +18,8 @@ LinearActuatorModule<CumulativeLinearActuatorParams>::LinearActuatorModule(
     params.brakeLowerThreshold, params.brakeUpperThreshold,
     params.minDuty, params.maxDuty
   ),
-  convergenceDelay(params.convergenceDelay)
-{
-  targetingChannel[0] = params.actuatorChannelPrefix;
-  reportingConvergenceChannel[0] = params.actuatorChannelPrefix;
-  reportingStreamingChannel[0] = params.actuatorChannelPrefix;
-}
+  convergenceDelay(params.convergenceDelay), moduleChannel(params.actuatorChannelPrefix)
+{}
 
 }
 

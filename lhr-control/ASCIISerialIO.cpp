@@ -19,9 +19,28 @@ void sendMessage(
     char channelStartDelimiter, char channelEndDelimiter,
     char payloadStartDelimiter, char payloadEndDelimiter
 ) {
+  sendChannel(channel, channelStartDelimiter, channelEndDelimiter);
+  sendPayload(payload, payloadStartDelimiter, payloadEndDelimiter);
+}
+void sendChannel(
+    const String &channel, char channelStartDelimiter, char channelEndDelimiter
+) {
   Serial.print(channelStartDelimiter);
   Serial.print(channel);
   Serial.print(channelEndDelimiter);
+}
+void sendChannelStart(char channelStartDelimiter) {
+  Serial.print(channelStartDelimiter);
+}
+void sendChannelChar(char channelChar) {
+  Serial.print(channelChar);
+}
+void sendChannelEnd(char channelEndDelimiter) {
+  Serial.print(channelEndDelimiter);
+}
+void sendPayload(
+    int payload, char payloadStartDelimiter, char payloadEndDelimiter
+) {
   Serial.print(payloadStartDelimiter);
   Serial.print(payload);
   Serial.print(payloadEndDelimiter);
@@ -94,6 +113,10 @@ bool MessageParser::isChannel(const char queryChannel[]) {
 
 bool MessageParser::justReceived(const char queryChannel[]) {
   return state.justEntered(State::parsedMessage) && isChannel(queryChannel);
+}
+
+bool MessageParser::justReceived() {
+  return state.justEntered(State::parsedMessage);
 }
 
 void MessageParser::onParsingChannel() {
