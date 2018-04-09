@@ -52,6 +52,6 @@ class AbsoluteLinearActuator(ChannelTreeNode):
     @property
     def subchannel_handlers(self):
         return {
-            'c': self.on_received_converge
+            'rc': self.on_received_converge
         }
 

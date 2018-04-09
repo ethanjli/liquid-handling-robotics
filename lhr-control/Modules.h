@@ -8,7 +8,7 @@ namespace LiquidHandlingRobotics {
 
 const AbsoluteLinearActuatorParams pipettorParams = {
   'p',
-  M1, A0, 100, 980,
+  M1, A0, 100, 975,
   20, 0.1, 0.1, 10,
   0, -100, 100,
   false, 100,

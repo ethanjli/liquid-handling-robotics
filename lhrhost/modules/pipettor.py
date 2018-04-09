@@ -20,12 +20,10 @@ class Pipettor(AbsoluteLinearActuator):
         super().__init__()
         self.running = False
 
-        self.top_position = 15  # unitless
-        self.top_mark = 0.95  # mL mark
-        self.top_limit = 0.25  # mL mark
-        self.bottom_position = 999  # unitless
-        self.bottom_mark = 0.03  # mL mark
-        self.bottom_limit = 0.03  # mL mark
+        self.top_position = 500  # unitless
+        self.top_mark = 0.44  # mL mark
+        self.bottom_position = 975  # unitless
+        self.bottom_mark = 0.0  # mL mark
 
     # Implement ChannelTreeNode
 
