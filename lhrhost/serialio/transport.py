@@ -264,7 +264,7 @@ class ASCIIMonitor(ASCIILineReceiver):
                         continue
                 for listener in self.listeners:
                     listener.on_line(line)
-        except Exception:
+        except (Exception, KeyboardInterrupt):
             self._monitoring = False
             raise
 
