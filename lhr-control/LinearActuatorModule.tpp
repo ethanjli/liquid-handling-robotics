@@ -43,6 +43,16 @@ void LinearActuatorModule<LinearActuatorParams>::reportConvergencePosition() {
 }
 
 template <class LinearActuatorParams>
+void LinearActuatorModule<LinearActuatorParams>::reportQueryPosition() {
+  sendChannelStart();
+  sendChannelChar(moduleChannel);
+  sendChannelChar(kReportingChannel);
+  sendChannelChar(kReportingQueryChannel);
+  sendChannelEnd();
+  sendPayload(actuator.pid.getInput());
+}
+
+template <class LinearActuatorParams>
 void LinearActuatorModule<LinearActuatorParams>::reportStreamingPosition() {
   sendChannelStart();
   sendChannelChar(moduleChannel);
@@ -132,6 +142,9 @@ void LinearActuatorModule<LinearActuatorParams>::onReportingMessage() {
       break;
     case kReportingStreamingChannel:
       reportingStreamingPosition = (messageParser.payload > 0);
+      break;
+    case kReportingQueryChannel:
+      reportQueryPosition();
       break;
   }
 }

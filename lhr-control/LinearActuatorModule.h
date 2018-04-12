@@ -22,7 +22,9 @@ const char kLimitsLowerSubchannel = 'l';
 const char kLimitsUpperSubchannel = 'h';
 // Reporting channel
 const char kReportingChannel = 'r';
+const char kReportingQueryChannel = 'q';
 const char kReportingConvergenceChannel = 'c';
+const char kReportingTimeoutChannel = 't';
 const char kReportingStreamingChannel = 's';
 // Targeting channel
 const char kTargetingChannel = 't';
@@ -49,6 +51,7 @@ class LinearActuatorModule {
 
     bool converged(unsigned int convergenceTime);
     void reportConvergencePosition();
+    void reportQueryPosition();
     void reportStreamingPosition();
 
   private:
