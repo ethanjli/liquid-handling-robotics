@@ -10,7 +10,7 @@ const AbsoluteLinearActuatorParams pipettorParams = {
   'p',
   M1, A0, 100, 975,
   20, 0.1, 0.1, 10,
-  0, -100, 100,
+  0, -140, 140,
   false, 100,
   -255, 255
 };

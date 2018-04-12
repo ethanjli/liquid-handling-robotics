@@ -1,7 +1,3 @@
-# Standard imports
-import time
-import argparse
-
 # Local package imports
 from lhrhost.serialio.transport import (
     ASCIIConnection, ASCIIMonitor
@@ -20,8 +16,8 @@ class Pipettor(AbsoluteLinearActuator):
         super().__init__()
         self.running = False
 
-        self.top_position = 500  # unitless
-        self.top_mark = 0.44  # mL mark
+        self.top_position = 800  # unitless
+        self.top_mark = 0.14  # mL mark
         self.bottom_position = 975  # unitless
         self.bottom_mark = 0.0  # mL mark
 
