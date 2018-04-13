@@ -2,6 +2,7 @@
 #define LinearActuatorModule_h
 
 #include <ASCIISerialIO.h>
+#include <Smoothing.h>
 
 #include "LinearActuator.h"
 
@@ -24,7 +25,7 @@ const char kLimitsUpperSubchannel = 'h';
 const char kReportingChannel = 'r';
 const char kReportingQueryChannel = 'q';
 const char kReportingConvergenceChannel = 'c';
-const char kReportingTimeoutChannel = 't';
+const char kReportingStallTimeoutChannel = 't';
 const char kReportingStreamingChannel = 's';
 // Targeting channel
 const char kTargetingChannel = 't';
@@ -37,24 +38,33 @@ class LinearActuatorModule {
         const LinearActuatorParams &linearActuatorParams
     );
 
+    using LinearActuator = typename LinearActuatorParams::LinearActuator;
+    using Smoother = LinearPositionControl::Smoother<typename LinearActuator::Position, int>;
+
     MessageParser &messageParser;
 
-    typename LinearActuatorParams::LinearActuator actuator;
+    LinearActuator actuator;
+    Smoother smoother;
 
     unsigned int convergenceDelay;
-
     bool reportedConvergence = false;
     bool reportingConvergencePosition = true;
+
+    unsigned int stallTimeout;
+    bool reportedStallTimeout = false;
+    bool reportingStallTimeoutPosition = true;
+
     int streamingPositionReportInterval = 0;
+
     const char moduleChannel = '\0';
 
     void setup();
     void update();
 
     bool converged(unsigned int convergenceTime);
-    void reportConvergencePosition();
-    void reportQueryPosition();
-    void reportStreamingPosition();
+    bool stalled(unsigned int stallTime);
+
+    void reportPosition(char reportingChannel);
 
   private:
     int streamingPositionClock = 0;

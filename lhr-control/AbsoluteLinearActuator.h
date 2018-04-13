@@ -15,23 +15,33 @@ struct AbsoluteLinearActuatorParams {
 
   MotorPort motorPort;
   uint8_t potentiometerPin;
+
   int minPosition;
   int maxPosition;
+
+  int minDuty;
+  int maxDuty;
 
   double pidKp;
   double pidKd;
   double pidKi;
+
   int pidSampleTime;
 
   int feedforward;
+
   int brakeLowerThreshold;
   int brakeUpperThreshold;
 
   bool swapMotorPolarity;
+
   int convergenceDelay;
 
-  int minDuty;
-  int maxDuty;
+  int stallTimeout;
+  float stallSmootherSnapMultiplier;
+  int stallSmootherMax;
+  bool stallSmootherEnableSleep;
+  float stallSmootherActivityThreshold;
 };
 
 using AbsoluteLinearActuator = LinearActuatorModule<AbsoluteLinearActuatorParams>;

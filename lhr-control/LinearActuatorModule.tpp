@@ -8,26 +8,33 @@ namespace LiquidHandlingRobotics {
 template <class LinearActuatorParams>
 void LinearActuatorModule<LinearActuatorParams>::setup() {
   actuator.setup();
+  smoother.setup();
 }
 
 template <class LinearActuatorParams>
 void LinearActuatorModule<LinearActuatorParams>::update() {
   actuator.update();
+  smoother.update();
 
   if (messageParser.justReceived() && messageParser.channel[0] == moduleChannel) {
     onReceivedMessage();
   }
 
-  if (converged(convergenceDelay) && !reportedConvergence) {
-    actuator.freeze();
-    if (reportingConvergencePosition) reportConvergencePosition();
+  if (!reportedConvergence && !reportedStallTimeout) {
+    if (converged(convergenceDelay)) {
+      actuator.freeze(true);
+      if (reportingConvergencePosition) reportPosition(kReportingConvergenceChannel);
+    } else if (stalled(stallTimeout)) {
+      actuator.freeze(true);
+      if (reportingStallTimeoutPosition) reportPosition(kReportingStallTimeoutChannel);
+    }
   }
   if (streamingPositionReportInterval > 0) {
-    if (streamingPositionClock == 0) reportStreamingPosition();
+    if (streamingPositionClock == 0) reportPosition(kReportingStreamingChannel);
     streamingPositionClock = (streamingPositionClock + 1) % streamingPositionReportInterval;
   }
   if (queryPositionCountdown > 0) {
-    reportQueryPosition();
+    reportPosition(kReportingQueryChannel);
     --queryPositionCountdown;
   }
 }
@@ -39,34 +46,28 @@ bool LinearActuatorModule<LinearActuatorParams>::converged(unsigned int converge
 }
 
 template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::reportConvergencePosition() {
-  sendChannelStart();
-  sendChannelChar(moduleChannel);
-  sendChannelChar(kReportingChannel);
-  sendChannelChar(kReportingConvergenceChannel);
-  sendChannelEnd();
-  sendPayload(actuator.pid.getInput());
-  reportedConvergence = true;
+bool LinearActuatorModule<LinearActuatorParams>::stalled(unsigned int stallTime) {
+  return actuator.speedAdjuster.output.current() != 0 &&
+    actuator.pid.setpoint.settled(stallTime) &&
+    smoother.output.settled(stallTime);
 }
 
 template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::reportQueryPosition() {
+void LinearActuatorModule<LinearActuatorParams>::reportPosition(char reportingChannel) {
   sendChannelStart();
   sendChannelChar(moduleChannel);
   sendChannelChar(kReportingChannel);
-  sendChannelChar(kReportingQueryChannel);
+  sendChannelChar(reportingChannel);
   sendChannelEnd();
-  sendPayload(actuator.pid.getInput());
-}
-
-template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::reportStreamingPosition() {
-  sendChannelStart();
-  sendChannelChar(moduleChannel);
-  sendChannelChar(kReportingChannel);
-  sendChannelChar(kReportingStreamingChannel);
-  sendChannelEnd();
-  sendPayload(actuator.pid.getInput());
+  sendPayload(actuator.position.current());
+  switch (reportingChannel) {
+    case kReportingConvergenceChannel:
+      reportedConvergence = true;
+      break;
+    case kReportingStallTimeoutChannel:
+      reportedStallTimeout = true;
+      break;
+  }
 }
 
 template <class LinearActuatorParams>
@@ -148,11 +149,12 @@ void LinearActuatorModule<LinearActuatorParams>::onReportingMessage() {
       reportingConvergencePosition = (messageParser.payload > 0);
       break;
     case kReportingStreamingChannel:
+      reportPosition(kReportingStreamingChannel);
       streamingPositionReportInterval = max(messageParser.payload, 0);
       streamingPositionClock = 0;
       break;
     case kReportingQueryChannel:
-      reportQueryPosition();
+      reportPosition(kReportingQueryChannel);
       queryPositionCountdown = max(messageParser.payload, 0);
       break;
   }
@@ -162,6 +164,7 @@ template <class LinearActuatorParams>
 void LinearActuatorModule<LinearActuatorParams>::onTargetingMessage() {
   actuator.pid.setSetpoint(messageParser.payload);
   reportedConvergence = false;
+  reportedStallTimeout = false;
   actuator.unfreeze();
 }
 

@@ -18,7 +18,13 @@ LinearActuatorModule<AbsoluteLinearActuatorParams>::LinearActuatorModule(
     params.brakeLowerThreshold, params.brakeUpperThreshold,
     params.minDuty, params.maxDuty
   ),
-  convergenceDelay(params.convergenceDelay), moduleChannel(params.actuatorChannelPrefix)
+  smoother(
+      actuator.position,
+      params.stallSmootherSnapMultiplier, params.stallSmootherMax,
+      params.stallSmootherEnableSleep, params.stallSmootherActivityThreshold
+  ),
+  convergenceDelay(params.convergenceDelay), stallTimeout(params.stallTimeout),
+  moduleChannel(params.actuatorChannelPrefix)
 {}
 
 }
