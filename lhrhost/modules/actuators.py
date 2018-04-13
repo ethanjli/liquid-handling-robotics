@@ -11,9 +11,15 @@ class ConvergedPositionReceiver(object, metaclass=InterfaceClass):
     def on_converged_position(self):
         pass
 
+class StalledPositionReceiver(object, metaclass=InterfaceClass):
+    @abstractmethod
+    def on_stalled_position(self):
+        pass
+
 class AbsoluteLinearActuator(ChannelTreeNode):
     def __init__(self):
         self.converged_position_listeners = []
+        self.stalled_position_listeners = []
         self.message_listeners = []
 
     # Unit conversions
@@ -36,6 +42,14 @@ class AbsoluteLinearActuator(ChannelTreeNode):
         for listener in self.converged_position_listeners:
             listener.on_converged_position(unitless_position, unit_position)
 
+    def on_received_stall(self, subchannel, message):
+        unitless_position = int(message.payload)
+        unit_position = self.to_unit_position(unitless_position)
+        print('Stalled at {:.2f} {} ({} unitless)!'
+              .format(unit_position, self.physical_unit, unitless_position))
+        for listener in self.stalled_position_listeners:
+            listener.on_stalled_position(unitless_position, unit_position)
+
     def set_target_position(self, target_position, units=None):
         if units is None:
             unitless_position = target_position
@@ -52,6 +66,7 @@ class AbsoluteLinearActuator(ChannelTreeNode):
     @property
     def subchannel_handlers(self):
         return {
-            'rc': self.on_received_converge
+            'rc': self.on_received_converge,
+            'rt': self.on_received_stall
         }
 

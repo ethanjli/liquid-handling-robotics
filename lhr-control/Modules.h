@@ -22,7 +22,7 @@ const AbsoluteLinearActuatorParams pipettorParams = {
   // feedforward
   0,
   // brakeLowerThreshold, brakeUpperThreshold
-  -140, 140,
+  -160, 160,
   // swapMotorPolarity
   false,
   // convergenceDelay
