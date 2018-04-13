@@ -1,9 +1,8 @@
 //#define DISABLE_LOGGING
 #include <ArduinoLog.h>
 
-#include <Pipettor.h>
-#include <VerticalPositioner.h>
 #include <ASCIISerialIO.h>
+#include <Modules.h>
 
 using namespace LiquidHandlingRobotics;
 
