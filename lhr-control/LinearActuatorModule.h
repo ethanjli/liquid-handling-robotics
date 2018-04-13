@@ -40,7 +40,9 @@ class LinearActuatorModule {
     MessageParser &messageParser;
 
     typename LinearActuatorParams::LinearActuator actuator;
+
     unsigned int convergenceDelay;
+
     bool reportedConvergence = false;
     bool reportingConvergencePosition = true;
     bool reportingStreamingPosition = false;
