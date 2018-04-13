@@ -22,7 +22,10 @@ void LinearActuatorModule<LinearActuatorParams>::update() {
     actuator.freeze();
     if (reportingConvergencePosition) reportConvergencePosition();
   }
-  if (reportingStreamingPosition) reportStreamingPosition();
+  if (streamingPositionReportInterval > 0) {
+    if (streamingPositionClock == 0) reportStreamingPosition();
+    streamingPositionClock = (streamingPositionClock + 1) % streamingPositionReportInterval;
+  }
 }
 
 template <class LinearActuatorParams>
@@ -141,7 +144,8 @@ void LinearActuatorModule<LinearActuatorParams>::onReportingMessage() {
       reportingConvergencePosition = (messageParser.payload > 0);
       break;
     case kReportingStreamingChannel:
-      reportingStreamingPosition = (messageParser.payload > 0);
+      streamingPositionReportInterval = max(messageParser.payload, 0);
+      streamingPositionClock = 0;
       break;
     case kReportingQueryChannel:
       reportQueryPosition();

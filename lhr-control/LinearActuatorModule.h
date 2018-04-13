@@ -45,7 +45,7 @@ class LinearActuatorModule {
 
     bool reportedConvergence = false;
     bool reportingConvergencePosition = true;
-    bool reportingStreamingPosition = false;
+    int streamingPositionReportInterval = 0;
     const char moduleChannel = '\0';
 
     void setup();
@@ -57,6 +57,7 @@ class LinearActuatorModule {
     void reportStreamingPosition();
 
   private:
+    int streamingPositionClock = 0;
     void onReceivedMessage();
     void onConstantsMessage();
     void onLimitsMessage();
