@@ -58,6 +58,7 @@ class LinearActuatorModule {
 
   private:
     int streamingPositionClock = 0;
+    int queryPositionCountdown = 0;
     void onReceivedMessage();
     void onConstantsMessage();
     void onLimitsMessage();

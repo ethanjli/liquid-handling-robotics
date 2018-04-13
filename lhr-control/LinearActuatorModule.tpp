@@ -26,6 +26,10 @@ void LinearActuatorModule<LinearActuatorParams>::update() {
     if (streamingPositionClock == 0) reportStreamingPosition();
     streamingPositionClock = (streamingPositionClock + 1) % streamingPositionReportInterval;
   }
+  if (queryPositionCountdown > 0) {
+    reportQueryPosition();
+    --queryPositionCountdown;
+  }
 }
 
 template <class LinearActuatorParams>
@@ -149,6 +153,7 @@ void LinearActuatorModule<LinearActuatorParams>::onReportingMessage() {
       break;
     case kReportingQueryChannel:
       reportQueryPosition();
+      queryPositionCountdown = max(messageParser.payload, 0);
       break;
   }
 }
