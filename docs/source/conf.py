@@ -39,6 +39,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
+    'sphinx.ext.graphviz',
     'sphinx.ext.napoleon',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
@@ -89,6 +90,12 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
+# Figure numbering
+numfig = True
+
+# -- Options for Graphviz rendering ---------------------------------------
+graphviz_dot_args = ['-Nfontname=Lato', '-Efontname=Lato', '-Efontsize=10']
+graphviz_output_format = 'svg'
 
 # -- Options for HTML output ----------------------------------------------
 

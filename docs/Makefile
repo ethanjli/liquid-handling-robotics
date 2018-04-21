@@ -24,6 +24,22 @@ api:
 	@echo "Auto-generation of API documentation finished." \
 		"The generated api files are in $(APIDIR)."
 
+livehtml:
+	sphinx-autobuild -b html $(SPHINXOPTS) \
+		--ignore "*.swp" \
+		--ignore "*.swo" \
+		--ignore "*.pdf" \
+		--ignore "*.log" \
+		--ignore "*.out" \
+		--ignore "*.toc" \
+		--ignore "*.aux" \
+		--ignore "*.idx" \
+		--ignore "*.ind" \
+		--ignore "*.ilg" \
+		--ignore "*.tex" \
+		$(SOURCEDIR) \
+		$(BUILDDIR)/html
+
 # Remove auto-generated files
 clean:
 	@rm -rf "$(BUILDDIR)"
