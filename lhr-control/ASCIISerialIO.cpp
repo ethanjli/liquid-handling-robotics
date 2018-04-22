@@ -4,11 +4,6 @@
 
 namespace LiquidHandlingRobotics {
 
-void hardReset() {
-  wdt_enable(WDTO_15MS);
-  while (true); // Hang to force the AVR watchdog timer to reset the Arduino
-}
-
 void waitForSerialHandshake(char handshakeChar, unsigned long waitDelay) {
   while (!Serial) {;}
   while (Serial.available() < 1) {
@@ -21,51 +16,70 @@ void waitForSerialHandshake(char handshakeChar, unsigned long waitDelay) {
   delay(waitDelay);
 }
 
-void sendMessage(
-    const String &channel, int payload,
-    char channelStartDelimiter, char channelEndDelimiter,
-    char payloadStartDelimiter, char payloadEndDelimiter
-) {
-  sendChannel(channel, channelStartDelimiter, channelEndDelimiter);
-  sendPayload(payload, payloadStartDelimiter, payloadEndDelimiter);
+// Message RX/TX
+
+void sendMessage(const String &channel, int payload) {
+  sendChannel(channel);
+  sendPayload(payload);
 }
-void sendChannel(
-    const String &channel, char channelStartDelimiter, char channelEndDelimiter
-) {
-  Serial.print(channelStartDelimiter);
+void sendChannel(const String &channel) {
+  Serial.print(kChannelStartDelimiter);
   Serial.print(channel);
-  Serial.print(channelEndDelimiter);
+  Serial.print(kChannelEndDelimiter);
 }
-void sendChannelStart(char channelStartDelimiter) {
-  Serial.print(channelStartDelimiter);
+void sendChannelStart() {
+  Serial.print(kChannelStartDelimiter);
 }
 void sendChannelChar(char channelChar) {
   Serial.print(channelChar);
 }
-void sendChannelEnd(char channelEndDelimiter) {
-  Serial.print(channelEndDelimiter);
+void sendChannelEnd() {
+  Serial.print(kChannelEndDelimiter);
 }
-void sendPayload(
-    int payload, char payloadStartDelimiter, char payloadEndDelimiter
-) {
-  Serial.print(payloadStartDelimiter);
+void sendPayloadStart() {
+  Serial.print(kPayloadStartDelimiter);
+}
+void sendPayloadEnd() {
+  Serial.print(kPayloadEndDelimiter);
+}
+void sendPayload(int payload) {
+  Serial.print(kPayloadStartDelimiter);
   Serial.print(payload);
-  Serial.print(payloadEndDelimiter);
+  Serial.print(kPayloadEndDelimiter);
+  Serial.println();
+}
+
+// General Protocol Functionalities
+
+void handleResetCommand(MessageParser &messageParser) {
+  if (messageParser.justReceived() && messageParser.channel[0] == kResetChannel) {
+    hardReset();
+  }
+}
+
+void hardReset() {
+  wdt_enable(WDTO_15MS);
+  while (true); // Hang to force the AVR watchdog timer to reset the Arduino
+}
+
+void handleVersionCommand(MessageParser &messageParser) {
+  if (messageParser.justReceived() && messageParser.channel[0] == kVersionChannel) {
+    sendVersionMessage(messageParser.channel[1]);
+  }
+}
+
+void sendVersionMessage(char versionPosition) {
+  int channelPosition = versionPosition - '0';
+  if (channelPosition < 0 || channelPosition >= 3) return;
+  sendChannelStart();
+  sendChannelChar(kVersionChannel);
+  sendChannelChar(versionPosition);
+  sendChannelEnd();
+  sendPayload(kVersion[channelPosition]);
   Serial.println();
 }
 
 // MessageParser
-
-MessageParser::MessageParser(
-    char channelStartDelimiter, char channelEndDelimiter,
-    char payloadStartDelimiter, char payloadEndDelimiter
-) :
-  channelStartDelimiter(channelStartDelimiter),
-  channelEndDelimiter(channelEndDelimiter),
-  payloadStartDelimiter(payloadStartDelimiter),
-  payloadEndDelimiter(payloadEndDelimiter)
-{
-}
 
 void MessageParser::setup() {
   channelBuffer[0] = '\0';
@@ -78,16 +92,16 @@ void MessageParser::update() {
     char current = Serial.read();
     switch (state.current()) {
       case State::awaitingChannel:
-        if (current == channelStartDelimiter) {
+        if (current == kChannelStartDelimiter) {
           onParsingChannel();
           state.update(State::parsingChannel);
         }
         break;
       case State::parsingChannel:
-        if (current == channelEndDelimiter) {
+        if (current == kChannelEndDelimiter) {
           state.update(State::awaitingPayload);
           onAwaitingPayload();
-        } else if (current == channelStartDelimiter) {
+        } else if (current == kChannelStartDelimiter) {
           onParsingChannel();
           Log.warning(F("Channel name starting with '%s' was interrupted in the middle by a '%c' character. Resetting channel name!" CR), channelBufferString, current);
         } else {
@@ -96,13 +110,13 @@ void MessageParser::update() {
         }
         break;
       case State::awaitingPayload:
-        if (current == payloadStartDelimiter) {
+        if (current == kPayloadStartDelimiter) {
           onParsingPayload();
           state.update(State::parsingPayload);
         }
         break;
       case State::parsingPayload:
-        if (current == payloadEndDelimiter) {
+        if (current == kPayloadEndDelimiter) {
           onParsedMessage();
           state.update(State::parsedMessage);
           return; // don't parse more messages until the next update() call
@@ -114,16 +128,31 @@ void MessageParser::update() {
   }
 }
 
-bool MessageParser::isChannel(const char queryChannel[]) {
+bool MessageParser::isChannel(const char queryChannel[]) const {
   return strncmp(queryChannel, channel, kChannelMaxLength + 1) == 0;
 }
 
-bool MessageParser::justReceived(const char queryChannel[]) {
+bool MessageParser::justReceived(const char queryChannel[]) const {
   return state.justEntered(State::parsedMessage) && isChannel(queryChannel);
 }
 
-bool MessageParser::justReceived() {
+bool MessageParser::justReceived() const {
   return state.justEntered(State::parsedMessage);
+}
+
+unsigned int MessageParser::payloadParsedLength() const {
+  return payloadLength;
+}
+
+void MessageParser::sendResponse(int payload, unsigned int channelLength) {
+  if (!channelLength) {
+    sendMessage(channel, payload);
+    return;
+  }
+  sendChannelStart();
+  for (unsigned int i = 0; i < channelLength; ++i) sendChannelChar(channel[i]);
+  sendChannelEnd();
+  sendPayload(payload);
 }
 
 void MessageParser::onParsingChannel() {
@@ -139,6 +168,7 @@ void MessageParser::onAwaitingPayload() {
 
 void MessageParser::onParsingPayload() {
   receivedNumber = 0;
+  payloadLength = 0;
   negative = false;
 }
 
@@ -165,9 +195,11 @@ void MessageParser::parseChannel(char current) {
 void MessageParser::parsePayload(char current) {
   if (current == '-' && state.justEntered(State::parsingPayload)) {
     negative = true;
+    ++payloadLength;
   } else if (isDigit(current)) {
     receivedNumber *= 10;
     receivedNumber += current - '0';
+    ++payloadLength;
   } else if (!isControl(current)) {
     Log.warning(F("Payload on channel '%s' has unknown character '%c'. Ignoring it!" CR), channelBufferString, current);
   }

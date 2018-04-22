@@ -21,6 +21,7 @@ CumulativeLinearActuator yPositioner(messageParser, motors, yPositionerParams);
 LinearPositionControl::CumulativePositionCalibrator yPositionerCalibrator(yPositioner.actuator);
 
 void setup() {
+  wdt_disable();  
   Serial.begin(115200);
 #ifndef DISABLE_LOGGING
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
@@ -35,9 +36,10 @@ void setup() {
 }
 
 void loop() {
-  if (messageParser.channel[0] == kResetChannel) hardReset();
   wdt_reset();
   messageParser.update();
+  handleResetCommand(messageParser);
+  handleVersionCommand(messageParser);
   pipettor.update();
   verticalPositioner.update();
   if (yPositionerCalibrator.state.current() == LinearPositionControl::CumulativePositionCalibrator::State::calibrated) yPositioner.update();

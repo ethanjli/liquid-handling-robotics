@@ -7,7 +7,43 @@
 
 namespace LiquidHandlingRobotics {
 
+const int kVersion[] = {
+  0, // Patch
+  1, // Minor
+  0  // Major
+};
+
+void waitForSerialHandshake(char handshakeChar = '~', unsigned long waitDelay = 200);
+
+// Message RX/TX
+
+const char kChannelStartDelimiter = '<';
+const char kChannelEndDelimiter = '>';
+const char kPayloadStartDelimiter = '[';
+const char kPayloadEndDelimiter = ']';
+
+void sendMessage(const String &channel, int payload);
+void sendChannelStart();
+void sendChannelChar(char channelChar);
+void sendChannelEnd();
+void sendChannel(const String &channel);
+void sendPayloadStart();
+void sendPayloadEnd();
+void sendPayload(int payload);
+
+class MessageParser;
+
+// General Protocol Functionalities
+
 const char kResetChannel = 'r';
+const char kVersionChannel = 'v';
+
+void handleResetCommand(MessageParser &messageParser);
+void hardReset();
+void handleVersionCommand(MessageParser &messageParser);
+void sendVersionMessage(char versionPosition);
+
+// Message Parsing
 
 namespace States {
   enum class Parsing : uint8_t {
@@ -19,45 +55,10 @@ namespace States {
   };
 }
 
-const char kChannelStartDelimiter = '<';
-const char kChannelEndDelimiter = '>';
-const char kPayloadStartDelimiter = '[';
-const char kPayloadEndDelimiter = ']';
-
-void hardReset();
-
-void waitForSerialHandshake(char handshakeChar = '~', unsigned long waitDelay = 200);
-
-void sendMessage(
-    const String &channel, int payload,
-    char channelStartDelimiter = kChannelStartDelimiter,
-    char channelEndDelimiter = kChannelEndDelimiter,
-    char payloadStartDelimiter = kPayloadStartDelimiter,
-    char payloadEndDelimiter = kPayloadEndDelimiter
-);
-void sendChannelStart(char channelStartDelimiter = kChannelStartDelimiter);
-void sendChannelChar(char channelChar);
-void sendChannelEnd(char channelEndDelimiter = kChannelEndDelimiter);
-void sendChannel(
-    const String &channel,
-    char channelStartDelimiter = kChannelStartDelimiter,
-    char channelEndDelimiter = kChannelEndDelimiter
-);
-void sendPayload(
-    int payload,
-    char payloadStartDelimiter = kPayloadStartDelimiter,
-    char payloadEndDelimiter = kPayloadEndDelimiter
-);
-
 const unsigned int kChannelMaxLength = 8;
 
 class MessageParser {
   public:
-    MessageParser(
-        char channelStartDelimiter = '<', char channelEndDelimiter = '>',
-        char payloadStartDelimiter = '[', char payloadEndDelimiter = ']'
-    );
-
     using State = States::Parsing;
 
     LinearPositionControl::StateVariable<States::Parsing> state;
@@ -71,9 +72,12 @@ class MessageParser {
     void setup();
     void update();
 
-    bool isChannel(const char queryChannel[]);
-    bool justReceived(const char queryChannel[]);
-    bool justReceived();
+    bool isChannel(const char queryChannel[]) const;
+    bool justReceived(const char queryChannel[]) const;
+    bool justReceived() const;
+    unsigned int payloadParsedLength() const;
+
+    void sendResponse(int payload, unsigned int channelLength = 0);
 
   private:
     char channelStartDelimiter;
@@ -89,6 +93,7 @@ class MessageParser {
     // Payload
     int receivedNumber;
     bool negative = false;
+    unsigned int payloadLength = 0;
 
     LinearPositionControl::StateVariable<char> received;
 
