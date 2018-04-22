@@ -40,6 +40,7 @@ void loop() {
   messageParser.update();
   handleResetCommand(messageParser);
   handleVersionCommand(messageParser);
+  handleEchoCommand(messageParser);
   pipettor.update();
   verticalPositioner.update();
   if (yPositionerCalibrator.state.current() == LinearPositionControl::CumulativePositionCalibrator::State::calibrated) yPositioner.update();

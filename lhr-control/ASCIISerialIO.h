@@ -37,11 +37,13 @@ class MessageParser;
 
 const char kResetChannel = 'r';
 const char kVersionChannel = 'v';
+const char kEchoChannel = 'e';
 
 void handleResetCommand(MessageParser &messageParser);
 void hardReset();
 void handleVersionCommand(MessageParser &messageParser);
 void sendVersionMessage(char versionPosition);
+void handleEchoCommand(MessageParser &messageParser);
 
 // Message Parsing
 

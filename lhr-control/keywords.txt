@@ -18,6 +18,7 @@ MessageParser	KEYWORD1
 waitForSerialHandshake	KEYWORD2
 handleResetCommand	KEYWORD2
 handleVersionCommand	KEYWORD2
+handleEchoCommand	KEYWORD2
 
 #######################################
 # Instances (KEYWORD2)

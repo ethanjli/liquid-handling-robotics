@@ -52,9 +52,8 @@ void sendPayload(int payload) {
 // General Protocol Functionalities
 
 void handleResetCommand(MessageParser &messageParser) {
-  if (messageParser.justReceived() && messageParser.channel[0] == kResetChannel) {
-    hardReset();
-  }
+  if (!(messageParser.justReceived() && messageParser.channel[0] == kResetChannel)) return;
+  hardReset();
 }
 
 void hardReset() {
@@ -63,9 +62,9 @@ void hardReset() {
 }
 
 void handleVersionCommand(MessageParser &messageParser) {
-  if (messageParser.justReceived() && messageParser.channel[0] == kVersionChannel) {
-    sendVersionMessage(messageParser.channel[1]);
-  }
+  if (!(messageParser.justReceived() && messageParser.channel[0] == kVersionChannel)) return;
+
+  sendVersionMessage(messageParser.channel[1]);
 }
 
 void sendVersionMessage(char versionPosition) {
@@ -76,6 +75,15 @@ void sendVersionMessage(char versionPosition) {
   sendChannelChar(versionPosition);
   sendChannelEnd();
   sendPayload((int) pgm_read_word_near(kVersion + channelPosition));
+}
+
+void handleEchoCommand(MessageParser &messageParser) {
+  if (!(messageParser.justReceived() && messageParser.channel[0] == kEchoChannel)) return;
+
+  sendChannelStart();
+  sendChannelChar(kEchoChannel);
+  sendChannelEnd();
+  sendPayload(messageParser.payload);
 }
 
 // MessageParser
