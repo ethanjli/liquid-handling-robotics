@@ -17,7 +17,7 @@ void LinearActuatorModule<LinearActuatorParams>::update() {
   smoother.update();
 
   if (messageParser.justReceived() && messageParser.channel[0] == moduleChannel) {
-    onReceivedMessage();
+    onReceivedMessage(1);
   }
 
   if (!reportedConvergence && !reportedStallTimeout) {
@@ -40,13 +40,13 @@ void LinearActuatorModule<LinearActuatorParams>::update() {
 }
 
 template <class LinearActuatorParams>
-bool LinearActuatorModule<LinearActuatorParams>::converged(unsigned int convergenceTime) {
+bool LinearActuatorModule<LinearActuatorParams>::converged(unsigned int convergenceTime) const {
   return actuator.pid.setpoint.settled(convergenceTime) &&
     actuator.speedAdjuster.output.settledAt(0, convergenceTime);
 }
 
 template <class LinearActuatorParams>
-bool LinearActuatorModule<LinearActuatorParams>::stalled(unsigned int stallTime) {
+bool LinearActuatorModule<LinearActuatorParams>::stalled(unsigned int stallTime) const {
   return actuator.speedAdjuster.output.current() != 0 &&
     actuator.pid.setpoint.settled(stallTime) &&
     smoother.output.settled(stallTime);
@@ -71,71 +71,107 @@ void LinearActuatorModule<LinearActuatorParams>::reportPosition(char reportingCh
 }
 
 template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::onReceivedMessage() {
-  switch (messageParser.channel[1]) {
+void LinearActuatorModule<LinearActuatorParams>::onReceivedMessage(unsigned int channelParsedLength) {
+  switch (messageParser.channel[channelParsedLength]) {
     case kConstantsChannel:
-      onConstantsMessage();
+      onConstantsMessage(channelParsedLength + 1);
       break;
     case kLimitsChannel:
-      onLimitsMessage();
+      onLimitsMessage(channelParsedLength + 1);
       break;
     case kReportingChannel:
-      onReportingMessage();
+      onReportingMessage(channelParsedLength + 1);
       break;
     case kTargetingChannel:
-      onTargetingMessage();
+      onTargetingMessage(channelParsedLength + 1);
       break;
   }
 }
 
 template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::onConstantsMessage() {
-  switch (messageParser.channel[2]) {
+void LinearActuatorModule<LinearActuatorParams>::onConstantsMessage(unsigned int channelParsedLength) {
+  switch (messageParser.channel[channelParsedLength]) {
     case kConstantsProportionalChannel:
-      actuator.pid.setKp((float) messageParser.payload / 100.0);
+      if (messageParser.payloadParsedLength()) {
+        actuator.pid.setKp((float) messageParser.payload / kConstantsFixedPointScaling);
+      }
+      messageParser.sendResponse((int) (actuator.pid.getKp() * kConstantsFixedPointScaling),
+          channelParsedLength + 1);
       break;
     case kConstantsDerivativeChannel:
-      actuator.pid.setKd((float) messageParser.payload / 100.0);
+      if (messageParser.payloadParsedLength()) {
+        actuator.pid.setKd((float) messageParser.payload / kConstantsFixedPointScaling);
+      }
+      messageParser.sendResponse((int) (actuator.pid.getKd() * kConstantsFixedPointScaling),
+          channelParsedLength + 1);
       break;
     case kConstantsIntegralChannel:
-      actuator.pid.setKi((float) messageParser.payload / 100.0);
+      if (messageParser.payloadParsedLength()) {
+        actuator.pid.setKi((float) messageParser.payload / kConstantsFixedPointScaling);
+      }
+      messageParser.sendResponse((int) (actuator.pid.getKi() * kConstantsFixedPointScaling),
+          channelParsedLength + 1);
       break;
     case kConstantsFeedforwardChannel:
-      actuator.speedAdjuster.speedBias = messageParser.payload;
+      if (messageParser.payloadParsedLength()) {
+        actuator.speedAdjuster.speedBias = messageParser.payload;
+      }
+      messageParser.sendResponse(actuator.speedAdjuster.speedBias, channelParsedLength + 1);
       break;
   }
 }
 
 template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::onLimitsMessage() {
-  switch (messageParser.channel[2]) {
+void LinearActuatorModule<LinearActuatorParams>::onLimitsMessage(unsigned int channelParsedLength) {
+  switch (messageParser.channel[channelParsedLength]) {
     case kLimitsPositionChannel:
-      switch (messageParser.channel[3]) {
+      ++channelParsedLength;
+      switch (messageParser.channel[channelParsedLength]) {
         case kLimitsLowerSubchannel:
-          actuator.pid.setMinInput(messageParser.payload);
+          if (messageParser.payloadParsedLength()) {
+            actuator.pid.setMinInput(messageParser.payload);
+          }
+          messageParser.sendResponse(actuator.pid.getMinInput(), channelParsedLength + 1);
           break;
         case kLimitsUpperSubchannel:
-          actuator.pid.setMaxInput(messageParser.payload);
+          if (messageParser.payloadParsedLength()) {
+            actuator.pid.setMaxInput(messageParser.payload);
+          }
+          messageParser.sendResponse(actuator.pid.getMaxInput(), channelParsedLength + 1);
           break;
       }
       break;
     case kLimitsDutyChannel:
-      switch (messageParser.channel[3]) {
+      ++channelParsedLength;
+      switch (messageParser.channel[channelParsedLength]) {
         case kLimitsLowerSubchannel:
-          actuator.pid.setMinOutput(messageParser.payload);
+          if (messageParser.payloadParsedLength()) {
+            actuator.pid.setMinOutput(messageParser.payload);
+          }
+          messageParser.sendResponse(actuator.pid.getMinOutput(), channelParsedLength + 1);
           break;
         case kLimitsUpperSubchannel:
-          actuator.pid.setMaxOutput(messageParser.payload);
+          if (messageParser.payloadParsedLength()) {
+            actuator.pid.setMaxOutput(messageParser.payload);
+          }
+          messageParser.sendResponse(actuator.pid.getMaxOutput(), channelParsedLength + 1);
           break;
       }
       break;
     case kLimitsBrakeChannel:
-      switch (messageParser.channel[3]) {
+      ++channelParsedLength;
+      switch (messageParser.channel[channelParsedLength]) {
         case kLimitsLowerSubchannel:
-          actuator.speedAdjuster.brakeLowerThreshold = messageParser.payload;
+          if (messageParser.payloadParsedLength()) {
+            actuator.speedAdjuster.brakeLowerThreshold = messageParser.payload;
+          }
+          messageParser.sendResponse(actuator.speedAdjuster.brakeLowerThreshold, channelParsedLength + 1);
           break;
         case kLimitsUpperSubchannel:
-          actuator.speedAdjuster.brakeUpperThreshold = messageParser.payload;
+          if (messageParser.payloadParsedLength()) {
+            actuator.speedAdjuster.brakeUpperThreshold = messageParser.payload;
+          }
+          messageParser.sendResponse(actuator.speedAdjuster.brakeUpperThreshold, channelParsedLength + 1);
           break;
       }
       break;
@@ -143,10 +179,13 @@ void LinearActuatorModule<LinearActuatorParams>::onLimitsMessage() {
 }
 
 template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::onReportingMessage() {
-  switch (messageParser.channel[2]) {
+void LinearActuatorModule<LinearActuatorParams>::onReportingMessage(unsigned int channelParsedLength) {
+  switch (messageParser.channel[channelParsedLength]) {
     case kReportingConvergenceChannel:
-      reportingConvergencePosition = (messageParser.payload > 0);
+      if (messageParser.payloadParsedLength()) {
+        reportingConvergencePosition = (messageParser.payload > 0);
+      }
+      messageParser.sendResponse(reportingConvergencePosition, channelParsedLength + 1);
       break;
     case kReportingStreamingChannel:
       reportPosition(kReportingStreamingChannel);
@@ -161,11 +200,14 @@ void LinearActuatorModule<LinearActuatorParams>::onReportingMessage() {
 }
 
 template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::onTargetingMessage() {
-  actuator.pid.setSetpoint(messageParser.payload);
-  reportedConvergence = false;
-  reportedStallTimeout = false;
-  actuator.unfreeze();
+void LinearActuatorModule<LinearActuatorParams>::onTargetingMessage(unsigned int channelParsedLength) {
+  if (messageParser.payloadParsedLength()) {
+    actuator.pid.setSetpoint(messageParser.payload);
+    reportedConvergence = false;
+    reportedStallTimeout = false;
+    actuator.unfreeze();
+  }
+  messageParser.sendResponse((int) actuator.pid.setpoint.current(), 2);
 }
 
 }

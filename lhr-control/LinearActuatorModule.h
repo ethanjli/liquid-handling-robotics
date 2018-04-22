@@ -30,6 +30,8 @@ const char kReportingStreamingChannel = 's';
 // Targeting channel
 const char kTargetingChannel = 't';
 
+const float kConstantsFixedPointScaling = 100;
+
 template <class LinearActuatorParams>
 class LinearActuatorModule {
   public:
@@ -61,19 +63,19 @@ class LinearActuatorModule {
     void setup();
     void update();
 
-    bool converged(unsigned int convergenceTime);
-    bool stalled(unsigned int stallTime);
+    bool converged(unsigned int convergenceTime) const;
+    bool stalled(unsigned int stallTime) const;
 
     void reportPosition(char reportingChannel);
 
   private:
     int streamingPositionClock = 0;
     int queryPositionCountdown = 0;
-    void onReceivedMessage();
-    void onConstantsMessage();
-    void onLimitsMessage();
-    void onReportingMessage();
-    void onTargetingMessage();
+    void onReceivedMessage(unsigned int channelParsedLength);
+    void onConstantsMessage(unsigned int channelParsedLength);
+    void onLimitsMessage(unsigned int channelParsedLength);
+    void onReportingMessage(unsigned int channelParsedLength);
+    void onTargetingMessage(unsigned int channelParsedLength);
 };
 
 }
