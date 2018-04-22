@@ -7,7 +7,7 @@
 
 namespace LiquidHandlingRobotics {
 
-const int kVersion[] = {
+const uint16_t kVersion[] PROGMEM = {
   0, // Patch
   1, // Minor
   0  // Major

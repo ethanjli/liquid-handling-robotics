@@ -75,8 +75,7 @@ void sendVersionMessage(char versionPosition) {
   sendChannelChar(kVersionChannel);
   sendChannelChar(versionPosition);
   sendChannelEnd();
-  sendPayload(kVersion[channelPosition]);
-  Serial.println();
+  sendPayload((int) pgm_read_word_near(kVersion + channelPosition));
 }
 
 // MessageParser
