@@ -16,6 +16,8 @@ MessageParser	KEYWORD1
 #######################################
 
 waitForSerialHandshake	KEYWORD2
+handleResetCommand	KEYWORD2
+handleVersionCommand	KEYWORD2
 
 #######################################
 # Instances (KEYWORD2)
@@ -24,3 +26,7 @@ waitForSerialHandshake	KEYWORD2
 #######################################
 # Constants (LITERAL1)
 ####################################### 
+
+kPipettorParams	LITERAL1
+kVerticalPositionerParams	LITERAL1
+kYPositionerParams	LITERAL1

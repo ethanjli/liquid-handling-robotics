@@ -27,10 +27,18 @@ const char kReportingQueryChannel = 'q';
 const char kReportingConvergenceChannel = 'c';
 const char kReportingStallTimeoutChannel = 't';
 const char kReportingStreamingChannel = 's';
-// Targeting channel
+// PID Targeting channel
 const char kTargetingChannel = 't';
+// Direct Duty channel
+const char kDutyChannel = 'd';
 
 const float kConstantsFixedPointScaling = 100;
+
+namespace States {
+  enum class LinearActuatorControlMode : uint8_t {
+    ready, pidTargeting, dutyControl
+  };
+}
 
 template <class LinearActuator>
 class LinearActuatorModule {
@@ -50,11 +58,14 @@ class LinearActuatorModule {
         int stallTimeout, float stallSmootherSnapMultiplier, int stallSmootherMax,
         bool stallSmootherEnableSleep, float stallSmootherActivityThreshold
     );
+
     using Smoother = LinearPositionControl::Smoother<typename LinearActuator::Position, int>;
+    using State = States::LinearActuatorControlMode;
 
     MessageParser &messageParser;
 
     LinearActuator actuator;
+    LinearPositionControl::StateVariable<State> state;
     Smoother smoother;
 
     unsigned int convergenceDelay;
@@ -85,6 +96,7 @@ class LinearActuatorModule {
     void onLimitsMessage(unsigned int channelParsedLength);
     void onReportingMessage(unsigned int channelParsedLength);
     void onTargetingMessage(unsigned int channelParsedLength);
+    void onDutyMessage(unsigned int channelParsedLength);
 };
 
 }

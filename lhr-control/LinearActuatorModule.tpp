@@ -43,6 +43,7 @@ template <class LinearActuator>
 void LinearActuatorModule<LinearActuator>::setup() {
   actuator.setup();
   smoother.setup();
+  state.setup(State::ready);
 }
 
 template <class LinearActuator>
@@ -54,14 +55,24 @@ void LinearActuatorModule<LinearActuator>::update() {
     onReceivedMessage(1);
   }
 
-  if (!reportedConvergence && !reportedStallTimeout) {
-    if (converged(convergenceDelay)) {
-      actuator.freeze(true);
-      if (reportingConvergencePosition) reportPosition(kReportingConvergenceChannel);
-    } else if (stalled(stallTimeout)) {
-      actuator.freeze(true);
-      if (reportingStallTimeoutPosition) reportPosition(kReportingStallTimeoutChannel);
-    }
+  switch (state.current()) {
+    case State::pidTargeting:
+      if (!reportedConvergence && !reportedStallTimeout) {
+        if (converged(convergenceDelay)) {
+          actuator.freeze(true);
+          if (reportingConvergencePosition) reportPosition(kReportingConvergenceChannel);
+        } else if (stalled(stallTimeout)) {
+          actuator.freeze(true);
+          if (reportingStallTimeoutPosition) reportPosition(kReportingStallTimeoutChannel);
+        }
+      }
+      break;
+    case State::dutyControl:
+      if (!reportedStallTimeout && stalled(stallTimeout)) {
+        actuator.freeze(true);
+        if (reportingStallTimeoutPosition) reportPosition(kReportingStallTimeoutChannel);
+      }
+      break;
   }
   if (streamingPositionReportInterval > 0) {
     if (streamingPositionClock == 0) reportPosition(kReportingStreamingChannel);
@@ -118,6 +129,9 @@ void LinearActuatorModule<LinearActuator>::onReceivedMessage(unsigned int channe
       break;
     case kTargetingChannel:
       onTargetingMessage(channelParsedLength + 1);
+      break;
+    case kDutyChannel:
+      onDutyMessage(channelParsedLength + 1);
       break;
   }
 }
@@ -239,9 +253,21 @@ void LinearActuatorModule<LinearActuator>::onTargetingMessage(unsigned int chann
     actuator.pid.setSetpoint(messageParser.payload);
     reportedConvergence = false;
     reportedStallTimeout = false;
+    state.update(State::pidTargeting, true);
     actuator.unfreeze();
   }
   messageParser.sendResponse((int) actuator.pid.setpoint.current(), 2);
+}
+
+template <class LinearActuator>
+void LinearActuatorModule<LinearActuator>::onDutyMessage(unsigned int channelParsedLength) {
+  if (messageParser.payloadParsedLength()) {
+    reportedStallTimeout = false;
+    state.update(State::dutyControl, true);
+    actuator.freeze(true);
+    actuator.motor.run(constrain(messageParser.payload, -255, 255));
+  }
+  messageParser.sendResponse(actuator.motor.speed, 2);
 }
 
 }

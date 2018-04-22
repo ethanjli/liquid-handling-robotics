@@ -21,7 +21,7 @@ CumulativeLinearActuator yPositioner(messageParser, motors, kYPositionerParams);
 LinearPositionControl::CumulativePositionCalibrator yPositionerCalibrator(yPositioner.actuator);
 
 void setup() {
-  wdt_disable();  
+  wdt_disable();
   Serial.begin(115200);
 #ifndef DISABLE_LOGGING
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
