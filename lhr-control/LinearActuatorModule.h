@@ -32,15 +32,24 @@ const char kTargetingChannel = 't';
 
 const float kConstantsFixedPointScaling = 100;
 
-template <class LinearActuatorParams>
+template <class LinearActuator>
 class LinearActuatorModule {
   public:
     LinearActuatorModule(
         MessageParser &messageParser, LinearPositionControl::Components::Motors &motors,
-        const LinearActuatorParams &linearActuatorParams
+        char actuatorChannelPrefix,
+        MotorPort motorPort, uint8_t sensorId,
+        int minPosition, int maxPosition,
+        int minDuty, int maxDuty,
+        double pidKp, double pidKd, double pidKi,
+        int pidSampleTime,
+        int feedforward,
+        int brakeLowerThreshold, int brakeUpperThreshold,
+        bool swapMotorPolarity,
+        int convergenceDelay,
+        int stallTimeout, float stallSmootherSnapMultiplier, int stallSmootherMax,
+        bool stallSmootherEnableSleep, float stallSmootherActivityThreshold
     );
-
-    using LinearActuator = typename LinearActuatorParams::LinearActuator;
     using Smoother = LinearPositionControl::Smoother<typename LinearActuator::Position, int>;
 
     MessageParser &messageParser;

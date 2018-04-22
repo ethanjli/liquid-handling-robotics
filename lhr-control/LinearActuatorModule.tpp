@@ -5,14 +5,48 @@ namespace LiquidHandlingRobotics {
 
 // LinearActuatorModule
 
-template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::setup() {
+template <class LinearActuator>
+LinearActuatorModule<LinearActuator>::LinearActuatorModule(
+    MessageParser &messageParser, LinearPositionControl::Components::Motors &motors,
+    char actuatorChannelPrefix,
+    MotorPort motorPort, uint8_t sensorId,
+    int minPosition, int maxPosition,
+    int minDuty, int maxDuty,
+    double pidKp, double pidKd, double pidKi,
+    int pidSampleTime,
+    int feedforward,
+    int brakeLowerThreshold, int brakeUpperThreshold,
+    bool swapMotorPolarity,
+    int convergenceDelay,
+    int stallTimeout, float stallSmootherSnapMultiplier, int stallSmootherMax,
+    bool stallSmootherEnableSleep, float stallSmootherActivityThreshold
+) :
+  messageParser(messageParser),
+  actuator(
+    motors, motorPort,
+    sensorId, minPosition, maxPosition,
+    pidKp, pidKd, pidKi, pidSampleTime,
+    swapMotorPolarity, feedforward,
+    brakeLowerThreshold, brakeUpperThreshold,
+    minDuty, maxDuty
+  ),
+  smoother(
+      actuator.position,
+      stallSmootherSnapMultiplier, stallSmootherMax,
+      stallSmootherEnableSleep, stallSmootherActivityThreshold
+  ),
+  convergenceDelay(convergenceDelay), stallTimeout(stallTimeout),
+  moduleChannel(actuatorChannelPrefix)
+{}
+
+template <class LinearActuator>
+void LinearActuatorModule<LinearActuator>::setup() {
   actuator.setup();
   smoother.setup();
 }
 
-template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::update() {
+template <class LinearActuator>
+void LinearActuatorModule<LinearActuator>::update() {
   actuator.update();
   smoother.update();
 
@@ -39,21 +73,21 @@ void LinearActuatorModule<LinearActuatorParams>::update() {
   }
 }
 
-template <class LinearActuatorParams>
-bool LinearActuatorModule<LinearActuatorParams>::converged(unsigned int convergenceTime) const {
+template <class LinearActuator>
+bool LinearActuatorModule<LinearActuator>::converged(unsigned int convergenceTime) const {
   return actuator.pid.setpoint.settled(convergenceTime) &&
     actuator.speedAdjuster.output.settledAt(0, convergenceTime);
 }
 
-template <class LinearActuatorParams>
-bool LinearActuatorModule<LinearActuatorParams>::stalled(unsigned int stallTime) const {
+template <class LinearActuator>
+bool LinearActuatorModule<LinearActuator>::stalled(unsigned int stallTime) const {
   return actuator.speedAdjuster.output.current() != 0 &&
     actuator.pid.setpoint.settled(stallTime) &&
     smoother.output.settled(stallTime);
 }
 
-template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::reportPosition(char reportingChannel) {
+template <class LinearActuator>
+void LinearActuatorModule<LinearActuator>::reportPosition(char reportingChannel) {
   sendChannelStart();
   sendChannelChar(moduleChannel);
   sendChannelChar(kReportingChannel);
@@ -70,8 +104,8 @@ void LinearActuatorModule<LinearActuatorParams>::reportPosition(char reportingCh
   }
 }
 
-template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::onReceivedMessage(unsigned int channelParsedLength) {
+template <class LinearActuator>
+void LinearActuatorModule<LinearActuator>::onReceivedMessage(unsigned int channelParsedLength) {
   switch (messageParser.channel[channelParsedLength]) {
     case kConstantsChannel:
       onConstantsMessage(channelParsedLength + 1);
@@ -88,8 +122,8 @@ void LinearActuatorModule<LinearActuatorParams>::onReceivedMessage(unsigned int 
   }
 }
 
-template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::onConstantsMessage(unsigned int channelParsedLength) {
+template <class LinearActuator>
+void LinearActuatorModule<LinearActuator>::onConstantsMessage(unsigned int channelParsedLength) {
   switch (messageParser.channel[channelParsedLength]) {
     case kConstantsProportionalChannel:
       if (messageParser.payloadParsedLength()) {
@@ -121,8 +155,8 @@ void LinearActuatorModule<LinearActuatorParams>::onConstantsMessage(unsigned int
   }
 }
 
-template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::onLimitsMessage(unsigned int channelParsedLength) {
+template <class LinearActuator>
+void LinearActuatorModule<LinearActuator>::onLimitsMessage(unsigned int channelParsedLength) {
   switch (messageParser.channel[channelParsedLength]) {
     case kLimitsPositionChannel:
       ++channelParsedLength;
@@ -178,8 +212,8 @@ void LinearActuatorModule<LinearActuatorParams>::onLimitsMessage(unsigned int ch
   }
 }
 
-template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::onReportingMessage(unsigned int channelParsedLength) {
+template <class LinearActuator>
+void LinearActuatorModule<LinearActuator>::onReportingMessage(unsigned int channelParsedLength) {
   switch (messageParser.channel[channelParsedLength]) {
     case kReportingConvergenceChannel:
       if (messageParser.payloadParsedLength()) {
@@ -199,8 +233,8 @@ void LinearActuatorModule<LinearActuatorParams>::onReportingMessage(unsigned int
   }
 }
 
-template <class LinearActuatorParams>
-void LinearActuatorModule<LinearActuatorParams>::onTargetingMessage(unsigned int channelParsedLength) {
+template <class LinearActuator>
+void LinearActuatorModule<LinearActuator>::onTargetingMessage(unsigned int channelParsedLength) {
   if (messageParser.payloadParsedLength()) {
     actuator.pid.setSetpoint(messageParser.payload);
     reportedConvergence = false;
