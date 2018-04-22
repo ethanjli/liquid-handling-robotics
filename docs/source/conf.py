@@ -40,6 +40,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.graphviz',
+    'sphinxcontrib.plantuml',
     'sphinx.ext.napoleon',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
@@ -96,6 +97,10 @@ numfig = True
 # -- Options for Graphviz rendering ---------------------------------------
 graphviz_dot_args = ['-Nfontname=Lato', '-Efontname=Lato', '-Efontsize=10']
 graphviz_output_format = 'svg'
+
+# -- Options for PlantUML rendering ---------------------------------------
+plantuml_output_format = 'svg'
+plantuml_latex_output_format = 'eps'
 
 # -- Options for HTML output ----------------------------------------------
 

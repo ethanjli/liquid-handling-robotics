@@ -1,6 +1,13 @@
 #include "ASCIISerialIO.h"
 
+#include <avr/wdt.h>
+
 namespace LiquidHandlingRobotics {
+
+void hardReset() {
+  wdt_enable(WDTO_15MS);
+  while (true); // Hang to force the AVR watchdog timer to reset the Arduino
+}
 
 void waitForSerialHandshake(char handshakeChar, unsigned long waitDelay) {
   while (!Serial) {;}

@@ -7,6 +7,8 @@
 
 namespace LiquidHandlingRobotics {
 
+const char kResetChannel = 'r';
+
 namespace States {
   enum class Parsing : uint8_t {
     awaitingChannel,
@@ -21,6 +23,8 @@ const char kChannelStartDelimiter = '<';
 const char kChannelEndDelimiter = '>';
 const char kPayloadStartDelimiter = '[';
 const char kPayloadEndDelimiter = ']';
+
+void hardReset();
 
 void waitForSerialHandshake(char handshakeChar = '~', unsigned long waitDelay = 200);
 

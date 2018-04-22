@@ -1,15 +1,44 @@
 digraph Controllers {
   forcelabels=true;
+  graph [
+    splines=headport
+  ];
+  node [
+    shape=rectangle,
+    width=2
+  ];
 
-  user [label="User"];
-  host [label="Host Controller"];
-  peripheral [label="Peripheral Controller"];
-  hardware [label="Hardware"];
+  user [
+    label="User"
+  ];
+  host [
+    label="Host Controller"
+  ];
+  peripheral [
+    label="Peripheral Controller"
+  ];
+  hardware [
+    label="Hardware"
+  ];
 
-  user:sw -> host:nw [xlabel="User Actions    "];
-  host:ne -> user:se [label="    Host Feedback"];
-  host:sw -> peripheral:nw [xlabel="Command Messages    ", penwidth=4];
-  peripheral:ne -> host:se [label="    Response Messages", penwidth=4];
-  peripheral:sw -> hardware:nw [xlabel="Actuator Effort Signals    "];
-  hardware:ne -> peripheral:se [label="    Sensor Signals"];
+  user:sw -> host:nw [
+    xlabel="User Actions    "
+  ];
+  host:ne -> user:se [
+    label="    Host Feedback"
+  ];
+  host:sw -> peripheral:nw [
+    xlabel="Command Messages    ",
+    penwidth=4
+  ];
+  peripheral:ne -> host:se [
+    label="    Response Messages",
+    penwidth=4
+  ];
+  peripheral:sw -> hardware:nw [
+    xlabel="Actuator Effort Signals    "
+  ];
+  hardware:ne -> peripheral:se [
+    label="    Sensor Signals"
+  ];
 }

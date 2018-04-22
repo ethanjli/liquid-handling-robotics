@@ -1,0 +1,55 @@
+@startuml
+
+!define string(x) <font:monospace><u>x</u></font>
+
+hide empty description
+skinparam monochrome true
+skinparam defaultFontName Lato
+skinparam shadowing false
+
+state SerialHandshake
+state Operational {
+  note "P Axis" as PAxis
+  [*] --> PReady : / init
+  PReady --> PReady : / update
+  PReady --> PPIDTargeting : string(<pt>[...])
+  PReady --> PDutyControl : string(<yd>[...])
+  PPIDTargeting --> PPIDTargeting : / update
+  PPIDTargeting --> PDutyControl : string(<yd>[...])
+  PDutyControl --> PDutyControl : / update
+  PDutyControl --> PPIDTargeting : string(<pt>[...])
+
+  --
+
+  note "Z Axis" as ZAxis
+  [*] --> ZReady : / init
+  ZReady --> ZReady : / update
+  ZReady --> ZPIDTargeting : string(<zt>[...])
+  ZReady --> ZDutyControl : string(<yd>[...])
+  ZPIDTargeting --> ZPIDTargeting : / update
+  ZPIDTargeting --> ZDutyControl : string(<yd>[...])
+  ZDutyControl --> ZDutyControl : / update
+  ZDutyControl --> ZPIDTargeting : string(<zt>[...])
+
+  --
+
+  note "Y Axis" as YAxis
+  [*] --> YReady : / init
+  YReady --> YReady : / update
+  YReady --> YPIDTargeting : string(<yt>[...])
+  YReady --> YDutyControl : string(<yd>[...])
+  YPIDTargeting --> YPIDTargeting : / update
+  YPIDTargeting --> YDutyControl : string(<yd>[...])
+  YDutyControl --> YDutyControl : / update
+  YDutyControl --> YPIDTargeting : string(<yt>[...])
+}
+
+[*] --> SerialHandshake : / setup
+SerialHandshake --> SerialHandshake : / string(~)
+SerialHandshake --> Operational : string(\\n)
+Operational --> Operational : / update
+Operational --> SerialHandshake : string(<r>[...]) / hard reset, setup
+
+
+@enduml
+

@@ -35,6 +35,7 @@ void setup() {
 }
 
 void loop() {
+  if (messageParser.channel[0] == kResetChannel) hardReset();
   wdt_reset();
   messageParser.update();
   pipettor.update();
