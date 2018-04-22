@@ -15,9 +15,9 @@ MessageParser messageParser;
 LinearPositionControl::Components::Motors motors;
 
 // Subsystems
-AbsoluteLinearActuator pipettor(messageParser, motors, pipettorParams);
-AbsoluteLinearActuator verticalPositioner(messageParser, motors, verticalPositionerParams);
-CumulativeLinearActuator yPositioner(messageParser, motors, yPositionerParams);
+AbsoluteLinearActuator pipettor(messageParser, motors, kPipettorParams);
+AbsoluteLinearActuator verticalPositioner(messageParser, motors, kVerticalPositionerParams);
+CumulativeLinearActuator yPositioner(messageParser, motors, kYPositionerParams);
 LinearPositionControl::CumulativePositionCalibrator yPositionerCalibrator(yPositioner.actuator);
 
 void setup() {

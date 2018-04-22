@@ -6,7 +6,7 @@
 
 namespace LiquidHandlingRobotics {
 
-const AbsoluteLinearActuatorParams pipettorParams = {
+const AbsoluteLinearActuatorParams kPipettorParams = {
   // actuatorChannelPrefix
   'p',
   // motorPort, potentiometerPin
@@ -33,7 +33,7 @@ const AbsoluteLinearActuatorParams pipettorParams = {
   true, 4.0
 };
 
-const AbsoluteLinearActuatorParams verticalPositionerParams = {
+const AbsoluteLinearActuatorParams kVerticalPositionerParams = {
   // actuatorChannelPrefix
   'z',
   // motorPort, potentiometerPin
@@ -60,7 +60,7 @@ const AbsoluteLinearActuatorParams verticalPositionerParams = {
   true, 4.0
 };
 
-const CumulativeLinearActuatorParams yPositionerParams = {
+const CumulativeLinearActuatorParams kYPositionerParams = {
   // actuatorChannelPrefix
   'y',
   // motorPort
