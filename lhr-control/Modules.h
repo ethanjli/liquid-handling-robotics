@@ -58,5 +58,8 @@ using CumulativeLinearActuator = LinearActuatorModule<LinearPositionControl::Cum
   /* stallTimeout, stallSmootherSnapMultiplier, stallSmootherMax */ 200, 0.01, 800,\
   /* stallSmootherEnableSleep, stallSmootherActivityThreshold */ true, 2.0
 
+#define kYPositionerCalibrationParams\
+  /* calibrationSpeed */ 200
+
 #endif
 

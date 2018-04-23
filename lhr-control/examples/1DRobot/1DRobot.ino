@@ -18,7 +18,7 @@ LinearPositionControl::Components::Motors motors;
 AbsoluteLinearActuator pipettor(messageParser, motors, kPipettorParams);
 AbsoluteLinearActuator verticalPositioner(messageParser, motors, kVerticalPositionerParams);
 CumulativeLinearActuator yPositioner(messageParser, motors, kYPositionerParams);
-LinearPositionControl::CumulativePositionCalibrator yPositionerCalibrator(yPositioner.actuator);
+LinearPositionControl::CumulativePositionCalibrator yPositionerCalibrator(yPositioner.actuator, kYPositionerCalibrationParams);
 
 void setup() {
   wdt_disable();
