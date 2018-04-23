@@ -35,21 +35,27 @@ Any command message received (or response message sent) by an **Operational** pe
 The syntax for a message is always ``<channel>[payload]``, with the channel surrounded by angle brackets and the payload surrounded by square brackets. Note that the payload may be an empty string (a string of length zero), which has a special semantic meaning described later. Thus, the following strings are syntactically valid messages to send to the peripheral:
 
 - ``<pkl>[1234]``
-- ``<zt>[-5]``
-- ``<v0>[]``
 - ``<pt123456>[4321]``
-- ``<e>[123456]``: This message is technically valid but may cause unexpected behavior. Because the peripheral parses the payload as a 16-bit integer, the number 123,456 will overflow, so the peripheral will parse the payload as -7,616.
+- ``<v0>[]``
+- ``<zt>[-5]``: Numeric digits, such as ``5``, and a hyphen, namely ``-``, at the start of the payload, are considered valid characters for the payload.
 
 And the following strings are not syntatically valid for command messages sent to the peripheral:
 
-- ``<>[2]``: Channel cannot be an empty string. The peripheral's behavior is undefined here, but the curent implementation just ignores this message.
+- ``<e>[123456]``: This message will silently cause unexpected behavior. Because the peripheral parses the payload as a 16-bit integer, the number 123,456 (which cannot be represented in only 16 bits) will silently overflow, so the peripheral will parse the payload as -7,616.
+- ``<>[2]``: Channel cannot be an empty string. This command will be ignored by the peripheral.
+- ``<v 0>[]``: Channel can only consist of alphanumeric characters, and the peripheral's response is undefined behavior. In the current implementation, all other characters are ignored on parsing, and the command is handled as if those characters were not part of the channel. For example, ``<v 0>[]`` is handled as ``<v0>[]``. Additionally, the peripheral will send a warning over serial: ``W: Channel name starting with 'v' has unknown character '32'. Ignoring it!``.
+- ``<pt1234567>[4321]``: Channel is too long, and the peripheral's response is undefined behavior. In the current implementation, any extra characters beyond the 8-character limit are discarded, and the command is handled as if those characters were not part of the channel. For the example of ``<pt1234567>[4321]``, the character ``7`` in the channel will be discarded, and the command is handled as ``<pt123456>[4321]``. Additionally, the peripheral will send an error line over serial: ``E: Channel name starting with 'pt123456' is too long. Ignoring extra character '55'!``.
 - ``<zt>[5.0]``: Payload cannot be a floating-point number. If the channel name is handled by the peripheral, this could cause undefined behavior; in the current implementation, invalid characters such as decimal points are ignored, so the command would be interpreted as if the message had been ``<zt>[50]``. Additionally, the peripheral will send a warning line over serial: ``W: Payload on channel 'zt' has unknown character '46'. Ignoring it!``, which is not encoded as a message.
-- ``<pt1234567>[4321]``: The channel is too long. The peripheral's behavior upon receiving this message is undefined. The currently implementation will send an error line over serial: ``E: Channel name starting with 'pt123456' is too long. Ignoring extra character '55'!``.
-- ``<zt>[1ab2c3]``: Payload can only be an integer. If it contains other characters, this could cause undefined behavior; in the current implementation, invalid characters are ignored, so the command would be interpreted as if the message had been ``<zt>[123]``. Additionally, the peripheral will send a series of warnings over serial:
+- ``<zt>[1ab2 3]``: Payload can only be an integer. If it contains other characters, this could cause undefined behavior; in the current implementation, invalid characters are ignored, so the command would be interpreted as if the message had been ``<zt>[123]``. Additionally, the peripheral will send a series of warnings over serial:
 
 .. code-block:: none
 
   W: Payload on channel 'zt' has unknown character '97'. Ignoring it!
   W: Payload on channel 'zt' has unknown character '98'. Ignoring it!
   W: Payload on channel 'zt' has unknown character '99'. Ignoring it!
+
+Command Handling
+----------------
+
+
 
