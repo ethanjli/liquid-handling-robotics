@@ -18,7 +18,9 @@ LinearPositionControl::Components::Motors motors;
 AbsoluteLinearActuator pipettor(messageParser, motors, kPipettorParams);
 AbsoluteLinearActuator verticalPositioner(messageParser, motors, kVerticalPositionerParams);
 CumulativeLinearActuator yPositioner(messageParser, motors, kYPositionerParams);
-LinearPositionControl::CumulativePositionCalibrator yPositionerCalibrator(yPositioner.actuator, kYPositionerCalibrationParams);
+LinearPositionControl::SmoothedCumulativePositionCalibrator yPositionerCalibrator(
+  yPositioner.actuator, yPositioner.smoother, kYPositionerCalibrationParams
+);
 
 void setup() {
   wdt_disable();
@@ -43,6 +45,6 @@ void loop() {
   handleEchoCommand(messageParser);
   pipettor.update();
   verticalPositioner.update();
-  if (yPositionerCalibrator.state.current() == LinearPositionControl::CumulativePositionCalibrator::State::calibrated) yPositioner.update();
+  if (yPositionerCalibrator.calibrated()) yPositioner.update();
   else yPositionerCalibrator.update();
 }
