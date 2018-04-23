@@ -251,12 +251,22 @@ void LinearActuatorModule<LinearActuator>::onReportingMessage(unsigned int chann
       }
       messageParser.sendResponse(reportingConvergencePosition, channelParsedLength + 1);
       break;
+    case kReportingStallTimeoutChannel:
+      if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
+      if (messageParser.payloadParsedLength()) {
+        reportingStallTimeoutPosition = (messageParser.payload > 0);
+      }
+      messageParser.sendResponse(reportingStallTimeoutPosition, channelParsedLength + 1);
+      break;
     case kReportingStreamingChannel:
+      if (messageParser.channelParsedLength() != channelParsedLength + 1 ||
+          !messageParser.payloadParsedLength()) break;
       reportPosition(kReportingStreamingChannel);
       streamingPositionReportInterval = max(messageParser.payload, 0);
       streamingPositionClock = 0;
       break;
     case kReportingQueryChannel:
+      if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
       reportPosition(kReportingQueryChannel);
       queryPositionCountdown = max(messageParser.payload, 0);
       break;
