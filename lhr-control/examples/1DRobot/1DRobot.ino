@@ -40,9 +40,12 @@ void setup() {
 void loop() {
   wdt_reset();
   messageParser.update();
+  // Standard protocol
   handleResetCommand(messageParser);
   handleVersionCommand(messageParser);
   handleEchoCommand(messageParser);
+  handleIOCommand(messageParser);
+  // Modules
   pipettor.update();
   verticalPositioner.update();
   if (yPositionerCalibrator.calibrated()) yPositioner.update();
