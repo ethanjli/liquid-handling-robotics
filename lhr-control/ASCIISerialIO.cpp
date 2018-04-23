@@ -97,6 +97,27 @@ void handleEchoCommand(MessageParser &messageParser) {
   sendPayload(messageParser.payload);
 }
 
+void handleIOCommand(MessageParser &messageParser) {
+  if (!messageParser.justReceived()) return;
+  if (messageParser.channel[0] != kIOChannel) return;
+  if (messageParser.channel[1] != kIOReadChannel) return;
+  const int pin = messageParser.payload;
+
+  switch (messageParser.channel[2]) {
+    case kIOReadAnalogChannel:
+      if (messageParser.channelParsedLength() != 3) break;
+      if (pin < kAnalogReadMinPin || pin > kAnalogReadMaxPin) break;
+      messageParser.sendResponse(analogRead(pin + kAnalogPinOffset));
+      break;
+    case kIOReadDigitalChannel:
+      if (messageParser.channelParsedLength() != 3) break;
+      if (pin < kDigitalReadMinPin || pin > kDigitalReadMaxPin) break;
+      messageParser.sendResponse(digitalRead(pin));
+      break;
+  }
+}
+
+
 // MessageParser
 
 void MessageParser::setup() {
@@ -166,15 +187,8 @@ unsigned int MessageParser::channelParsedLength() const {
   return channelLength;
 }
 
-void MessageParser::sendResponse(int payload, unsigned int channelLength) {
-  if (!channelLength) {
-    sendMessage(channel, payload);
-    return;
-  }
-  sendChannelStart();
-  for (unsigned int i = 0; i < channelLength; ++i) sendChannelChar(channel[i]);
-  sendChannelEnd();
-  sendPayload(payload);
+void MessageParser::sendResponse(int payload) {
+  sendMessage(channel, payload);
 }
 
 void MessageParser::onParsingChannel() {
