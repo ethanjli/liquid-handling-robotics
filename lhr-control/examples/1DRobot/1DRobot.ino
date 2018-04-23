@@ -35,19 +35,24 @@ void setup() {
   yPositionerCalibrator.setup();
   waitForSerialHandshake();
   wdt_enable(WDTO_1S);
+  sendAllVersionMessages();
 }
 
 void loop() {
   wdt_reset();
   messageParser.update();
   // Standard protocol
+  wdt_reset();
   handleResetCommand(messageParser);
   handleVersionCommand(messageParser);
   handleEchoCommand(messageParser);
   handleIOCommand(messageParser);
   // Modules
+  wdt_reset();
   pipettor.update();
+  wdt_reset();
   verticalPositioner.update();
+  wdt_reset();
   if (yPositionerCalibrator.calibrated()) yPositioner.update();
   else yPositionerCalibrator.update();
 }
