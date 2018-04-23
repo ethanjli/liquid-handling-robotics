@@ -41,9 +41,14 @@ LinearActuatorModule<LinearActuator>::LinearActuatorModule(
 
 template <class LinearActuator>
 void LinearActuatorModule<LinearActuator>::setup() {
+  if (setupCompleted) return;
+
   actuator.setup();
   smoother.setup();
+
   state.setup(State::ready);
+
+  setupCompleted = true;
 }
 
 template <class LinearActuator>

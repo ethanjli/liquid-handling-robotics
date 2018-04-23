@@ -89,8 +89,10 @@ class LinearActuatorModule {
     void reportPosition(char reportingChannel);
 
   private:
+    bool setupCompleted = false;
     int streamingPositionClock = 0;
     int queryPositionCountdown = 0;
+
     void onReceivedMessage(unsigned int channelParsedLength);
     void onConstantsMessage(unsigned int channelParsedLength);
     void onLimitsMessage(unsigned int channelParsedLength);
