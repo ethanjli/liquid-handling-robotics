@@ -34,7 +34,7 @@ void setup() {
   yPositioner.setup();
   yPositionerCalibrator.setup();
   waitForSerialHandshake();
-  wdt_enable(WDTO_1S);
+  wdt_enable(WDTO_2S);
   sendAllVersionMessages();
 }
 

@@ -37,7 +37,7 @@ class AbsoluteLinearActuator(ChannelTreeNode):
     def on_received_converge(self, subchannel, message):
         unitless_position = int(message.payload)
         unit_position = self.to_unit_position(unitless_position)
-        print('Converged at {:.2f} {} ({} unitless)!'
+        print('Converged at {:.3f} {} ({} unitless)!'
               .format(unit_position, self.physical_unit, unitless_position))
         for listener in self.converged_position_listeners:
             listener.on_converged_position(unitless_position, unit_position)
@@ -45,7 +45,7 @@ class AbsoluteLinearActuator(ChannelTreeNode):
     def on_received_stall(self, subchannel, message):
         unitless_position = int(message.payload)
         unit_position = self.to_unit_position(unitless_position)
-        print('Stalled at {:.2f} {} ({} unitless)!'
+        print('Stalled at {:.3f} {} ({} unitless)!'
               .format(unit_position, self.physical_unit, unitless_position))
         for listener in self.stalled_position_listeners:
             listener.on_stalled_position(unitless_position, unit_position)

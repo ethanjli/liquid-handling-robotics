@@ -1,6 +1,7 @@
 # Standard imports
 import datetime
 import itertools
+import time
 
 # Local package imports
 from lhrhost.serialio.transport import (
@@ -8,14 +9,14 @@ from lhrhost.serialio.transport import (
 )
 from lhrhost.serialio.dispatch import (
     Message, Dispatcher,
-    ASCIITranslator
+    ASCIITranslator, MessageReceiver, MessageEchoer
 )
 from lhrhost.modules.actuators import (
     ConvergedPositionReceiver, StalledPositionReceiver
 )
 from lhrhost.modules.pipettor import Pipettor
 
-class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver):
+class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, MessageReceiver):
     def __init__(self, pipettor, targets, interactive=False):
         super().__init__()
         self.pipettor = pipettor
@@ -33,6 +34,7 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver):
             print('Finished the batch sequence!')
             self.pipettor.running = False
             return
+        time.sleep(0.5)
         print('Moving to the {:.2f} mark...'.format(next_target), end='')
         self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
         self.current_step += 1
@@ -46,10 +48,17 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver):
             print('Finished the batch sequence!')
             self.pipettor.running = False
             return
+        time.sleep(0.5)
         print('Moving to the {:.2f} mark...'.format(next_target), end='')
         self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
         self.current_step += 1
         self.stalled_steps += 1
+
+    def on_message(self, message):
+        if message.channel == 'v0':
+            message = Message('{}kp'.format(self.pipettor.node_prefix), 2500)
+            for listener in self.pipettor.message_listeners:
+                listener.on_message(message)
 
 def main():
     connection = ASCIIConnection()
@@ -57,6 +66,7 @@ def main():
     console = ASCIIConsole(connection)
 
     translator = ASCIITranslator()
+    echoer = MessageEchoer(set(['pt', 'prc', 'zrc', 'yrc', 'prt', 'pkp', 'pldl', 'pldh']))
     dispatcher = Dispatcher()
     pipettor = Pipettor()
     targeting = BatchTargeting(
@@ -64,9 +74,11 @@ def main():
     )
 
     monitor.listeners.append(translator)
+    translator.message_listeners.append(echoer)
     translator.message_listeners.append(dispatcher)
     translator.line_listeners.append(monitor)
     dispatcher.receivers[None].append(pipettor)
+    dispatcher.receivers['v0'].append(targeting)
     pipettor.converged_position_listeners.append(targeting)
     pipettor.stalled_position_listeners.append(targeting)
     pipettor.message_listeners.append(translator)
@@ -76,7 +88,7 @@ def main():
     console.start_input_loop()
     connection.reset()
     print()
-    print('{}/{} steps were stalled, which is an error rate of {:.2f}.'.format(
+    print('{}/{} steps were stalled, which is an error rate of {:.3f}.'.format(
         targeting.stalled_steps, targeting.current_step, targeting.stalled_steps / targeting.current_step
     ))
 

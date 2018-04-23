@@ -18,7 +18,7 @@ class Pipettor(AbsoluteLinearActuator):
 
         self.top_position = 800  # unitless
         self.top_mark = 0.14  # mL mark
-        self.bottom_position = 975  # unitless
+        self.bottom_position = 985  # unitless
         self.bottom_mark = 0.0  # mL mark
 
     # Implement ChannelTreeNode

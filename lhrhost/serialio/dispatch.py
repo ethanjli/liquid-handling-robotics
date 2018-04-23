@@ -66,6 +66,17 @@ class Dispatcher(MessageReceiver):
         for receiver in self.receivers[None]:
             receiver.on_message(message)
 
+class MessageEchoer(MessageReceiver):
+    """Prints all received messages."""
+    def __init__(self, ignored_channels: set=set()):
+        self.ignored_channels = ignored_channels
+
+    # Implement MessageReceiver
+
+    def on_message(self, message: Message) -> None:
+        if message.channel not in self.ignored_channels:
+            print(message)
+
 
 # Message Translation
 
@@ -215,6 +226,8 @@ class ASCIITranslator(Translator, MessageReceiver, ASCIILineReceiver):
     # Implement transport.ASCIILineReceiver
 
     def on_line(self, line: str) -> None:
+        if not line.strip():
+            return
         try:
             message = self.decode(line)
             for listener in self.message_listeners:
