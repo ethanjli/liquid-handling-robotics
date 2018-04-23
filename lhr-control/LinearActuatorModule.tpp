@@ -185,30 +185,27 @@ void LinearActuatorModule<LinearActuator>::onReceivedMessage(unsigned int channe
 
 template <class LinearActuator>
 void LinearActuatorModule<LinearActuator>::onConstantsMessage(unsigned int channelParsedLength) {
+  if (messageParser.channelParsedLength() != channelParsedLength + 1) return;
   switch (messageParser.channel[channelParsedLength]) {
     case kConstantsProportionalChannel:
-      if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
       if (messageParser.payloadParsedLength()) {
         actuator.pid.setKp((float) messageParser.payload / kConstantsFixedPointScaling);
       }
       messageParser.sendResponse((int) (actuator.pid.getKp() * kConstantsFixedPointScaling));
       break;
     case kConstantsDerivativeChannel:
-      if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
       if (messageParser.payloadParsedLength()) {
         actuator.pid.setKd((float) messageParser.payload / kConstantsFixedPointScaling);
       }
       messageParser.sendResponse((int) (actuator.pid.getKd() * kConstantsFixedPointScaling));
       break;
     case kConstantsIntegralChannel:
-      if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
       if (messageParser.payloadParsedLength()) {
         actuator.pid.setKi((float) messageParser.payload / kConstantsFixedPointScaling);
       }
       messageParser.sendResponse((int) (actuator.pid.getKi() * kConstantsFixedPointScaling));
       break;
     case kConstantsFeedforwardChannel:
-      if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
       if (messageParser.payloadParsedLength()) {
         actuator.speedAdjuster.speedBias = messageParser.payload;
       }
@@ -219,19 +216,17 @@ void LinearActuatorModule<LinearActuator>::onConstantsMessage(unsigned int chann
 
 template <class LinearActuator>
 void LinearActuatorModule<LinearActuator>::onLimitsMessage(unsigned int channelParsedLength) {
+  if (messageParser.channelParsedLength() != channelParsedLength + 2) return;
   switch (messageParser.channel[channelParsedLength]) {
     case kLimitsPositionChannel:
-      ++channelParsedLength;
-      switch (messageParser.channel[channelParsedLength]) {
+      switch (messageParser.channel[channelParsedLength + 1]) {
         case kLimitsLowerSubchannel:
-          if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
           if (messageParser.payloadParsedLength()) {
             actuator.pid.setMinInput(messageParser.payload);
           }
           messageParser.sendResponse(actuator.pid.getMinInput());
           break;
         case kLimitsUpperSubchannel:
-          if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
           if (messageParser.payloadParsedLength()) {
             actuator.pid.setMaxInput(messageParser.payload);
           }
@@ -240,17 +235,14 @@ void LinearActuatorModule<LinearActuator>::onLimitsMessage(unsigned int channelP
       }
       break;
     case kLimitsDutyChannel:
-      ++channelParsedLength;
-      switch (messageParser.channel[channelParsedLength]) {
+      switch (messageParser.channel[channelParsedLength + 1]) {
         case kLimitsLowerSubchannel:
-          if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
           if (messageParser.payloadParsedLength()) {
             actuator.pid.setMinOutput(messageParser.payload);
           }
           messageParser.sendResponse(actuator.pid.getMinOutput());
           break;
         case kLimitsUpperSubchannel:
-          if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
           if (messageParser.payloadParsedLength()) {
             actuator.pid.setMaxOutput(messageParser.payload);
           }
@@ -259,17 +251,14 @@ void LinearActuatorModule<LinearActuator>::onLimitsMessage(unsigned int channelP
       }
       break;
     case kLimitsBrakeChannel:
-      ++channelParsedLength;
-      switch (messageParser.channel[channelParsedLength]) {
+      switch (messageParser.channel[channelParsedLength + 1]) {
         case kLimitsLowerSubchannel:
-          if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
           if (messageParser.payloadParsedLength()) {
             actuator.speedAdjuster.brakeLowerThreshold = messageParser.payload;
           }
           messageParser.sendResponse(actuator.speedAdjuster.brakeLowerThreshold);
           break;
         case kLimitsUpperSubchannel:
-          if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
           if (messageParser.payloadParsedLength()) {
             actuator.speedAdjuster.brakeUpperThreshold = messageParser.payload;
           }
@@ -282,30 +271,27 @@ void LinearActuatorModule<LinearActuator>::onLimitsMessage(unsigned int channelP
 
 template <class LinearActuator>
 void LinearActuatorModule<LinearActuator>::onReportingMessage(unsigned int channelParsedLength) {
+  if (messageParser.channelParsedLength() != channelParsedLength + 1) return;
   switch (messageParser.channel[channelParsedLength]) {
     case kReportingConvergenceChannel:
-      if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
       if (messageParser.payloadParsedLength()) {
         reportingConvergencePosition = (messageParser.payload > 0);
       }
       messageParser.sendResponse(reportingConvergencePosition);
       break;
     case kReportingStallTimeoutChannel:
-      if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
       if (messageParser.payloadParsedLength()) {
         reportingStallTimeoutPosition = (messageParser.payload > 0);
       }
       messageParser.sendResponse(reportingStallTimeoutPosition);
       break;
     case kReportingStreamingChannel:
-      if (messageParser.channelParsedLength() != channelParsedLength + 1 ||
-          !messageParser.payloadParsedLength()) break;
+      if (!messageParser.payloadParsedLength()) break;
       reportPosition(kReportingStreamingChannel);
       streamingPositionReportInterval = max(messageParser.payload, 0);
       streamingPositionClock = 0;
       break;
     case kReportingQueryChannel:
-      if (messageParser.channelParsedLength() != channelParsedLength + 1) break;
       reportPosition(kReportingQueryChannel);
       queryPositionCountdown = max(messageParser.payload, 0);
       break;
