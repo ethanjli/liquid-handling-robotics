@@ -53,6 +53,7 @@ void handleResetCommand(MessageParser &messageParser);
 void hardReset();
 void handleVersionCommand(MessageParser &messageParser);
 void sendVersionMessage(char versionPosition);
+void sendAllVersionMessages();
 void handleEchoCommand(MessageParser &messageParser);
 void handleIOCommand(MessageParser &messageParser);
 

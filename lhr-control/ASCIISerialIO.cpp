@@ -71,9 +71,10 @@ void hardReset() {
 void handleVersionCommand(MessageParser &messageParser) {
   if (!(messageParser.justReceived() &&
         messageParser.channel[0] == kVersionChannel &&
-        messageParser.channelParsedLength() == 1)) return;
+        messageParser.channelParsedLength() <= 2)) return;
 
-  sendVersionMessage(messageParser.channel[1]);
+  if (messageParser.channelParsedLength() == 1) sendAllVersionMessages();
+  else sendVersionMessage(messageParser.channel[1]);
 }
 
 void sendVersionMessage(char versionPosition) {
@@ -84,6 +85,15 @@ void sendVersionMessage(char versionPosition) {
   sendChannelChar(versionPosition);
   sendChannelEnd();
   sendPayload((int) pgm_read_word_near(kVersion + channelPosition));
+}
+
+void sendAllVersionMessages() {
+  sendVersionMessage('2');
+  wdt_reset();
+  sendVersionMessage('1');
+  wdt_reset();
+  sendVersionMessage('0');
+  wdt_reset();
 }
 
 void handleEchoCommand(MessageParser &messageParser) {
