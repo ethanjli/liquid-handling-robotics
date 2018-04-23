@@ -78,6 +78,7 @@ class MessageParser {
     bool justReceived(const char queryChannel[]) const;
     bool justReceived() const;
     unsigned int payloadParsedLength() const;
+    unsigned int channelParsedLength() const;
 
     void sendResponse(int payload, unsigned int channelLength = 0);
 
@@ -96,6 +97,7 @@ class MessageParser {
     int receivedNumber;
     bool negative = false;
     unsigned int payloadLength = 0;
+    unsigned int channelLength = 0;
 
     LinearPositionControl::StateVariable<char> received;
 

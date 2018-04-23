@@ -46,7 +46,7 @@ state Operational {
 
 [*] --> SerialHandshake : / setup
 SerialHandshake --> SerialHandshake : / string(~)
-SerialHandshake --> Operational : string(\\n)
+SerialHandshake --> Operational : string(\\n) / string(\\n)
 Operational --> Operational : / update
 Operational --> SerialHandshake : string(<r>[...]) / hard reset, setup
 

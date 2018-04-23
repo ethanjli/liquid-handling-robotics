@@ -13,6 +13,7 @@ void waitForSerialHandshake(char handshakeChar, unsigned long waitDelay) {
   while (Serial.available() > 0) {
     if (Serial.read() == '\n') break;
   }
+  Serial.println();
   delay(waitDelay);
 }
 
@@ -52,7 +53,13 @@ void sendPayload(int payload) {
 // General Protocol Functionalities
 
 void handleResetCommand(MessageParser &messageParser) {
-  if (!(messageParser.justReceived() && messageParser.channel[0] == kResetChannel)) return;
+  if (!(messageParser.justReceived() &&
+        messageParser.channel[0] == kResetChannel &&
+        messageParser.channelParsedLength() == 1)) return;
+  sendChannelStart();
+  sendChannelChar(kResetChannel);
+  sendChannelEnd();
+  sendPayload(messageParser.payload);
   hardReset();
 }
 
@@ -62,7 +69,9 @@ void hardReset() {
 }
 
 void handleVersionCommand(MessageParser &messageParser) {
-  if (!(messageParser.justReceived() && messageParser.channel[0] == kVersionChannel)) return;
+  if (!(messageParser.justReceived() &&
+        messageParser.channel[0] == kVersionChannel &&
+        messageParser.channelParsedLength() == 1)) return;
 
   sendVersionMessage(messageParser.channel[1]);
 }
@@ -78,7 +87,9 @@ void sendVersionMessage(char versionPosition) {
 }
 
 void handleEchoCommand(MessageParser &messageParser) {
-  if (!(messageParser.justReceived() && messageParser.channel[0] == kEchoChannel)) return;
+  if (!(messageParser.justReceived() &&
+        messageParser.channel[0] == kEchoChannel &&
+        messageParser.channelParsedLength() == 1)) return;
 
   sendChannelStart();
   sendChannelChar(kEchoChannel);
@@ -151,6 +162,10 @@ unsigned int MessageParser::payloadParsedLength() const {
   return payloadLength;
 }
 
+unsigned int MessageParser::channelParsedLength() const {
+  return channelLength;
+}
+
 void MessageParser::sendResponse(int payload, unsigned int channelLength) {
   if (!channelLength) {
     sendMessage(channel, payload);
@@ -164,6 +179,7 @@ void MessageParser::sendResponse(int payload, unsigned int channelLength) {
 
 void MessageParser::onParsingChannel() {
   memset(channelBuffer, '\0', kChannelMaxLength + 1);
+  channelLength = 0;
   channelBufferPosition = 0;
 }
 
@@ -190,6 +206,7 @@ void MessageParser::parseChannel(char current) {
       if (channelBufferPosition < kChannelMaxLength) {
         channelBuffer[channelBufferPosition] = current;
         ++channelBufferPosition;
+        ++channelLength;
       } else {
         Log.error(F("Channel name starting with '%s' is too long. Ignoring extra character '%c'!" CR), channelBufferString, current);
       }
