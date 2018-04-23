@@ -68,29 +68,34 @@ class LinearActuatorModule {
     LinearPositionControl::StateVariable<State> state;
     Smoother smoother;
 
-    unsigned int convergenceDelay;
-    bool reportedConvergence = false;
-    bool reportingConvergencePosition = true;
-
-    unsigned int stallTimeout;
-    bool reportedStallTimeout = false;
-    bool reportingStallTimeoutPosition = true;
-
-    int streamingPositionReportInterval = 0;
-
-    const char moduleChannel = '\0';
-
     void setup();
     void update();
 
     bool converged(unsigned int convergenceTime) const;
+    bool stopped(unsigned int convergenceTime) const;
     bool stalled(unsigned int stallTime) const;
 
     void reportPosition(char reportingChannel);
 
   private:
     bool setupCompleted = false;
+
+    const char moduleChannel = '\0';
+
+    // Parameters
+    unsigned int convergenceDelay;
+    unsigned int stallTimeout;
+
+    // Convergence reporting state variables
+    bool reportedConvergence = false;
+    bool reportingConvergencePosition = true;
+    // Stall timeout reporting state variables
+    bool reportedStallTimeout = false;
+    bool reportingStallTimeoutPosition = true;
+    // Position streaming state variable
+    int streamingPositionReportInterval = 0;
     int streamingPositionClock = 0;
+    // Position query state variable
     int queryPositionCountdown = 0;
 
     void onReceivedMessage(unsigned int channelParsedLength);
