@@ -24,7 +24,7 @@ using CumulativeLinearActuator = LinearActuatorModule<LinearPositionControl::Cum
   /* pidKp, pidKd, pidKi */ 20, 0.1, 0.1,\
   /* pidSampleTime */ 10,\
   /* feedforward */ 0,\
-  /* brakeLowerThreshold, brakeUpperThreshold */ -160, 160,\
+  /* brakeLowerThreshold, brakeUpperThreshold */ -180, 180,\
   /* swapMotorPolarity */ false,\
   /* convergenceDelay */ 100,\
   /* stallTimeout, stallSmootherSnapMultiplier, stallSmootherMax */ 200, 0.01, 1023,\
@@ -38,7 +38,7 @@ using CumulativeLinearActuator = LinearActuatorModule<LinearPositionControl::Cum
   /* pidKp, pidKd, pidKi */ 8, 0.2, 0.1,\
   /* pidSampleTime */ 10,\
   /* feedforward */ 0,\
-  /* brakeLowerThreshold, brakeUpperThreshold */ -100, 100,\
+  /* brakeLowerThreshold, brakeUpperThreshold */ -60, 120,\
   /* swapMotorPolarity */ false,\
   /* convergenceDelay */ 100,\
   /* stallTimeout, stallSmootherSnapMultiplier, stallSmootherMax */ 200, 0.01, 1023,\
@@ -52,7 +52,7 @@ using CumulativeLinearActuator = LinearActuatorModule<LinearPositionControl::Cum
   /* pidKp, pidKd, pidKi */ 10, 0.1, 0.1,\
   /* pidSampleTime */ 10,\
   /* feedforward */ 0,\
-  /* brakeLowerThreshold, brakeUpperThreshold */ -60, 60,\
+  /* brakeLowerThreshold, brakeUpperThreshold */ -80, 80,\
   /* swapMotorPolarity */ false,\
   /* convergenceDelay */ 100,\
   /* stallTimeout, stallSmootherSnapMultiplier, stallSmootherMax */ 200, 0.01, 800,\
