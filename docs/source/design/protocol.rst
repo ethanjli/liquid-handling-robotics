@@ -32,21 +32,35 @@ Command/Response Message Syntax
 
 Any command message received (or response message sent) by an **Operational** peripheral follows a standard syntax. Messages are consist of a *channel name* (abbreviated as *channel*) and a *payload*. The channel is a string, between 1 and 8 characters long (inclusive), consisting entirely of alphanumeric characters (from *a* to *z*, *A* to *Z*, and *0* to *9*). The payload is a sting representing a number. The peripheral currently only accepts payloads representing a 16-bit integer (from -32,768 to 32,767 inclusive); however, in special cases (documented below) the peripheral may send payloads representing floating-point numbers.
 
-The syntax for a message is always ``<channel>[payload]``, with the channel surrounded by angle brackets and the payload surrounded by square brackets. Note that the payload may be an empty string (a string of length zero), which has a special semantic meaning described later. Thus, the following strings are syntactically valid messages to send to the peripheral:
+The syntax for a message is always ``<channel>[payload]``, with the channel surrounded by angle brackets and the payload surrounded by square brackets. Note that the payload may be an empty string (a string of length zero), which has a special semantic meaning described later. Thus, the following strings are examples of syntactically valid messages to send to the peripheral:
 
 - ``<pkl>[1234]``
 - ``<pt123456>[4321]``
 - ``<v0>[]``
 - ``<zt>[-5]``: Numeric digits, such as ``5``, and a hyphen, namely ``-``, at the start of the payload, are considered valid characters for the payload.
 
-And the following strings are not syntatically valid for command messages sent to the peripheral:
+And the following strings are examples of malformed (syntatically invalid) strings for command messages sent to the peripheral:
 
-- ``<e>[123456]``: This message will silently cause unexpected behavior. Because the peripheral parses the payload as a 16-bit integer, the number 123,456 (which cannot be represented in only 16 bits) will silently overflow, so the peripheral will parse the payload as -7,616.
+- ``<e>[123456]``: The payload in this message will silently overflow, potentially producing unexpected behavior.
+   - Because the peripheral parses the payload as a 16-bit integer, the number 123,456 (which cannot be represented in only 16 bits) will silently overflow, so the peripheral will parse the payload as -7,616.
+   - If you are working with a potentially large number in your payload, you can pass it to the echo command (discussed below), which will trigger a response whose payload is the value parsed by the peripheral.
+   - Commands are designed to be robust to integer overflows by sanitizing their inputs, so that they will always constrain the parsed value to be within valid ranges, or so that they ignore invalid values. However, you may still get undesirable behaviors with the sanitized values.
 - ``<>[2]``: Channel cannot be an empty string. This command will be ignored by the peripheral.
-- ``<v 0>[]``: Channel can only consist of alphanumeric characters, and the peripheral's response is undefined behavior. In the current implementation, all other characters are ignored on parsing, and the command is handled as if those characters were not part of the channel. For example, ``<v 0>[]`` is handled as ``<v0>[]``. Additionally, the peripheral will send a warning over serial: ``W: Channel name starting with 'v' has unknown character '32'. Ignoring it!``.
-- ``<pt1234567>[4321]``: Channel is too long, and the peripheral's response is undefined behavior. In the current implementation, any extra characters beyond the 8-character limit are discarded, and the command is handled as if those characters were not part of the channel. For the example of ``<pt1234567>[4321]``, the character ``7`` in the channel will be discarded, and the command is handled as ``<pt123456>[4321]``. Additionally, the peripheral will send an error line over serial: ``E: Channel name starting with 'pt123456' is too long. Ignoring extra character '55'!``.
-- ``<zt>[5.0]``: Payload cannot be a floating-point number. If the channel name is handled by the peripheral, this could cause undefined behavior; in the current implementation, invalid characters such as decimal points are ignored, so the command would be interpreted as if the message had been ``<zt>[50]``. Additionally, the peripheral will send a warning line over serial: ``W: Payload on channel 'zt' has unknown character '46'. Ignoring it!``, which is not encoded as a message.
-- ``<zt>[1ab2 3]``: Payload can only be an integer. If it contains other characters, this could cause undefined behavior; in the current implementation, invalid characters are ignored, so the command would be interpreted as if the message had been ``<zt>[123]``. Additionally, the peripheral will send a series of warnings over serial:
+   - This will always be part of the parser's behavior.
+- ``<v 0>[]``: Channel can only consist of alphanumeric characters, and the peripheral's response is undefined behavior. In the current implementation:
+   - All other characters are ignored on parsing, and each one triggers a warning sent over serial (not encoded as a message).
+   - The command is handled as if those characters were not part of the channel.
+   - For example, ``<v 0>[]`` is handled as ``<v0>[]``. Additionally, the peripheral will send a warning report over serial: ``W: Channel name starting with 'v' has unknown character '32'. Ignoring it!``.
+- ``<pt1234567>[4321]``: Channel is too long, and the peripheral's response is undefined behavior. In the current implementation:
+   - Any extra characters beyond the 8-character limit are discarded, and each one triggers an error report sent over serial (not encoded as a message).
+   - The command is handled as if those characters were not part of the channel.
+   - For example, for the message ``<pt1234567>[4321]``, the character ``7`` in the channel will be discarded, and the command is handled as ``<pt123456>[4321]``. Additionally, the peripheral will send an error line over serial: ``E: Channel name starting with 'pt123456' is too long. Ignoring extra character '55'!``.
+- ``<zt>[5.0]``: Payload cannot be a floating-point number. If the channel name is handled by the peripheral, this could cause undefined behavior. In the current implementation:
+   - Invalid characters such as decimal points are ignored, so the command would be interpreted as if the message had been ``<zt>[50]``.
+   - Additionally, the peripheral will send a warning report over serial: ``W: Payload on channel 'zt' has unknown character '46'. Ignoring it!``, which is not encoded as a message.
+- ``<zt>[1ab2 3]``: Payload can only be an integer. If it contains other characters, this could cause undefined behavior. In the current implementation:
+   - Invalid characters are ignored, so the command would be interpreted as if the message had been ``<zt>[123]``.
+   - Additionally, the peripheral will send a series of warnings over serial:
 
 .. code-block:: none
 

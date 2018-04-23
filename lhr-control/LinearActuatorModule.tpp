@@ -207,7 +207,7 @@ void LinearActuatorModule<LinearActuator>::onConstantsMessage(unsigned int chann
       break;
     case kConstantsFeedforwardChannel:
       if (messageParser.payloadParsedLength()) {
-        actuator.speedAdjuster.speedBias = messageParser.payload;
+        actuator.speedAdjuster.speedBias = constrain(messageParser.payload, -255 * 2, 255 * 2);
       }
       messageParser.sendResponse(actuator.speedAdjuster.speedBias);
       break;
@@ -221,13 +221,15 @@ void LinearActuatorModule<LinearActuator>::onLimitsMessage(unsigned int channelP
     case kLimitsPositionChannel:
       switch (messageParser.channel[channelParsedLength + 1]) {
         case kLimitsLowerSubchannel:
-          if (messageParser.payloadParsedLength()) {
+          if (messageParser.payloadParsedLength() &&
+              messageParser.payload <= actuator.pid.getMaxInput()) {
             actuator.pid.setMinInput(messageParser.payload);
           }
           messageParser.sendResponse(actuator.pid.getMinInput());
           break;
         case kLimitsUpperSubchannel:
-          if (messageParser.payloadParsedLength()) {
+          if (messageParser.payloadParsedLength() &&
+              messageParser.payload >= actuator.pid.getMinInput()) {
             actuator.pid.setMaxInput(messageParser.payload);
           }
           messageParser.sendResponse(actuator.pid.getMaxInput());
@@ -238,13 +240,13 @@ void LinearActuatorModule<LinearActuator>::onLimitsMessage(unsigned int channelP
       switch (messageParser.channel[channelParsedLength + 1]) {
         case kLimitsLowerSubchannel:
           if (messageParser.payloadParsedLength()) {
-            actuator.pid.setMinOutput(messageParser.payload);
+            actuator.pid.setMinOutput(constrain(messageParser.payload, -255, 255));
           }
           messageParser.sendResponse(actuator.pid.getMinOutput());
           break;
         case kLimitsUpperSubchannel:
           if (messageParser.payloadParsedLength()) {
-            actuator.pid.setMaxOutput(messageParser.payload);
+            actuator.pid.setMaxOutput(constrain(messageParser.payload, -255, 255));
           }
           messageParser.sendResponse(actuator.pid.getMaxOutput());
           break;
@@ -254,13 +256,13 @@ void LinearActuatorModule<LinearActuator>::onLimitsMessage(unsigned int channelP
       switch (messageParser.channel[channelParsedLength + 1]) {
         case kLimitsLowerSubchannel:
           if (messageParser.payloadParsedLength()) {
-            actuator.speedAdjuster.brakeLowerThreshold = messageParser.payload;
+            actuator.speedAdjuster.brakeLowerThreshold = constrain(messageParser.payload, -255, 255);
           }
           messageParser.sendResponse(actuator.speedAdjuster.brakeLowerThreshold);
           break;
         case kLimitsUpperSubchannel:
           if (messageParser.payloadParsedLength()) {
-            actuator.speedAdjuster.brakeUpperThreshold = messageParser.payload;
+            actuator.speedAdjuster.brakeUpperThreshold = constrain(messageParser.payload, -255, 255);
           }
           messageParser.sendResponse(actuator.speedAdjuster.brakeUpperThreshold);
           break;
