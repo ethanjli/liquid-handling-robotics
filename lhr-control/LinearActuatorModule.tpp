@@ -61,6 +61,9 @@ void LinearActuatorModule<LinearActuator>::update() {
   }
 
   switch (state.current()) {
+    case State::ready:
+      if (reportingConvergencePosition &&
+          !reportedConvergence) reportPosition(kReportingConvergenceChannel);
     case State::pidTargeting:
       if (converged(convergenceDelay)) {
         actuator.freeze(true);
