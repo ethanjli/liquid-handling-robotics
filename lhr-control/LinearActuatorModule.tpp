@@ -103,6 +103,7 @@ void LinearActuatorModule<LinearActuator>::update() {
 
 template <class LinearActuator>
 bool LinearActuatorModule<LinearActuator>::converged(unsigned int convergenceTime) const {
+  if (!convergenceTime) convergenceTime = convergenceDelay;
   return actuator.pid.setpoint.settled(convergenceTime) &&
     actuator.speedAdjuster.output.settledAt(0, convergenceTime) &&
     state.settled(convergenceTime);
@@ -110,6 +111,7 @@ bool LinearActuatorModule<LinearActuator>::converged(unsigned int convergenceTim
 
 template <class LinearActuator>
 bool LinearActuatorModule<LinearActuator>::stalled(unsigned int stallTime) const {
+  if (!stallTime) stallTime = stallTimeout;
   return actuator.motor.speed != 0 &&
     actuator.pid.setpoint.settled(stallTime) &&
     smoother.output.settled(stallTime) &&
@@ -118,9 +120,19 @@ bool LinearActuatorModule<LinearActuator>::stalled(unsigned int stallTime) const
 
 template <class LinearActuator>
 bool LinearActuatorModule<LinearActuator>::stopped(unsigned int convergenceTime) const {
+  if (!convergenceTime) convergenceTime = convergenceDelay;
   return actuator.motor.speed == 0 &&
     smoother.output.settled(convergenceTime) &&
     state.settled(convergenceTime);
+}
+
+template<class LinearActuator>
+void LinearActuatorModule<LinearActuator>::targetPosition(Position position) {
+    actuator.pid.setSetpoint(position);
+    reportedConvergence = false;
+    reportedStallTimeout = false;
+    state.update(State::pidTargeting, true);
+    actuator.unfreeze();
 }
 
 template <class LinearActuator>
@@ -139,6 +151,15 @@ void LinearActuatorModule<LinearActuator>::reportPosition(char reportingChannel)
       reportedStallTimeout = true;
       break;
   }
+}
+
+template<class LinearActuator>
+void LinearActuatorModule<LinearActuator>::setDirectDuty(int duty) {
+    reportedConvergence = false;
+    reportedStallTimeout = false;
+    state.update(State::dutyControl, true);
+    actuator.freeze(true);
+    actuator.motor.run(constrain(duty, -255, 255));
 }
 
 template <class LinearActuator>
@@ -294,26 +315,14 @@ void LinearActuatorModule<LinearActuator>::onReportingMessage(unsigned int chann
 template <class LinearActuator>
 void LinearActuatorModule<LinearActuator>::onTargetingMessage(unsigned int channelParsedLength) {
   if (messageParser.channelParsedLength() != channelParsedLength) return;
-  if (messageParser.payloadParsedLength()) {
-    actuator.pid.setSetpoint(messageParser.payload);
-    reportedConvergence = false;
-    reportedStallTimeout = false;
-    state.update(State::pidTargeting, true);
-    actuator.unfreeze();
-  }
+  if (messageParser.payloadParsedLength()) targetPosition(messageParser.payload);
   messageParser.sendResponse((int) actuator.pid.setpoint.current());
 }
 
 template <class LinearActuator>
 void LinearActuatorModule<LinearActuator>::onDutyMessage(unsigned int channelParsedLength) {
   if (messageParser.channelParsedLength() != channelParsedLength) return;
-  if (messageParser.payloadParsedLength()) {
-    reportedConvergence = false;
-    reportedStallTimeout = false;
-    state.update(State::dutyControl, true);
-    actuator.freeze(true);
-    actuator.motor.run(constrain(messageParser.payload, -255, 255));
-  }
+  if (messageParser.payloadParsedLength()) setDirectDuty(messageParser.payload);
   messageParser.sendResponse(actuator.motor.speed);
 }
 

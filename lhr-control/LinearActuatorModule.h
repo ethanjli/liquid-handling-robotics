@@ -59,7 +59,8 @@ class LinearActuatorModule {
         bool stallSmootherEnableSleep, float stallSmootherActivityThreshold
     );
 
-    using Smoother = LinearPositionControl::Smoother<typename LinearActuator::Position, int>;
+    using Position = typename LinearActuator::Position;
+    using Smoother = LinearPositionControl::Smoother<Position, int>;
     using State = States::LinearActuatorControlMode;
 
     MessageParser &messageParser;
@@ -71,11 +72,13 @@ class LinearActuatorModule {
     void setup();
     void update();
 
-    bool converged(unsigned int convergenceTime) const;
-    bool stopped(unsigned int convergenceTime) const;
-    bool stalled(unsigned int stallTime) const;
+    bool converged(unsigned int convergenceTime = 0) const;
+    bool stopped(unsigned int convergenceTime = 0) const;
+    bool stalled(unsigned int stallTime = 0) const;
 
+    void targetPosition(Position position);
     void reportPosition(char reportingChannel);
+    void setDirectDuty(int duty);
 
   private:
     bool setupCompleted = false;
