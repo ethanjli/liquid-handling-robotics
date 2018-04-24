@@ -24,8 +24,11 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
         self.targets = targets
         self.current_step = 0
         self.stalled_steps = 0
+        self.initialized = False
 
     def on_converged_position(self, position_unitless, position_mL_mark):
+        if not self.initialized:
+            return
         try:
             next_target = next(self.targets)
             print('{}: Completed step {}. '.format(datetime.datetime.now(), self.current_step),
@@ -40,6 +43,8 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
         self.current_step += 1
 
     def on_stalled_position(self, position_unitless, position_mL_mark):
+        if not self.initialized:
+            return
         try:
             next_target = next(self.targets)
             print('{}: Stalled at step {}. '.format(datetime.datetime.now(), self.current_step),
@@ -55,8 +60,11 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
         self.stalled_steps += 1
 
     def on_message(self, message):
-        if message.channel == 'v0':
-            message = Message('{}kp'.format(self.pipettor.node_prefix), 2500)
+        if not self.initialized and message.channel == 'yrc':
+            self.initialized = True
+            print('Initialized. Press enter twice to continue!', end='')
+            input()
+            message = Message('{}d'.format(self.pipettor.node_prefix), 0)
             for listener in self.pipettor.message_listeners:
                 listener.on_message(message)
 
@@ -66,7 +74,7 @@ def main():
     console = ASCIIConsole(connection)
 
     translator = ASCIITranslator()
-    echoer = MessageEchoer(set(['pt', 'prc', 'zrc', 'yrc', 'prt', 'pkp', 'pldl', 'pldh']))
+    echoer = MessageEchoer(set(['pt', 'prc', 'zrc', 'yrc', 'prt', 'pd']))
     dispatcher = Dispatcher()
     pipettor = Pipettor()
     targeting = BatchTargeting(
@@ -78,7 +86,7 @@ def main():
     translator.message_listeners.append(dispatcher)
     translator.line_listeners.append(monitor)
     dispatcher.receivers[None].append(pipettor)
-    dispatcher.receivers['v0'].append(targeting)
+    dispatcher.receivers['yrc'].append(targeting)
     pipettor.converged_position_listeners.append(targeting)
     pipettor.stalled_position_listeners.append(targeting)
     pipettor.message_listeners.append(translator)
