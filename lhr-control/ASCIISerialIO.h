@@ -19,8 +19,8 @@ void waitForSerialHandshake(char handshakeChar = '~', unsigned long waitDelay = 
 
 const char kChannelStartDelimiter = '<';
 const char kChannelEndDelimiter = '>';
-const char kPayloadStartDelimiter = '[';
-const char kPayloadEndDelimiter = ']';
+const char kPayloadStartDelimiter = '(';
+const char kPayloadEndDelimiter = ')';
 
 void sendMessage(const String &channel, int payload);
 void sendChannelStart();
