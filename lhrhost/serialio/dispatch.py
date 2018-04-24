@@ -166,7 +166,7 @@ class ASCIITranslator(Translator, MessageReceiver, ASCIILineReceiver):
     """
     def __init__(self, channel_max_len: int=8,
                  channel_start: str='<', channel_end: str='>',
-                 payload_start: str='[', payload_end: str=']'):
+                 payload_start: str='(', payload_end: str=')'):
         self.line_listeners = []
         self.message_listeners = []
 

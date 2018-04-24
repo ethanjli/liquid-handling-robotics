@@ -36,11 +36,13 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
                   end='')
         except (IndexError, StopIteration):
             self.quit()
+        if self.current_step % 1000 == 0 and self.current_step > 0:
+            self.print_stats()
         time.sleep(0.5)
         print('Moving to the {:.2f} mark...'.format(next_target), end='')
         self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
         self.current_step += 1
-        if self.max_steps and self.current_step > self.max_steps:
+        if self.max_steps is not None and self.current_step > self.max_steps:
             self.quit()
 
     def on_stalled_position(self, position_unitless, position_mL_mark):
@@ -53,6 +55,8 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
         except (IndexError, StopIteration):
             self.quit()
         time.sleep(0.5)
+        if self.current_step % 1000 == 0 and self.current_step > 0:
+            self.print_stats()
         print('Moving to the {:.2f} mark...'.format(next_target), end='')
         self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
         self.current_step += 1
@@ -75,12 +79,15 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
                 for listener in self.pipettor.message_listeners:
                     listener.on_message(message)
 
-    def quit(self):
-        print('Finished the batch sequence!')
-        print()
+    def print_stats(self):
         print('{}/{} steps were stalled, which is an error rate of {:.3f}.'.format(
             self.stalled_steps, self.current_step, self.stalled_steps / self.current_step
         ))
+
+    def quit(self):
+        print('Finished the batch sequence!')
+        print()
+        self.print_stats()
         self.pipettor.running = False
         raise KeyboardInterrupt
 
