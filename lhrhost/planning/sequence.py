@@ -17,13 +17,14 @@ from lhrhost.modules.actuators import (
 from lhrhost.modules.pipettor import Pipettor
 
 class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, MessageReceiver):
-    def __init__(self, pipettor, targets, interactive=False):
+    def __init__(self, pipettor, targets, max_steps=None, interactive=False):
         super().__init__()
         self.pipettor = pipettor
         self.interactive = interactive
         self.targets = targets
         self.current_step = 0
         self.stalled_steps = 0
+        self.max_steps = max_steps
         self.initialized = False
 
     def on_converged_position(self, position_unitless, position_mL_mark):
@@ -33,14 +34,14 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
             next_target = next(self.targets)
             print('{}: Completed step {}. '.format(datetime.datetime.now(), self.current_step),
                   end='')
-        except IndexError:
-            print('Finished the batch sequence!')
-            self.pipettor.running = False
-            return
+        except (IndexError, StopIteration):
+            self.quit()
         time.sleep(0.5)
         print('Moving to the {:.2f} mark...'.format(next_target), end='')
         self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
         self.current_step += 1
+        if self.max_steps and self.current_step > self.max_steps:
+            self.quit()
 
     def on_stalled_position(self, position_unitless, position_mL_mark):
         if not self.initialized:
@@ -49,24 +50,39 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
             next_target = next(self.targets)
             print('{}: Stalled at step {}. '.format(datetime.datetime.now(), self.current_step),
                   end='')
-        except IndexError:
-            print('Finished the batch sequence!')
-            self.pipettor.running = False
-            return
+        except (IndexError, StopIteration):
+            self.quit()
         time.sleep(0.5)
         print('Moving to the {:.2f} mark...'.format(next_target), end='')
         self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
         self.current_step += 1
+        if self.max_steps and self.current_step > self.max_steps:
+            self.quit()
         self.stalled_steps += 1
 
     def on_message(self, message):
-        if not self.initialized and message.channel == 'yrc':
-            self.initialized = True
-            print('Initialized. Press enter twice to continue!', end='')
-            input()
-            message = Message('{}d'.format(self.pipettor.node_prefix), 0)
-            for listener in self.pipettor.message_listeners:
-                listener.on_message(message)
+        if message.channel == 'yrc':
+            if not self.initialized:
+                self.initialized = True
+                message = Message('yt', 720)
+                for listener in self.pipettor.message_listeners:
+                    listener.on_message(message)
+            else:
+                message = Message('zt', 300)
+                for listener in self.pipettor.message_listeners:
+                    listener.on_message(message)
+                message = Message('{}d'.format(self.pipettor.node_prefix), 0)
+                for listener in self.pipettor.message_listeners:
+                    listener.on_message(message)
+
+    def quit(self):
+        print('Finished the batch sequence!')
+        print()
+        print('{}/{} steps were stalled, which is an error rate of {:.3f}.'.format(
+            self.stalled_steps, self.current_step, self.stalled_steps / self.current_step
+        ))
+        self.pipettor.running = False
+        raise KeyboardInterrupt
 
 def main():
     connection = ASCIIConnection()
@@ -74,11 +90,11 @@ def main():
     console = ASCIIConsole(connection)
 
     translator = ASCIITranslator()
-    echoer = MessageEchoer(set(['pt', 'prc', 'zrc', 'yrc', 'prt', 'pd']))
+    echoer = MessageEchoer(set(['pt', 'prc', 'zt', 'zrc', 'yt', 'yrc', 'prt', 'pd']))
     dispatcher = Dispatcher()
     pipettor = Pipettor()
     targeting = BatchTargeting(
-        pipettor, itertools.cycle([pipettor.bottom_mark, pipettor.top_mark])
+        pipettor, itertools.cycle([pipettor.bottom_mark, pipettor.top_mark]), 2000 * 2
     )
 
     monitor.listeners.append(translator)
@@ -94,11 +110,8 @@ def main():
     connection.open()
     monitor.start_thread()
     console.start_input_loop()
+    monitor._thread.join()
     connection.reset()
-    print()
-    print('{}/{} steps were stalled, which is an error rate of {:.3f}.'.format(
-        targeting.stalled_steps, targeting.current_step, targeting.stalled_steps / targeting.current_step
-    ))
 
 
 if __name__ == '__main__':

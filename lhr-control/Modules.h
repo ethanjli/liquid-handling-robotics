@@ -19,9 +19,9 @@ using CumulativeLinearActuator = LinearActuatorModule<LinearPositionControl::Cum
 #define kPipettorParams\
   /* actuatorChannelPrefix */ 'p',\
   /* motorPort, potentiometerPin */ M1, A0,\
-  /* minPosition, maxPosition */ 20, 985,\
+  /* minPosition, maxPosition */ 20, 975,\
   /* minDuty, maxDuty */ -255, 255,\
-  /* pidKp, pidKd, pidKi */ 25, 0.1, 0.1,\
+  /* pidKp, pidKd, pidKi */ 40, 0.6, 0.0,\
   /* pidSampleTime */ 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -180, 180,\
@@ -35,7 +35,7 @@ using CumulativeLinearActuator = LinearActuatorModule<LinearPositionControl::Cum
   /* motorPort, potentiometerPin */ M2, A1,\
   /* minPosition, maxPosition */ 20, 970,\
   /* minDuty, maxDuty */ -255, 255,\
-  /* pidKp, pidKd, pidKi */ 8, 0.2, 0.1,\
+  /* pidKp, pidKd, pidKi */ 8, 0.2, 0.2,\
   /* pidSampleTime */ 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -60, 120,\

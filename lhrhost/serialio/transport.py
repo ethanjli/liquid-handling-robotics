@@ -252,8 +252,8 @@ class ASCIIMonitor(ASCIILineReceiver):
         encountered.
         """
         self._monitoring = True
-        try:
-            while self._monitoring:
+        while self._monitoring:
+            try:
                 line = self._connection.read_line()
                 if self.intercept_logging:
                     if line.startswith('E: '):
@@ -264,9 +264,11 @@ class ASCIIMonitor(ASCIILineReceiver):
                         continue
                 for listener in self.listeners:
                     listener.on_line(line)
-        except (Exception, KeyboardInterrupt):
-            self._monitoring = False
-            raise
+            except KeyboardInterrupt:
+                self._monitoring = False
+            except Exception:
+                self._monitoring = False
+                raise
 
     def stop_reading_lines(self) -> None:
         """Make `start_reading_lines` quit after the current line.
