@@ -23,10 +23,12 @@ const char kPayloadStartDelimiter = '(';
 const char kPayloadEndDelimiter = ')';
 
 void sendMessage(const String &channel, int payload);
+void sendMessage(const char *channel, int payload);
 void sendChannelStart();
 void sendChannelChar(char channelChar);
 void sendChannelEnd();
 void sendChannel(const String &channel);
+void sendChannel(const char *channel);
 void sendPayloadStart();
 void sendPayloadEnd();
 void sendPayload(int payload);

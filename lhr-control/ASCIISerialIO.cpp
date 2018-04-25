@@ -23,16 +23,31 @@ void sendMessage(const String &channel, int payload) {
   sendChannel(channel);
   sendPayload(payload);
 }
+void sendMessage(const char *channel, int payload) {
+  sendChannel(channel);
+  sendPayload(payload);
+}
 void sendChannel(const String &channel) {
   Serial.print(kChannelStartDelimiter);
-  Serial.print(channel);
+  // FIXME: Revert
+  //Serial.print(channel);
+  Serial.print(F("Error"));
+  Serial.print(kChannelEndDelimiter);
+}
+void sendChannel(const char *channel) {
+  Serial.print(kChannelStartDelimiter);
+  // FIXME: use simple implementation if this is unnecessary
+  char *curr = channel;
+  while (curr != nullptr && *curr != '\0') {
+    if (*curr != 0x7f) Serial.print(*curr);
+  }
   Serial.print(kChannelEndDelimiter);
 }
 void sendChannelStart() {
   Serial.print(kChannelStartDelimiter);
 }
 void sendChannelChar(char channelChar) {
-  Serial.print(channelChar);
+  if (channelChar != 0x7f) Serial.print(channelChar); // FIXME: temporary test. Remove if unneeded.
 }
 void sendChannelEnd() {
   Serial.print(kChannelEndDelimiter);
