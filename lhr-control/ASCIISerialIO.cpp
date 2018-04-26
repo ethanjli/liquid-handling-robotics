@@ -40,6 +40,7 @@ void sendChannel(const char *channel) {
   char *curr = channel;
   while (curr != nullptr && *curr != '\0') {
     if (*curr != 0x7f) Serial.print(*curr);
+    ++curr;
   }
   Serial.print(kChannelEndDelimiter);
 }
