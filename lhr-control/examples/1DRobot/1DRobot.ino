@@ -1,6 +1,6 @@
 #include <avr/wdt.h>
 
-//#define DISABLE_LOGGING
+#define DISABLE_LOGGING
 #include <ArduinoLog.h>
 
 #include <ASCIISerialIO.h>
