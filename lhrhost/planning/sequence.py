@@ -40,7 +40,12 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
             self.print_stats()
         time.sleep(0.5)
         print('Moving to the {:.2f} mark...'.format(next_target), end='')
-        self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
+        if next_target == self.pipettor.bottom_mark:
+            message = Message('{}d'.format(self.pipettor.node_prefix), 255)
+            for listener in self.pipettor.message_listeners:
+                listener.on_message(message)
+        else:
+            self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
         self.current_step += 1
         if self.max_steps is not None and self.current_step > self.max_steps:
             self.quit()
@@ -55,7 +60,7 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
         except (IndexError, StopIteration):
             self.quit()
         time.sleep(0.5)
-        if self.current_step % 1000 == 0 and self.current_step > 0:
+        if self.current_step % 500 == 0 and self.current_step > 0:
             self.print_stats()
         print('Moving to the {:.2f} mark...'.format(next_target), end='')
         self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
@@ -69,6 +74,12 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
             if not self.initialized:
                 self.initialized = True
                 message = Message('yt', 720)
+                for listener in self.pipettor.message_listeners:
+                    listener.on_message(message)
+                message = Message('{}kd'.format(self.pipettor.node_prefix), 100)
+                for listener in self.pipettor.message_listeners:
+                    listener.on_message(message)
+                message = Message('{}kp'.format(self.pipettor.node_prefix), 3000)
                 for listener in self.pipettor.message_listeners:
                     listener.on_message(message)
             else:
@@ -101,7 +112,7 @@ def main():
     dispatcher = Dispatcher()
     pipettor = Pipettor()
     targeting = BatchTargeting(
-        pipettor, itertools.cycle([pipettor.bottom_mark, pipettor.top_mark]), 2000 * 2
+        pipettor, itertools.cycle([pipettor.bottom_mark, pipettor.top_mark]), None
     )
 
     monitor.listeners.append(translator)

@@ -7,7 +7,7 @@ namespace LiquidHandlingRobotics {
 void waitForSerialHandshake(char handshakeChar, unsigned long waitDelay) {
   while (!Serial) {;}
   while (Serial.available() < 1) {
-    Serial.print(handshakeChar);
+    Serial.println(handshakeChar);
     delay(waitDelay);
   }
   while (Serial.available() > 0) {
