@@ -1,4 +1,5 @@
 # Local package imports
+from lhrhost.util.interfaces import custom_repr
 from lhrhost.serialio.transport import (
     ASCIIConnection, ASCIIMonitor
 )
@@ -21,7 +22,7 @@ class YPositioner(LinearActuator):
         self.bottom_position = 700  # unitless
         self.bottom_mark = 0  # cm
 
-        self.cuvette_marks = {  # cm
+        self.cuvette_rows = {  # cm
             'G': 0.3,
             'F': 1.8,
             'E': 3.3,
@@ -41,15 +42,26 @@ class YPositioner(LinearActuator):
             'A': 8.1
         }
 
+    def __repr__(self):
+        return 'Y Axis'
+
+    @property
+    def physical_unit(self):
+        return 'cm'
+
+    @custom_repr('set cuvette row')
+    def set_cuvette_position(self, cuvette):
+        self.set_target_mark(self.cuvette_rows[cuvette])
+
+    @custom_repr('set 96-well plate row')
+    def set_well_position(self, well):
+        self.set_target_mark(self.well_rows[well])
+
     # Implement ChannelTreeNode
 
     @property
     def node_prefix(self):
         return 'y'
-
-    @property
-    def physical_unit(self):
-        return 'cm'
 
     # Implement LinearActuator
 

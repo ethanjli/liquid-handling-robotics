@@ -1,146 +1,312 @@
 # Standard imports
-import datetime
-import itertools
 import time
 
 # Local package imports
 from lhrhost.serialio.transport import (
-    ASCIIConnection, ASCIIMonitor, ASCIIConsole
+    ASCIIConnection, ASCIIMonitor
 )
 from lhrhost.serialio.dispatch import (
     Message, Dispatcher,
-    ASCIITranslator, MessageReceiver, MessageEchoer
+    ASCIITranslator, MessageReceiver, MessageEchoer, VersionReceiver
 )
 from lhrhost.modules.actuators import (
     ConvergedPositionReceiver, StalledPositionReceiver
 )
 from lhrhost.modules.pipettor import Pipettor
+from lhrhost.modules.verticalpositioner import VerticalPositioner
+from lhrhost.modules.ypositioner import YPositioner
 
 class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, MessageReceiver):
-    def __init__(self, pipettor, targets, max_steps=None, interactive=False):
-        super().__init__()
+    def __init__(self, pipettor, vertical_positioner, y_positioner,
+                 actions, initialization=[],
+                 interactive=True):
         self.pipettor = pipettor
+        self.vertical_positioner = vertical_positioner
+        self.y_positioner = y_positioner
+        self.actions = actions
+        self.initialization = initialization
+        self.initialization_step = 0
+        self.sequence_step = 0
         self.interactive = interactive
-        self.targets = targets
-        self.current_step = 0
-        self.stalled_steps = 0
-        self.max_steps = max_steps
         self.initialized = False
 
-    def on_converged_position(self, position_unitless, position_mL_mark):
-        if not self.initialized:
-            return
-        try:
-            next_target = next(self.targets)
-            print('{}: Completed step {}. '.format(datetime.datetime.now(), self.current_step),
-                  end='')
-        except (IndexError, StopIteration):
-            self.quit()
-        if self.current_step % 1000 == 0 and self.current_step > 0:
-            self.print_stats()
-        time.sleep(0.5)
-        print('Moving to the {:.2f} mark...'.format(next_target), end='')
-        #if next_target == self.pipettor.bottom_mark:
-        #    message = Message('{}d'.format(self.pipettor.node_prefix), 255)
-        #    for listener in self.pipettor.message_listeners:
-        #        listener.on_message(message)
-        #else:
-        #    self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
-        self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
-        self.current_step += 1
-        if self.max_steps is not None and self.current_step > self.max_steps:
-            self.quit()
+    def on_converged_position(self, actuator, position_unitless, position_mark):
+        self.on_new_position(actuator, position_unitless, position_mark)
 
-    def on_stalled_position(self, position_unitless, position_mL_mark):
-        if not self.initialized:
-            return
-        try:
-            next_target = next(self.targets)
-            print('{}: Stalled at step {}. '.format(datetime.datetime.now(), self.current_step),
-                  end='')
-        except (IndexError, StopIteration):
-            self.quit()
-        time.sleep(0.5)
-        if self.current_step % 500 == 0 and self.current_step > 0:
-            self.print_stats()
-        print('Moving to the {:.2f} mark...'.format(next_target), end='')
-        #if next_target == self.pipettor.bottom_mark:
-        #    message = Message('{}d'.format(self.pipettor.node_prefix), 255)
-        #    for listener in self.pipettor.message_listeners:
-        #        listener.on_message(message)
-        #else:
-        #    self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
-        self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
-        self.current_step += 1
-        if self.max_steps and self.current_step > self.max_steps:
-            self.quit()
-        self.stalled_steps += 1
+    def on_stalled_position(self, actuator, position_unitless, position_mark):
+        self.on_new_position(actuator, position_unitless, position_mark)
 
     def on_message(self, message):
-        #if message.channel == 'yrc':
-        if message.channel == 'zrc':
-            if not self.initialized:
-                self.initialized = True
-                #message = Message('yt', 720)
-                #for listener in self.pipettor.message_listeners:
-                #    listener.on_message(message)
-                message = Message('{}kd'.format(self.pipettor.node_prefix), 100)
-                for listener in self.pipettor.message_listeners:
-                    listener.on_message(message)
-                message = Message('{}kp'.format(self.pipettor.node_prefix), 3000)
-                for listener in self.pipettor.message_listeners:
-                    listener.on_message(message)
-                message = Message('{}lph'.format(self.pipettor.node_prefix), 980)
-                for listener in self.pipettor.message_listeners:
-                    listener.on_message(message)
-            #else:
-                #message = Message('zt', 300)
-                #for listener in self.pipettor.message_listeners:
-                #    listener.on_message(message)
-                message = Message('{}d'.format(self.pipettor.node_prefix), 0)
-                for listener in self.pipettor.message_listeners:
-                    listener.on_message(message)
+        if self.modules_initialized and not self.initialized:
+            self.advance_initialization()
 
-    def print_stats(self):
-        print('{}/{} steps were stalled, which is an error rate of {:.3f}.'.format(
-            self.stalled_steps, self.current_step, self.stalled_steps / self.current_step
+    @property
+    def modules_initialized(self):
+        return (
+            self.pipettor.initialized and
+            self.vertical_positioner.initialized and
+            self.y_positioner.initialized
+        )
+
+    def on_new_position(self, actuator, position_unitless, position_mark):
+        if self.initialized:
+            self.advance_sequence()
+
+    def advance_initialization(self):
+        try:
+            (action, parameter) = self.initialization[self.initialization_step]
+        except (IndexError, StopIteration):
+            self.initialized = True
+            print('Completed robot initialization! Starting action sequence...')
+            self.advance_sequence()
+            return
+        print('Performing the next initialization step ({}, {})...'.format(
+            action, parameter
         ))
+        self.initialization_step += 1
+        action(parameter)
+
+    def advance_sequence(self):
+        try:
+            (next_action, next_parameter) = self.actions[self.sequence_step]
+        except (IndexError, StopIteration):
+            self.quit()
+            return
+        print()
+        if next_action is None:
+            input('{}\n[{}] Press enter to continue: '.format(
+                next_parameter, self.sequence_step
+            ))
+            self.sequence_step += 1
+            self.advance_sequence()
+        elif self.interactive:
+            input('[{}] Press enter to perform the next action ({}, {}): '.format(
+                self.sequence_step, next_action, next_parameter
+            ))
+            self.sequence_step += 1
+            next_action(next_parameter)
+        else:
+            print('[{}] Performing the next action ({}, {})...'.format(
+                self.sequence_step, next_action, next_parameter
+            ))
+            self.sequence_step += 1
+            next_action(next_parameter)
 
     def quit(self):
         print('Finished the batch sequence!')
         print()
-        self.print_stats()
         self.pipettor.running = False
+        self.vertical_positioner.running = False
+        self.y_positioner.running = False
         raise KeyboardInterrupt
 
 def main():
     connection = ASCIIConnection()
     monitor = ASCIIMonitor(connection)
-    console = ASCIIConsole(connection)
 
     translator = ASCIITranslator()
-    echoer = MessageEchoer(set(['pt', 'prc', 'zt', 'zrc', 'yt', 'yrc', 'prt', 'pd']))
+    echoer = MessageEchoer(set([
+        'v0', 'v1', 'v2',
+        'pt', 'prc', 'prt', 'pd',
+        'zt', 'zrc', 'zrt', 'zd',
+        'yt', 'yrc', 'yrt', 'yd'
+    ]))
+    version_receiver = VersionReceiver()
     dispatcher = Dispatcher()
     pipettor = Pipettor()
+    vertical_positioner = VerticalPositioner()
+    y_positioner = YPositioner()
+    initialization = [
+        (pipettor.set_pid_k_p, 30),
+        (pipettor.set_pid_k_d, 1)
+    ]
+    sequence = [
+        (None, 'Ready to begin.'),
+
+        (pipettor.set_target_mark, 0),
+
+        # Fill wells H,G,F,E with 0.2 mL water each using water in cuvette G
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the cuvette column.'),
+
+        (y_positioner.set_cuvette_position, 'G'),
+        (vertical_positioner.set_cuvette_position, 'mid'),
+        (pipettor.set_target_mark, 0.8),
+
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the plate column 1.'),
+
+        (y_positioner.set_well_position, 'H'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_target_mark, 0.6),
+        (vertical_positioner.set_well_position, 'above'),
+
+        (y_positioner.set_well_position, 'G'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_target_mark, 0.4),
+        (vertical_positioner.set_well_position, 'above'),
+
+        (y_positioner.set_well_position, 'F'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_target_mark, 0.2),
+        (vertical_positioner.set_well_position, 'above'),
+
+        (y_positioner.set_well_position, 'E'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_target_mark, 0.0),
+        (vertical_positioner.set_well_position, 'above'),
+
+        # Fill wells D,C,B,A with 0.2 mL water each using water in cuvette G
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the cuvette column.'),
+
+        (y_positioner.set_cuvette_position, 'G'),
+        (vertical_positioner.set_cuvette_position, 'mid'),
+        (pipettor.set_target_mark, 0.8),
+
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the plate column 1.'),
+
+        (y_positioner.set_well_position, 'D'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_target_mark, 0.6),
+        (vertical_positioner.set_well_position, 'above'),
+
+        (y_positioner.set_well_position, 'C'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_target_mark, 0.4),
+        (vertical_positioner.set_well_position, 'above'),
+
+        (y_positioner.set_well_position, 'B'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_target_mark, 0.2),
+        (vertical_positioner.set_well_position, 'above'),
+
+        (y_positioner.set_well_position, 'A'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_target_mark, 0.0),
+        (vertical_positioner.set_well_position, 'above'),
+
+        # Prepare for serial dilution using blue-colored water in cuvette F
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the cuvette column.'),
+
+        (y_positioner.set_cuvette_position, 'F'),
+        (vertical_positioner.set_cuvette_position, 'mid'),
+        (pipettor.set_target_mark, 0.2),
+
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the plate column 1.'),
+
+        # Dilute well H
+        (y_positioner.set_well_position, 'H'),
+        (vertical_positioner.set_well_position, 'low'),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (vertical_positioner.set_well_position, 'above'),
+
+        # Dilute well G
+        (y_positioner.set_well_position, 'G'),
+        (vertical_positioner.set_well_position, 'low'),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (vertical_positioner.set_well_position, 'above'),
+
+        # Dilute well F
+        (y_positioner.set_well_position, 'F'),
+        (vertical_positioner.set_well_position, 'low'),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (vertical_positioner.set_well_position, 'above'),
+
+        # Dilute well E
+        (y_positioner.set_well_position, 'E'),
+        (vertical_positioner.set_well_position, 'low'),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (vertical_positioner.set_well_position, 'above'),
+
+        # Dilute well D
+        (y_positioner.set_well_position, 'D'),
+        (vertical_positioner.set_well_position, 'low'),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (vertical_positioner.set_well_position, 'above'),
+
+        # Dilute well C
+        (y_positioner.set_well_position, 'C'),
+        (vertical_positioner.set_well_position, 'low'),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (vertical_positioner.set_well_position, 'above'),
+
+        # Dilute well B
+        (y_positioner.set_well_position, 'B'),
+        (vertical_positioner.set_well_position, 'low'),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (vertical_positioner.set_well_position, 'above'),
+
+        # Dilute well A
+        (y_positioner.set_well_position, 'A'),
+        (vertical_positioner.set_well_position, 'low'),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (pipettor.set_target_mark, 0.2),
+        (pipettor.set_target_mark, 0.0),
+        (vertical_positioner.set_well_position, 'above'),
+
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+    ]
     targeting = BatchTargeting(
-        pipettor, itertools.cycle([pipettor.bottom_mark, pipettor.top_mark]), None
+        pipettor, vertical_positioner, y_positioner, sequence, initialization,
+        interactive=False
     )
 
     monitor.listeners.append(translator)
-    translator.message_listeners.append(echoer)
     translator.message_listeners.append(dispatcher)
     translator.line_listeners.append(monitor)
-    dispatcher.receivers[None].append(pipettor)
-    #dispatcher.receivers['yrc'].append(targeting)
-    dispatcher.receivers['zrc'].append(targeting)
-    pipettor.converged_position_listeners.append(targeting)
-    pipettor.stalled_position_listeners.append(targeting)
-    pipettor.message_listeners.append(translator)
+    for version_channel in ['v0', 'v1', 'v2']:
+        dispatcher.receivers[version_channel].append(version_receiver)
+    dispatcher.receivers[None].append(echoer)
+    for actuator in [pipettor, vertical_positioner, y_positioner]:
+        dispatcher.receivers[None].append(actuator)
+        actuator.converged_position_listeners.append(targeting)
+        actuator.stalled_position_listeners.append(targeting)
+        actuator.message_listeners.append(translator)
+    dispatcher.receivers[None].append(targeting)
 
     connection.open()
-    monitor.start_thread()
-    console.start_input_loop()
-    monitor._thread.join()
+    monitor.start_reading_lines()
     connection.reset()
 
 

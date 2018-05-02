@@ -1,4 +1,5 @@
 # Local package imports
+from lhrhost.util.interfaces import custom_repr
 from lhrhost.serialio.transport import (
     ASCIIConnection, ASCIIMonitor
 )
@@ -21,26 +22,40 @@ class VerticalPositioner(LinearActuator):
         self.bottom_position = 20  # unitless
         self.bottom_mark = 0  # cm
 
-        self.well_above_mark = 1.3  # cm
-        self.well_in_high_mark = 0.75  # cm
-        self.well_in_low_mark = 0.4  # cm
-        self.well_bottom_mark = 0.1  # cm
+        self.well_marks = {  # cm
+            'above': 1.3,
+            'high': 0.75,
+            'low': 0.4,
+            'bottom': 0.1
+        }
+        self.cuvette_marks = {  # cm
+            'above': 4.5,
+            'high': 3.5,
+            'mid': 2,
+            'low': 0.5,
+            'bottom': 0.05
+        }
 
-        self.cuvette_above_mark = 4.5  # cm
-        self.cuvette_in_high_mark = 3.5  # cm
-        self.cuvette_in_mid_mark = 2  # cm
-        self.cuvette_in_low_mark = 0.5  # cm
-        self.cuvette_bottom_mark = 0.05  # cm
+    def __repr__(self):
+        return 'Z Axis'
+
+    @property
+    def physical_unit(self):
+        return 'cm'
+
+    @custom_repr('set cuvette-relative height')
+    def set_cuvette_position(self, cuvette):
+        self.set_target_mark(self.cuvette_marks[cuvette])
+
+    @custom_repr('set well-relative height')
+    def set_well_position(self, well):
+        self.set_target_mark(self.well_marks[well])
 
     # Implement ChannelTreeNode
 
     @property
     def node_prefix(self):
         return 'z'
-
-    @property
-    def physical_unit(self):
-        return 'cm'
 
     # Implement LinearActuator
 

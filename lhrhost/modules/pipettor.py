@@ -27,15 +27,18 @@ class Pipettor(LinearActuator):
         self.bottom_position = 975  # unitless
         self.bottom_mark = 0.0  # mL mark
 
+    def __repr__(self):
+        return 'Pipettor Axis'
+
+    @property
+    def physical_unit(self):
+        return 'mL mark'
+
     # Implement ChannelTreeNode
 
     @property
     def node_prefix(self):
         return 'p'
-
-    @property
-    def physical_unit(self):
-        return 'mL mark'
 
     # Implement LinearActuator
 
