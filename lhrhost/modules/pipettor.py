@@ -22,8 +22,8 @@ class Pipettor(AbsoluteLinearActuator):
         # self.top_mark = 0.34  # mL mark
         # self.top_position = 800  # unitless
         # self.top_mark = 0.14  # mL mark
-        self.top_position = 850  # unitless
-        self.top_mark = 0.10  # mL mark
+        self.top_position = 910  # unitless
+        self.top_mark = 0.05  # mL mark
         self.bottom_position = 975  # unitless
         self.bottom_mark = 0.0  # mL mark
 

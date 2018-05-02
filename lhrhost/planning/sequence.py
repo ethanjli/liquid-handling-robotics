@@ -40,12 +40,13 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
             self.print_stats()
         time.sleep(0.5)
         print('Moving to the {:.2f} mark...'.format(next_target), end='')
-        if next_target == self.pipettor.bottom_mark:
-            message = Message('{}d'.format(self.pipettor.node_prefix), 255)
-            for listener in self.pipettor.message_listeners:
-                listener.on_message(message)
-        else:
-            self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
+        #if next_target == self.pipettor.bottom_mark:
+        #    message = Message('{}d'.format(self.pipettor.node_prefix), 255)
+        #    for listener in self.pipettor.message_listeners:
+        #        listener.on_message(message)
+        #else:
+        #    self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
+        self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
         self.current_step += 1
         if self.max_steps is not None and self.current_step > self.max_steps:
             self.quit()
@@ -63,6 +64,12 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
         if self.current_step % 500 == 0 and self.current_step > 0:
             self.print_stats()
         print('Moving to the {:.2f} mark...'.format(next_target), end='')
+        #if next_target == self.pipettor.bottom_mark:
+        #    message = Message('{}d'.format(self.pipettor.node_prefix), 255)
+        #    for listener in self.pipettor.message_listeners:
+        #        listener.on_message(message)
+        #else:
+        #    self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
         self.pipettor.set_target_position(next_target, units=self.pipettor.physical_unit)
         self.current_step += 1
         if self.max_steps and self.current_step > self.max_steps:
@@ -70,22 +77,26 @@ class BatchTargeting(ConvergedPositionReceiver, StalledPositionReceiver, Message
         self.stalled_steps += 1
 
     def on_message(self, message):
-        if message.channel == 'yrc':
+        #if message.channel == 'yrc':
+        if message.channel == 'zrc':
             if not self.initialized:
                 self.initialized = True
-                message = Message('yt', 720)
-                for listener in self.pipettor.message_listeners:
-                    listener.on_message(message)
+                #message = Message('yt', 720)
+                #for listener in self.pipettor.message_listeners:
+                #    listener.on_message(message)
                 message = Message('{}kd'.format(self.pipettor.node_prefix), 100)
                 for listener in self.pipettor.message_listeners:
                     listener.on_message(message)
                 message = Message('{}kp'.format(self.pipettor.node_prefix), 3000)
                 for listener in self.pipettor.message_listeners:
                     listener.on_message(message)
-            else:
-                message = Message('zt', 300)
+                message = Message('{}lph'.format(self.pipettor.node_prefix), 980)
                 for listener in self.pipettor.message_listeners:
                     listener.on_message(message)
+            #else:
+                #message = Message('zt', 300)
+                #for listener in self.pipettor.message_listeners:
+                #    listener.on_message(message)
                 message = Message('{}d'.format(self.pipettor.node_prefix), 0)
                 for listener in self.pipettor.message_listeners:
                     listener.on_message(message)
@@ -120,7 +131,8 @@ def main():
     translator.message_listeners.append(dispatcher)
     translator.line_listeners.append(monitor)
     dispatcher.receivers[None].append(pipettor)
-    dispatcher.receivers['yrc'].append(targeting)
+    #dispatcher.receivers['yrc'].append(targeting)
+    dispatcher.receivers['zrc'].append(targeting)
     pipettor.converged_position_listeners.append(targeting)
     pipettor.stalled_position_listeners.append(targeting)
     pipettor.message_listeners.append(translator)
