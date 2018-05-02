@@ -8,12 +8,12 @@
 namespace LiquidHandlingRobotics {
 
 const uint16_t kVersion[] PROGMEM = {
-  0, // Patch
+  0, // Major
   1, // Minor
-  0  // Major
+  0  // Patch
 };
 
-void waitForSerialHandshake(char handshakeChar = '~', unsigned long waitDelay = 200);
+void waitForSerialHandshake(char handshakeChar = '~', unsigned long waitDelay = 500);
 
 // Message RX/TX
 
