@@ -154,9 +154,9 @@ class ASCIIConnection(Connection):
 
     def _wait_for_handshake(self) -> None:
         while True:
-            char = self.ser.read().decode('utf-8')
+            char = self.read_line()
             if char == self.handshake_rx_char:
-                self.write_line(self.handshake_tx_char, end='')
+                self.write_line(self.handshake_tx_char)
                 print('Completed handshake!')
                 return
             time.sleep(self.handshake_poll_interval / 1000)
@@ -207,6 +207,11 @@ class ASCIILineReceiver(object, metaclass=InterfaceClass):
         """
         pass
 
+    def on_connection_reset(self) -> None:
+        """Event handler for a reset of the serial connection.
+        """
+        pass
+
 class ASCIIMonitor(ASCIILineReceiver):
     """Monitors an :class:`ASCIIConnection` for new lines in RX.
 
@@ -227,8 +232,7 @@ class ASCIIMonitor(ASCIILineReceiver):
         intercept_logging (bool): whether to intercept logging messages and
             display them instead of passing them to listeners.
     """
-    def __init__(self, connection: ASCIIConnection,
-                 intercept_logging: bool=True):
+    def __init__(self, connection: ASCIIConnection, intercept_logging: bool=True):
         self._connection = connection
         self.intercept_logging = intercept_logging
 
@@ -262,8 +266,14 @@ class ASCIIMonitor(ASCIILineReceiver):
                     elif line.startswith('W: '):
                         print('Warning: {}'.format(line[3:]))
                         continue
-                for listener in self.listeners:
-                    listener.on_line(line)
+                if line == self._connection.handshake_rx_char:
+                    self._connection.write_line(self._connection.handshake_tx_char)
+                    print('Connection was reset! Re-initiating serial handshake...')
+                    for listener in self.listeners:
+                        listener.on_connection_reset()
+                else:
+                    for listener in self.listeners:
+                        listener.on_line(line)
             except KeyboardInterrupt:
                 self._monitoring = False
             except Exception:
