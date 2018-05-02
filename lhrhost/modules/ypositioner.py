@@ -11,31 +11,45 @@ from lhrhost.modules.actuators import (
 )
 from lhrhost.util.math import map_value
 
-class Pipettor(LinearActuator):
+class YPositioner(LinearActuator):
     def __init__(self):
         super().__init__()
         self.running = False
 
-        self.top_position = 25  # unitless
-        self.top_mark = 0.90  # mL mark
-        # self.top_position = 600  # unitless
-        # self.top_mark = 0.34  # mL mark
-        # self.top_position = 800  # unitless
-        # self.top_mark = 0.14  # mL mark
-        # self.top_position = 910  # unitless
-        # self.top_mark = 0.05  # mL mark
-        self.bottom_position = 975  # unitless
-        self.bottom_mark = 0.0  # mL mark
+        self.top_position = 0  # unitless
+        self.top_mark = 9.7  # cm
+        self.bottom_position = 700  # unitless
+        self.bottom_mark = 0  # cm
+
+        self.cuvette_marks = {  # cm
+            'G': 0.3,
+            'F': 1.8,
+            'E': 3.3,
+            'D': 4.8,
+            'C': 6.4,
+            'B': 7.9,
+            'A': 9.4
+        }
+        self.well_rows = {  # cm
+            'H': 1.75,
+            'G': 2.75,
+            'F': 3.6,
+            'E': 4.5,
+            'D': 5.4,
+            'C': 6.3,
+            'B': 7.2,
+            'A': 8.1
+        }
 
     # Implement ChannelTreeNode
 
     @property
     def node_prefix(self):
-        return 'p'
+        return 'y'
 
     @property
     def physical_unit(self):
-        return 'mL mark'
+        return 'cm'
 
     # Implement LinearActuator
 
@@ -52,16 +66,16 @@ class Pipettor(LinearActuator):
         ))
 
 class InteractiveTargeting(ConvergedPositionReceiver):
-    def __init__(self, pipettor):
-        self.pipettor = pipettor
+    def __init__(self, y_positioner):
+        self.y_positioner = y_positioner
 
     def parse_input(self, user_input):
-        if user_input.lower().endswith('ml'):
+        if user_input.lower().endswith(self.y_positioner.physical_unit):
             user_input = user_input[:-2]
         user_input = user_input.strip()
         user_input = float(user_input)
-        if (user_input < self.pipettor.bottom_mark or
-                user_input > self.pipettor.top_mark):
+        if (user_input < self.y_positioner.bottom_mark or
+                user_input > self.y_positioner.top_mark):
             raise ValueError
         return user_input
 
@@ -78,11 +92,13 @@ class InteractiveTargeting(ConvergedPositionReceiver):
         while need_input:
             try:
                 user_input = input(
-                    ('Please specify the next pipettor position to go to '
+                    ('Please specify the next y positioner position to go to '
                      'between {} {} and {} {}: ')
                     .format(
-                        self.pipettor.bottom_mark, self.pipettor.physical_unit,
-                        self.pipettor.top_mark, self.pipettor.physical_unit
+                        self.y_positioner.bottom_mark,
+                        self.y_positioner.physical_unit,
+                        self.y_positioner.top_mark,
+                        self.y_positioner.physical_unit
                     )
                 )
                 user_input = self.parse_input(user_input)
@@ -91,25 +107,27 @@ class InteractiveTargeting(ConvergedPositionReceiver):
                 print('Invalid input: {}'.format(user_input))
                 pass
             except EOFError:
-                self.pipettor.running = False
+                self.y_positioner.running = False
                 return
-        self.pipettor.set_target_position(user_input, units=self.pipettor.physical_unit)
+        self.y_positioner.set_target_position(
+            user_input, units=self.y_positioner.physical_unit
+        )
 
 def main():
     connection = ASCIIConnection()
     monitor = ASCIIMonitor(connection)
     translator = ASCIITranslator()
     dispatcher = Dispatcher()
-    pipettor = Pipettor()
-    targeting = InteractiveTargeting(pipettor)
+    y_positioner = YPositioner()
+    targeting = InteractiveTargeting(y_positioner)
 
     monitor.listeners.append(translator)
     translator.message_listeners.append(dispatcher)
     translator.line_listeners.append(monitor)
-    dispatcher.receivers[None].append(pipettor)
-    pipettor.converged_position_listeners.append(targeting)
-    pipettor.stalled_position_listeners.append(targeting)
-    pipettor.message_listeners.append(translator)
+    dispatcher.receivers[None].append(y_positioner)
+    y_positioner.converged_position_listeners.append(targeting)
+    y_positioner.stalled_position_listeners.append(targeting)
+    y_positioner.message_listeners.append(translator)
 
     connection.open()
     monitor.start_reading_lines()

@@ -16,7 +16,7 @@ class StalledPositionReceiver(object, metaclass=InterfaceClass):
     def on_stalled_position(self):
         pass
 
-class AbsoluteLinearActuator(ChannelTreeNode):
+class LinearActuator(ChannelTreeNode):
     def __init__(self):
         self.converged_position_listeners = []
         self.stalled_position_listeners = []

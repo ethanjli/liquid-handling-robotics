@@ -1,7 +1,3 @@
-# Standard imports
-import time
-import argparse
-
 # Local package imports
 from lhrhost.serialio.transport import (
     ASCIIConnection, ASCIIMonitor
@@ -11,21 +7,30 @@ from lhrhost.serialio.dispatch import (
     ASCIITranslator
 )
 from lhrhost.modules.actuators import (
-    AbsoluteLinearActuator, ConvergedPositionReceiver
+    LinearActuator, ConvergedPositionReceiver
 )
 from lhrhost.util.math import map_value
 
-class VerticalPositioner(AbsoluteLinearActuator):
+class VerticalPositioner(LinearActuator):
     def __init__(self):
         super().__init__()
         self.running = False
 
-        self.top_position = 999  # unitless
-        self.top_mark = 5.4  # cm
-        self.top_limit = 4 # cm
-        self.bottom_position = 15  # unitless
+        self.top_position = 970  # unitless
+        self.top_mark = 5.2  # cm
+        self.bottom_position = 20  # unitless
         self.bottom_mark = 0  # cm
-        self.bottom_limit = 2.8 # cm
+
+        self.well_above_mark = 1.3  # cm
+        self.well_in_high_mark = 0.75  # cm
+        self.well_in_low_mark = 0.4  # cm
+        self.well_bottom_mark = 0.1  # cm
+
+        self.cuvette_above_mark = 4.5  # cm
+        self.cuvette_in_high_mark = 3.5  # cm
+        self.cuvette_in_mid_mark = 2  # cm
+        self.cuvette_in_low_mark = 0.5  # cm
+        self.cuvette_bottom_mark = 0.05  # cm
 
     # Implement ChannelTreeNode
 
@@ -37,7 +42,7 @@ class VerticalPositioner(AbsoluteLinearActuator):
     def physical_unit(self):
         return 'cm'
 
-    # Implement AbsoluteLinearActuator
+    # Implement LinearActuator
 
     def to_unit_position(self, unitless_position):
         return map_value(
@@ -56,7 +61,7 @@ class InteractiveTargeting(ConvergedPositionReceiver):
         self.vertical_positioner = vertical_positioner
 
     def parse_input(self, user_input):
-        if user_input.lower().endswith('cm'):
+        if user_input.lower().endswith(self.vertical_positioner.physical_unit):
             user_input = user_input[:-2]
         user_input = user_input.strip()
         user_input = float(user_input)
@@ -68,11 +73,18 @@ class InteractiveTargeting(ConvergedPositionReceiver):
     # Implement ConvergedPositionReceiver
 
     def on_converged_position(self, position_unitless, position_physical):
+        self.get_next_position()
+
+    def on_stalled_position(self, position_unitless, position_physical):
+        self.get_next_position()
+
+    def get_next_position(self):
         need_input = True
         while need_input:
             try:
                 user_input = input(
-                    'Please specify the next vertical positioner position to go to between {} {} and {} {}: '
+                    ('Please specify the next vertical positioner position to go to '
+                     'between {} {} and {} {}: ')
                     .format(
                         self.vertical_positioner.bottom_mark,
                         self.vertical_positioner.physical_unit,
@@ -105,6 +117,7 @@ def main():
     translator.line_listeners.append(monitor)
     dispatcher.receivers[None].append(vertical_positioner)
     vertical_positioner.converged_position_listeners.append(targeting)
+    vertical_positioner.stalled_position_listeners.append(targeting)
     vertical_positioner.message_listeners.append(translator)
 
     connection.open()

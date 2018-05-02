@@ -49,12 +49,12 @@ using CumulativeLinearActuator = LinearActuatorModule<LinearPositionControl::Cum
   /* motorPort, angleSensorId */ M3, 0,\
   /* minPosition, maxPosition */ 0, 700,\
   /* minDuty, maxDuty */ -200, 200,\
-  /* pidKp, pidKd, pidKi */ 10, 0.1, 0.1,\
+  /* pidKp, pidKd, pidKi */ 10, 0, 0,\
   /* pidSampleTime */ 10,\
   /* feedforward */ 0,\
-  /* brakeLowerThreshold, brakeUpperThreshold */ -80, 80,\
+  /* brakeLowerThreshold, brakeUpperThreshold */ -70, 70,\
   /* swapMotorPolarity */ false,\
-  /* convergenceDelay */ 100,\
+  /* convergenceDelay */ 150,\
   /* stallTimeout, stallSmootherSnapMultiplier, stallSmootherMax */ 200, 0.01, 800,\
   /* stallSmootherEnableSleep, stallSmootherActivityThreshold */ true, 2.0
 
