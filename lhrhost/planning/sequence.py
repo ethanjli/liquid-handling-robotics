@@ -117,9 +117,12 @@ def main():
     vertical_positioner = VerticalPositioner()
     y_positioner = YPositioner()
 
+    pipettor.top_position = 77  # lhr2
+    pipettor.bottom_position = 1020  # lhr2
     initialization = [
         (pipettor.set_pid_k_p, 30),
-        (pipettor.set_pid_k_d, 1)
+        (pipettor.set_pid_k_d, 1),
+        (pipettor.set_limit_position_high, pipettor.bottom_position),  # lhr2
     ]
     """
     initialization = [
@@ -172,7 +175,7 @@ def main():
         (None, 'Please move the sample stage to the cuvette column.'),
 
         (y_positioner.set_cuvette_position, 'G'),
-        (vertical_positioner.set_cuvette_position, 'mid'),
+        (vertical_positioner.set_cuvette_position, 'low'),
         (pipettor.set_target_mark, 0.8),
 
         (vertical_positioner.set_target_mark, vertical_positioner.top_mark),

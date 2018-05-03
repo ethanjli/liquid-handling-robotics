@@ -60,7 +60,7 @@ void loop() {
       // Make the z-axis move up so the syringe doesn't hit anything during y-axis initialization
       verticalPositioner.actuator.pid.setSetpoint(verticalPositioner.actuator.pid.getMaxInput());
       verticalPositioner.actuator.unfreeze();
-    } else if (verticalPositioner.converged() || verticalPositioner.stalled()) {
+    } else if (verticalPositioner.converged() || verticalPositioner.stalled() || verticalPositioner.stopped()) {
       verticalPositioner.actuator.freeze();
       yPositionerCalibrator.update();
     }
