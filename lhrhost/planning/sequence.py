@@ -105,21 +105,32 @@ def main():
     monitor = ASCIIMonitor(connection)
 
     translator = ASCIITranslator()
-    echoer = MessageEchoer(set([
+    echoer = MessageEchoer({
         'v0', 'v1', 'v2',
         'pt', 'prc', 'prt', 'pd',
         'zt', 'zrc', 'zrt', 'zd',
         'yt', 'yrc', 'yrt', 'yd'
-    ]))
+    })
     version_receiver = VersionReceiver()
     dispatcher = Dispatcher()
     pipettor = Pipettor()
     vertical_positioner = VerticalPositioner()
     y_positioner = YPositioner()
+
     initialization = [
         (pipettor.set_pid_k_p, 30),
         (pipettor.set_pid_k_d, 1)
     ]
+    """
+    initialization = [
+        (pipettor.set_pid_k_p, 50),
+        (pipettor.set_pid_k_d, 0.5),
+        (pipettor.set_limit_duty_reverse, -160),
+        (pipettor.set_limit_duty_forward, 160),
+        (pipettor.set_threshold_brake_forward, 150),
+        (pipettor.set_threshold_brake_reverse, -150),
+    ]
+    """
     sequence = [
         (None, 'Ready to begin.'),
 
@@ -287,6 +298,135 @@ def main():
 
         (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
     ]
+    """
+    sequence = [
+        (None, 'Ready to begin.'),
+
+        (pipettor.set_target_mark, 0),
+
+        # Acquire blue food coloring from cuvette F
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the cuvette column.'),
+        (y_positioner.set_cuvette_position, 'F'),
+        (pipettor.set_target_mark, 0.02),
+        (vertical_positioner.set_cuvette_position, 'mid'),
+        (pipettor.set_target_mark, 0.04),
+
+        # Dispense droplet to plate position H
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the plate column 1.'),
+        (y_positioner.set_well_position, 'H'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_direct_duty, 255),
+
+        # Acquire blue food coloring from cuvette F
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the cuvette column.'),
+        (y_positioner.set_cuvette_position, 'F'),
+        (pipettor.set_target_mark, 0.02),
+        (vertical_positioner.set_cuvette_position, 'mid'),
+        (pipettor.set_target_mark, 0.04),
+
+        # Dispense droplet to plate position G
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the plate column 1.'),
+        (y_positioner.set_well_position, 'G'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_direct_duty, 255),
+
+        # Acquire blue food coloring from cuvette F
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the cuvette column.'),
+        (y_positioner.set_cuvette_position, 'F'),
+        (pipettor.set_target_mark, 0.02),
+        (vertical_positioner.set_cuvette_position, 'mid'),
+        (pipettor.set_target_mark, 0.04),
+
+        # Dispense droplet to plate position F
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the plate column 1.'),
+        (y_positioner.set_well_position, 'F'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_direct_duty, 255),
+
+        # Acquire blue food coloring from cuvette F
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the cuvette column.'),
+        (y_positioner.set_cuvette_position, 'F'),
+        (pipettor.set_target_mark, 0.02),
+        (vertical_positioner.set_cuvette_position, 'mid'),
+        (pipettor.set_target_mark, 0.04),
+
+        # Dispense droplet to plate position E
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the plate column 1.'),
+        (y_positioner.set_well_position, 'E'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_direct_duty, 255),
+
+        # Acquire blue food coloring from cuvette F
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the cuvette column.'),
+        (y_positioner.set_cuvette_position, 'F'),
+        (pipettor.set_target_mark, 0.02),
+        (vertical_positioner.set_cuvette_position, 'mid'),
+        (pipettor.set_target_mark, 0.04),
+
+        # Dispense droplet to plate position D
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the plate column 1.'),
+        (y_positioner.set_well_position, 'D'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_direct_duty, 255),
+
+        # Acquire blue food coloring from cuvette F
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the cuvette column.'),
+        (y_positioner.set_cuvette_position, 'F'),
+        (pipettor.set_target_mark, 0.02),
+        (vertical_positioner.set_cuvette_position, 'mid'),
+        (pipettor.set_target_mark, 0.04),
+
+        # Dispense droplet to plate position C
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the plate column 1.'),
+        (y_positioner.set_well_position, 'C'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_direct_duty, 255),
+
+        # Acquire blue food coloring from cuvette F
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the cuvette column.'),
+        (y_positioner.set_cuvette_position, 'F'),
+        (pipettor.set_target_mark, 0.02),
+        (vertical_positioner.set_cuvette_position, 'mid'),
+        (pipettor.set_target_mark, 0.04),
+
+        # Dispense droplet to plate position B
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the plate column 1.'),
+        (y_positioner.set_well_position, 'B'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_direct_duty, 255),
+
+        # Acquire blue food coloring from cuvette F
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the cuvette column.'),
+        (y_positioner.set_cuvette_position, 'F'),
+        (pipettor.set_target_mark, 0.02),
+        (vertical_positioner.set_cuvette_position, 'mid'),
+        (pipettor.set_target_mark, 0.04),
+
+        # Dispense droplet to plate position A
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+        (None, 'Please move the sample stage to the plate column 1.'),
+        (y_positioner.set_well_position, 'A'),
+        (vertical_positioner.set_well_position, 'high'),
+        (pipettor.set_direct_duty, 255),
+
+        (vertical_positioner.set_target_mark, vertical_positioner.top_mark),
+    ]
+    """
     targeting = BatchTargeting(
         pipettor, vertical_positioner, y_positioner, sequence, initialization,
         interactive=False

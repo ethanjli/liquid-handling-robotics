@@ -9,7 +9,7 @@ from lhrhost.serialio.transport import (
 )
 from lhrhost.serialio.dispatch import (
     Message, Dispatcher,
-    ASCIITranslator, MessageReceiver, MessageEchoer
+    ASCIITranslator, MessageReceiver, MessageEchoer, VersionReceiver
 )
 from lhrhost.modules.actuators import (
     ConvergedPositionReceiver, StalledPositionReceiver
@@ -111,7 +111,13 @@ def main():
     console = ASCIIConsole(connection)
 
     translator = ASCIITranslator()
-    echoer = MessageEchoer(set(['pt', 'prc', 'zt', 'zrc', 'yt', 'yrc', 'prt', 'pd']))
+    echoer = MessageEchoer({
+        'v0', 'v1', 'v2',
+        'pt', 'prc', 'prt', 'pd',
+        'zt', 'zrc', 'zrt', 'zd',
+        'yt', 'yrc', 'yrt', 'yd'
+    })
+    version_receiver = VersionReceiver()
     dispatcher = Dispatcher()
     pipettor = Pipettor()
     targeting = BatchTargeting(
@@ -121,8 +127,10 @@ def main():
     monitor.listeners.append(translator)
     translator.message_listeners.append(dispatcher)
     translator.line_listeners.append(monitor)
-    dispatcher.receivers[None].append(pipettor)
+    for version_channel in ['v0', 'v1', 'v2']:
+        dispatcher.receivers[version_channel].append(version_receiver)
     dispatcher.receivers[None].append(echoer)
+    dispatcher.receivers[None].append(pipettor)
     #dispatcher.receivers['yrc'].append(targeting)
     dispatcher.receivers['zrc'].append(targeting)
     pipettor.converged_position_listeners.append(targeting)

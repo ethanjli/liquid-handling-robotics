@@ -87,13 +87,33 @@ class LinearActuator(ChannelTreeNode):
     def set_pid_k_i(self, k_i):
         self._emit_message('{}ki'.format(self.node_prefix), int(k_i * 100))
 
-    @custom_repr('set limit position high')
+    @custom_repr('set PID feedforward')
+    def set_pid_f(self, feedforward):
+        self._emit_message('{}kf'.format(self.node_prefix), feedforward)
+
+    @custom_repr('set high position limit')
     def set_limit_position_high(self, limit):
         self._emit_message('{}lph'.format(self.node_prefix), limit)
 
-    @custom_repr('set limit position low')
+    @custom_repr('set low position limit')
     def set_limit_position_low(self, limit):
         self._emit_message('{}lpl'.format(self.node_prefix), limit)
+
+    @custom_repr('set forward duty limit')
+    def set_limit_duty_forward(self, limit):
+        self._emit_message('{}ldh'.format(self.node_prefix), limit)
+
+    @custom_repr('set reverse duty limit')
+    def set_limit_duty_reverse(self, limit):
+        self._emit_message('{}ldl'.format(self.node_prefix), limit)
+
+    @custom_repr('set forward braking threshold')
+    def set_threshold_brake_forward(self, limit):
+        self._emit_message('{}lbh'.format(self.node_prefix), limit)
+
+    @custom_repr('set reverse braking threshold')
+    def set_threshold_brake_reverse(self, limit):
+        self._emit_message('{}lbl'.format(self.node_prefix), limit)
 
     # Implement ChannelTreeNode
 
