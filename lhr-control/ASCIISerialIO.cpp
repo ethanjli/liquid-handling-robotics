@@ -32,5 +32,19 @@ void waitForSerialHandshake(char handshakeChar, unsigned long waitDelay) {
   while (timer < waitDelay) wdt_reset();
 }
 
+// MessageSender
+
+template<>
+MessageSender<HardwareSerial>::MessageSender() :
+  transport(Serial)
+{}
+
+// MessageParser
+
+template<>
+MessageParser<HardwareSerial>::MessageParser() :
+  transport(Serial)
+{}
+
 }
 

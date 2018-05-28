@@ -12,18 +12,28 @@ const char kChannelEndDelimiter = '>';
 const char kPayloadStartDelimiter = '(';
 const char kPayloadEndDelimiter = ')';
 
-// Message TX
+// Message Sending
 
-void sendMessage(const String &channel, int payload);
-void sendMessage(const char *channel, int payload);
-void sendChannelStart();
-void sendChannelChar(char channelChar);
-void sendChannelEnd();
-void sendChannel(const String &channel);
-void sendChannel(const char *channel);
-void sendPayloadStart();
-void sendPayloadEnd();
-void sendPayload(int payload);
+template <class Transport>
+class MessageSender {
+  public:
+    MessageSender();
+    MessageSender(Transport &transport);
+
+    void sendMessage(const String &channel, int payload);
+    void sendMessage(const char *channel, int payload);
+    void sendChannelStart();
+    void sendChannelChar(char channelChar);
+    void sendChannelEnd();
+    void sendChannel(const String &channel);
+    void sendChannel(const char *channel);
+    void sendPayloadStart();
+    void sendPayloadEnd();
+    void sendPayload(int payload);
+
+  private:
+    Transport &transport;
+};
 
 // Message Parsing
 
@@ -39,8 +49,12 @@ namespace States {
 
 const unsigned int kChannelMaxLength = 8;
 
+template <class Transport>
 class MessageParser {
   public:
+    MessageParser();
+    MessageParser(Transport &transport);
+
     using State = States::Parsing;
 
     LinearPositionControl::StateVariable<States::Parsing> state;
@@ -54,6 +68,8 @@ class MessageParser {
     void setup();
     void update();
 
+    void receive();
+
     bool isChannel(const char queryChannel[]) const;
     bool justReceived(const char queryChannel[]) const;
     bool justReceived() const;
@@ -62,9 +78,11 @@ class MessageParser {
 
     void onChar(char current);
 
-    void sendResponse(int payload);
+    //void sendResponse(int payload);
 
   private:
+    Transport &transport;
+
     // Channel
     int channelBufferPosition = 0;
     char channelBuffer[kChannelMaxLength + 1];
@@ -87,6 +105,8 @@ class MessageParser {
 };
 
 }
+
+#include "Messages.tpp"
 
 #endif
 

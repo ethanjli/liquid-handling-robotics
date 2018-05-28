@@ -9,7 +9,8 @@
 using namespace LiquidHandlingRobotics;
 
 // ASCII Serial communications
-MessageParser messageParser;
+SerialMessageParser messageParser;
+SerialMessageSender messageSender;
 
 void setup() {
   wdt_disable();
@@ -20,7 +21,7 @@ void setup() {
   messageParser.setup();
   waitForSerialHandshake();
   wdt_enable(WDTO_2S);
-  sendAllVersionMessages();
+  sendAllVersionMessages(messageSender);
 }
 
 void loop() {
@@ -28,8 +29,8 @@ void loop() {
   messageParser.update();
   // Standard protocol
   wdt_reset();
-  handleResetCommand(messageParser);
-  handleVersionCommand(messageParser);
-  handleEchoCommand(messageParser);
-  handleIOCommand(messageParser);
+  handleResetCommand(messageParser, messageSender);
+  handleVersionCommand(messageParser, messageSender);
+  handleEchoCommand(messageParser, messageSender);
+  handleIOCommand(messageParser, messageSender);
 }

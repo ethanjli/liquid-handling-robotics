@@ -7,6 +7,9 @@ namespace LiquidHandlingRobotics {
 
 void waitForSerialHandshake(char handshakeChar = '~', unsigned long waitDelay = 500);
 
+using SerialMessageSender = MessageSender<HardwareSerial>;
+using SerialMessageParser = MessageParser<HardwareSerial>;
+
 }
 
 #endif

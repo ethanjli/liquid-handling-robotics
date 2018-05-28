@@ -1,70 +1,110 @@
-#include "Messages.h"
+#ifndef Messages_tpp
+#define Messages_tpp
 
 #include <avr/wdt.h>
 
 namespace LiquidHandlingRobotics {
 
-// Message TX
+// MessageSender
 
-void sendMessage(const String &channel, int payload) {
+template<class Transport>
+MessageSender<Transport>::MessageSender(Transport &transport) :
+  transport(transport)
+{}
+
+template<class Transport>
+void MessageSender<Transport>::sendMessage(const String &channel, int payload) {
   sendChannel(channel);
   sendPayload(payload);
 }
-void sendMessage(const char *channel, int payload) {
+
+template<class Transport>
+void MessageSender<Transport>::sendMessage(const char *channel, int payload) {
   sendChannel(channel);
   sendPayload(payload);
 }
-void sendChannel(const String &channel) {
-  Serial.print(kChannelStartDelimiter);
-  Serial.print(channel);
-  Serial.print(kChannelEndDelimiter);
+
+template<class Transport>
+void MessageSender<Transport>::sendChannel(const String &channel) {
+  transport.print(kChannelStartDelimiter);
+  transport.print(channel);
+  transport.print(kChannelEndDelimiter);
 }
-void sendChannel(const char *channel) {
-  Serial.print(kChannelStartDelimiter);
-  Serial.print(channel);
+
+template<class Transport>
+void MessageSender<Transport>::sendChannel(const char *channel) {
+  transport.print(kChannelStartDelimiter);
+  transport.print(channel);
   //char *curr = channel;
   //while (curr != nullptr && *curr != '\0') {
-  //  if (*curr != 0x7f) Serial.print(*curr);
+  //  transport.print(*curr);
   //  ++curr;
   //}
-  Serial.print(kChannelEndDelimiter);
+  transport.print(kChannelEndDelimiter);
 }
-void sendChannelStart() {
-  Serial.print(kChannelStartDelimiter);
+
+template<class Transport>
+void MessageSender<Transport>::sendChannelStart() {
+  transport.print(kChannelStartDelimiter);
 }
-void sendChannelChar(char channelChar) {
-  Serial.print(channelChar);
-  //if (channelChar != 0x7f) Serial.print(channelChar);
+
+template<class Transport>
+void MessageSender<Transport>::sendChannelChar(char channelChar) {
+  transport.print(channelChar);
 }
-void sendChannelEnd() {
-  Serial.print(kChannelEndDelimiter);
+
+template<class Transport>
+void MessageSender<Transport>::sendChannelEnd() {
+  transport.print(kChannelEndDelimiter);
 }
-void sendPayloadStart() {
-  Serial.print(kPayloadStartDelimiter);
+
+template<class Transport>
+void MessageSender<Transport>::sendPayloadStart() {
+  transport.print(kPayloadStartDelimiter);
 }
-void sendPayloadEnd() {
-  Serial.print(kPayloadEndDelimiter);
+
+template<class Transport>
+void MessageSender<Transport>::sendPayloadEnd() {
+  transport.print(kPayloadEndDelimiter);
 }
-void sendPayload(int payload) {
-  Serial.print(kPayloadStartDelimiter);
-  Serial.print(payload);
-  Serial.print(kPayloadEndDelimiter);
-  Serial.println();
+
+template<class Transport>
+void MessageSender<Transport>::sendPayload(int payload) {
+  transport.print(kPayloadStartDelimiter);
+  transport.print(payload);
+  transport.print(kPayloadEndDelimiter);
+  transport.println();
 }
 
 // MessageParser
 
-void MessageParser::setup() {
+template<class Transport>
+MessageParser<Transport>::MessageParser(Transport &transport) :
+  transport(transport)
+{}
+
+template<class Transport>
+void MessageParser<Transport>::setup() {
   channelBuffer[0] = '\0';
   state.setup(State::awaitingChannel);
 }
 
-void MessageParser::update() {
+template<class Transport>
+void MessageParser<Transport>::update() {
   if (state.current() == State::parsedMessage) state.update(State::awaitingChannel);
-  while (Serial.available() > 0) onChar(Serial.read());
+  receive();
 }
 
-void MessageParser::onChar(char current) {
+template<class Transport>
+void MessageParser<Transport>::receive() {
+  while (transport.available() > 0) {
+    wdt_reset();
+    onChar(transport.read());
+  }
+}
+
+template<class Transport>
+void MessageParser<Transport>::onChar(char current) {
   switch (state.current()) {
     case State::awaitingChannel:
       if (current == kChannelStartDelimiter) {
@@ -102,54 +142,65 @@ void MessageParser::onChar(char current) {
   }
 }
 
-bool MessageParser::isChannel(const char queryChannel[]) const {
+template<class Transport>
+bool MessageParser<Transport>::isChannel(const char queryChannel[]) const {
   return strncmp(queryChannel, channel, kChannelMaxLength + 1) == 0;
 }
 
-bool MessageParser::justReceived(const char queryChannel[]) const {
+template<class Transport>
+bool MessageParser<Transport>::justReceived(const char queryChannel[]) const {
   return state.justEntered(State::parsedMessage) && isChannel(queryChannel);
 }
 
-bool MessageParser::justReceived() const {
+template<class Transport>
+bool MessageParser<Transport>::justReceived() const {
   return state.justEntered(State::parsedMessage);
 }
 
-unsigned int MessageParser::payloadParsedLength() const {
+template<class Transport>
+unsigned int MessageParser<Transport>::payloadParsedLength() const {
   return payloadLength;
 }
 
-unsigned int MessageParser::channelParsedLength() const {
+template<class Transport>
+unsigned int MessageParser<Transport>::channelParsedLength() const {
   return channelLength;
 }
 
-void MessageParser::sendResponse(int payload) {
-  sendMessage(channel, payload);
-}
+//template<class Transport>
+//void MessageParser<Transport>::sendResponse(int payload) {
+//  sendMessage(channel, payload);
+//}
 
-void MessageParser::onParsingChannel() {
+template<class Transport>
+void MessageParser<Transport>::onParsingChannel() {
   memset(channelBuffer, '\0', kChannelMaxLength + 1);
   channelLength = 0;
   channelBufferPosition = 0;
 }
 
-void MessageParser::onAwaitingPayload() {
+template<class Transport>
+void MessageParser<Transport>::onAwaitingPayload() {
   channelBuffer[channelBufferPosition] = '\0';
   channelBufferPosition = -1;
   strlcpy(channel, channelBuffer, kChannelMaxLength + 1);
 }
 
-void MessageParser::onParsingPayload() {
+template<class Transport>
+void MessageParser<Transport>::onParsingPayload() {
   receivedNumber = 0;
   payloadLength = 0;
   negative = false;
 }
 
-void MessageParser::onParsedMessage() {
+template<class Transport>
+void MessageParser<Transport>::onParsedMessage() {
   if (negative) payload = -1 * receivedNumber;
   else payload = receivedNumber;
 }
 
-void MessageParser::parseChannel(char current) {
+template<class Transport>
+void MessageParser<Transport>::parseChannel(char current) {
   if (channelBufferPosition >= 0) {
     if (isAlphaNumeric(current)) {
       if (channelBufferPosition < kChannelMaxLength) {
@@ -165,7 +216,8 @@ void MessageParser::parseChannel(char current) {
   }
 }
 
-void MessageParser::parsePayload(char current) {
+template<class Transport>
+void MessageParser<Transport>::parsePayload(char current) {
   if (current == '-' && state.justEntered(State::parsingPayload)) {
     negative = true;
     ++payloadLength;
@@ -179,4 +231,6 @@ void MessageParser::parsePayload(char current) {
 }
 
 }
+
+#endif
 

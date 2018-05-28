@@ -25,15 +25,26 @@ const uint8_t kAnalogReadMaxPin = 5;
 const uint8_t kDigitalReadMinPin = 2;
 const uint8_t kDigitalReadMaxPin = 13;
 
-void handleResetCommand(MessageParser &messageParser);
+template<class Transport>
+void handleResetCommand(MessageParser<Transport> &messageParser, MessageSender<Transport> &messageSender);
 void hardReset();
-void handleVersionCommand(MessageParser &messageParser);
-void sendVersionMessage(char versionPosition);
-void sendAllVersionMessages();
-void handleEchoCommand(MessageParser &messageParser);
-void handleIOCommand(MessageParser &messageParser);
+
+template<class Transport>
+void handleVersionCommand(MessageParser<Transport> &messageParser, MessageSender<Transport> &messageSender);
+template<class Transport>
+void sendVersionMessage(char versionPosition, MessageSender<Transport> &messageSender);
+template<class Transport>
+void sendAllVersionMessages(MessageSender<Transport> &messageSender);
+
+template<class Transport>
+void handleEchoCommand(MessageParser<Transport> &messageParser, MessageSender<Transport> &messageSender);
+
+template<class Transport>
+void handleIOCommand(MessageParser<Transport> &messageParser, MessageSender<Transport> &messageSender);
 
 }
+
+#include "CoreProtocol.tpp"
 
 #endif
 
