@@ -97,11 +97,6 @@ class MessageParser {
     void sendResponse(int payload);
 
   private:
-    char channelStartDelimiter;
-    char channelEndDelimiter;
-    char payloadStartDelimiter;
-    char payloadEndDelimiter;
-
     // Channel
     int channelBufferPosition = 0;
     char channelBuffer[kChannelMaxLength + 1];
