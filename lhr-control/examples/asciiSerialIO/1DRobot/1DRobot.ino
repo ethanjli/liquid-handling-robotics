@@ -4,6 +4,7 @@
 #include <ArduinoLog.h>
 
 #include <ASCIISerialIO.h>
+#include <CoreProtocol.h>
 #include <Modules.h>
 
 using namespace LiquidHandlingRobotics;

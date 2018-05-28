@@ -1,10 +1,10 @@
 #ifndef LinearActuatorModule_h
 #define LinearActuatorModule_h
 
-#include <ASCIISerialIO.h>
 #include <Smoothing.h>
+#include <LinearActuator.h>
 
-#include "LinearActuator.h"
+#include "Messages.h"
 
 namespace LiquidHandlingRobotics {
 
