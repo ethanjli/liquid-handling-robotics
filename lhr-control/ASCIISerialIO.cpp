@@ -2,19 +2,34 @@
 
 #include <avr/wdt.h>
 
+#include <elapsedMillis.h>
+
 namespace LiquidHandlingRobotics {
 
 void waitForSerialHandshake(char handshakeChar, unsigned long waitDelay) {
-  while (!Serial) {;}
+  elapsedMillis timer;
+
+  // Wait for Serial to become ready
+  while (!Serial) wdt_reset();
+
+  // Print handshake char until input is received
   while (Serial.available() < 1) {
     Serial.println(handshakeChar);
-    delay(waitDelay);
+    timer = 0;
+    while (timer < waitDelay) wdt_reset();
   }
+
+  // Wait for (and read) input until a newline is received
   while (Serial.available() > 0) {
     if (Serial.read() == '\n') break;
   }
+
+  // Send a newline response
   Serial.println();
-  delay(waitDelay);
+
+  // Wait a bit longer
+  timer = 0;
+  while (timer < waitDelay) wdt_reset();
 }
 
 }
