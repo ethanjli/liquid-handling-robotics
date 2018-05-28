@@ -78,8 +78,6 @@ class MessageParser {
 
     void onChar(char current);
 
-    //void sendResponse(int payload);
-
   private:
     Transport &transport;
 
@@ -102,6 +100,22 @@ class MessageParser {
     void onParsingPayload();
     void parsePayload(char current);
     void onParsedMessage();
+};
+
+// Messaging
+template <class Transport>
+class Messager {
+  public:
+    Messager();
+    Messager(Transport &transport);
+
+    void setup();
+    void update();
+
+    MessageSender<Transport> sender;
+    MessageParser<Transport> parser;
+
+    void sendResponse(int payload);
 };
 
 }

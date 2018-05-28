@@ -167,11 +167,6 @@ unsigned int MessageParser<Transport>::channelParsedLength() const {
   return channelLength;
 }
 
-//template<class Transport>
-//void MessageParser<Transport>::sendResponse(int payload) {
-//  sendMessage(channel, payload);
-//}
-
 template<class Transport>
 void MessageParser<Transport>::onParsingChannel() {
   memset(channelBuffer, '\0', kChannelMaxLength + 1);
@@ -228,6 +223,28 @@ void MessageParser<Transport>::parsePayload(char current) {
   } else if (!isControl(current)) {
     Log.warning(F("Payload on channel '%s' has unknown character '%c'. Ignoring it!" CR), channelBufferString, current);
   }
+}
+
+// Messager
+
+template<class Transport>
+Messager<Transport>::Messager(Transport &transport) :
+  sender(transport), parser(transport)
+{}
+
+template<class Transport>
+void Messager<Transport>::setup() {
+  parser.setup();
+}
+
+template<class Transport>
+void Messager<Transport>::update() {
+  parser.update();
+}
+
+template<class Transport>
+void Messager<Transport>::sendResponse(int payload) {
+  sender.sendMessage(parser.channel, payload);
 }
 
 }

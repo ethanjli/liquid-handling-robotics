@@ -46,5 +46,12 @@ MessageParser<HardwareSerial>::MessageParser() :
   transport(Serial)
 {}
 
+// Messager
+
+template<>
+Messager<HardwareSerial>::Messager() :
+  sender(Serial), parser(Serial)
+{}
+
 }
 

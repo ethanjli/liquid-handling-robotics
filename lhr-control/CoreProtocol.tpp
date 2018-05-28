@@ -6,14 +6,14 @@
 namespace LiquidHandlingRobotics {
 
 template<class Transport>
-void handleResetCommand(MessageParser<Transport> &messageParser, MessageSender<Transport> &messageSender) {
-  if (!(messageParser.justReceived() &&
-        messageParser.channel[0] == kResetChannel &&
-        messageParser.channelParsedLength() == 1)) return;
-  messageSender.sendChannelStart();
-  messageSender.sendChannelChar(kResetChannel);
-  messageSender.sendChannelEnd();
-  messageSender.sendPayload(messageParser.payload);
+void handleResetCommand(Messager<Transport> &messager) {
+  if (!(messager.parser.justReceived() &&
+        messager.parser.channel[0] == kResetChannel &&
+        messager.parser.channelParsedLength() == 1)) return;
+  messager.sender.sendChannelStart();
+  messager.sender.sendChannelChar(kResetChannel);
+  messager.sender.sendChannelEnd();
+  messager.sender.sendPayload(messager.parser.payload);
   hardReset();
 }
 
@@ -23,13 +23,13 @@ void hardReset() {
 }
 
 template<class Transport>
-void handleVersionCommand(MessageParser<Transport> &messageParser, MessageSender<Transport> &messageSender) {
-  if (!(messageParser.justReceived() &&
-        messageParser.channel[0] == kVersionChannel &&
-        messageParser.channelParsedLength() <= 2)) return;
+void handleVersionCommand(Messager<Transport> &messager) {
+  if (!(messager.parser.justReceived() &&
+        messager.parser.channel[0] == kVersionChannel &&
+        messager.parser.channelParsedLength() <= 2)) return;
 
-  if (messageParser.channelParsedLength() == 1) sendAllVersionMessages(messageSender);
-  else sendVersionMessage(messageParser.channel[1], messageSender);
+  if (messager.parser.channelParsedLength() == 1) sendAllVersionMessages(messager.sender);
+  else sendVersionMessage(messager.parser.channel[1], messager.sender);
 }
 
 template<class Transport>
@@ -54,36 +54,34 @@ void sendAllVersionMessages(MessageSender<Transport> &messageSender) {
 }
 
 template<class Transport>
-void handleEchoCommand(MessageParser<Transport> &messageParser, MessageSender<Transport> &messageSender) {
-  if (!(messageParser.justReceived() &&
-        messageParser.channel[0] == kEchoChannel &&
-        messageParser.channelParsedLength() == 1)) return;
+void handleEchoCommand(Messager<Transport> &messager) {
+  if (!(messager.parser.justReceived() &&
+        messager.parser.channel[0] == kEchoChannel &&
+        messager.parser.channelParsedLength() == 1)) return;
 
-  messageSender.sendChannelStart();
-  messageSender.sendChannelChar(kEchoChannel);
-  messageSender.sendChannelEnd();
-  messageSender.sendPayload(messageParser.payload);
+  messager.sender.sendChannelStart();
+  messager.sender.sendChannelChar(kEchoChannel);
+  messager.sender.sendChannelEnd();
+  messager.sender.sendPayload(messager.parser.payload);
 }
 
 template<class Transport>
-void handleIOCommand(MessageParser<Transport> &messageParser, MessageSender<Transport> &messageSender) {
-  if (!messageParser.justReceived()) return;
-  if (messageParser.channel[0] != kIOChannel) return;
-  if (messageParser.channel[1] != kIOReadChannel) return;
-  const int pin = messageParser.payload;
+void handleIOCommand(Messager<Transport> &messager) {
+  if (!messager.parser.justReceived()) return;
+  if (messager.parser.channel[0] != kIOChannel) return;
+  if (messager.parser.channel[1] != kIOReadChannel) return;
+  const int pin = messager.parser.payload;
 
-  switch (messageParser.channel[2]) {
+  switch (messager.parser.channel[2]) {
     case kIOReadAnalogChannel:
-      if (messageParser.channelParsedLength() != 3) break;
+      if (messager.parser.channelParsedLength() != 3) break;
       if (pin < kAnalogReadMinPin || pin > kAnalogReadMaxPin) break;
-      //messageParser.sendResponse(analogRead(pin + kAnalogPinOffset));
-      messageSender.sendMessage(messageParser.channel, messageParser.payload);
+      messager.sendResponse(analogRead(pin + kAnalogPinOffset));
       break;
     case kIOReadDigitalChannel:
-      if (messageParser.channelParsedLength() != 3) break;
+      if (messager.parser.channelParsedLength() != 3) break;
       if (pin < kDigitalReadMinPin || pin > kDigitalReadMaxPin) break;
-      //messageParser.sendResponse(digitalRead(pin));
-      messageSender.sendMessage(messageParser.channel, digitalRead(pin));
+      messager.sendResponse(digitalRead(pin));
       break;
   }
 }

@@ -9,6 +9,7 @@ void waitForSerialHandshake(char handshakeChar = '~', unsigned long waitDelay = 
 
 using SerialMessageSender = MessageSender<HardwareSerial>;
 using SerialMessageParser = MessageParser<HardwareSerial>;
+using SerialMessager = Messager<HardwareSerial>;
 
 }
 

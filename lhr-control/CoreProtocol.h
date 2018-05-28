@@ -26,21 +26,21 @@ const uint8_t kDigitalReadMinPin = 2;
 const uint8_t kDigitalReadMaxPin = 13;
 
 template<class Transport>
-void handleResetCommand(MessageParser<Transport> &messageParser, MessageSender<Transport> &messageSender);
+void handleResetCommand(Messager<Transport> &messager);
 void hardReset();
 
 template<class Transport>
-void handleVersionCommand(MessageParser<Transport> &messageParser, MessageSender<Transport> &messageSender);
+void handleVersionCommand(Messager<Transport> &messager);
 template<class Transport>
 void sendVersionMessage(char versionPosition, MessageSender<Transport> &messageSender);
 template<class Transport>
 void sendAllVersionMessages(MessageSender<Transport> &messageSender);
 
 template<class Transport>
-void handleEchoCommand(MessageParser<Transport> &messageParser, MessageSender<Transport> &messageSender);
+void handleEchoCommand(Messager<Transport> &messager);
 
 template<class Transport>
-void handleIOCommand(MessageParser<Transport> &messageParser, MessageSender<Transport> &messageSender);
+void handleIOCommand(Messager<Transport> &messager);
 
 }
 
