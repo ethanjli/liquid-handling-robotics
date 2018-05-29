@@ -23,9 +23,10 @@ void setup()
 }
 
 void loop() {
-  transport.digitalInput.report();
-
-  while (Firmata.available()) Firmata.processInput(); // TODO: stop processing input as soon as a message is received
-
   if (transport.reporting.elapsed()) transport.analogInput.report();
+  transport.digitalInput.report();
+  while (Firmata.available() && !transport.available()) Firmata.processInput();
+  
+  messager.update();
+  coreProtocol.update();
 }
