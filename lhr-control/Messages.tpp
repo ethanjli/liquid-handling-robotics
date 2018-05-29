@@ -94,15 +94,17 @@ void StringParser<maxLength>::setup() {
 }
 
 template<uint8_t maxLength>
-void StringParser<maxLength>::onChar(char current) {
+bool StringParser<maxLength>::onChar(char current) {
   if (current == endDelimiter) {
     state.update(State::parsed);
     bufferPosition = 0;
     strlcpy(received, buffer, maxLength + 1);
     buffer[0] = '\0';
+    return false;
   } else {
     parse(current);
     state.update(State::parsing, true);
+    return true;
   }
 }
 
@@ -140,7 +142,65 @@ void StringParser<maxLength>::parse(char current) {
       Log.warning(F("Ignoring char '%c' beyond max string length!" CR), current);
     }
   } else if (!isControl(current)) {
-    Log.warning(F("Ignoring unknown char '%c'!" CR), current);
+    Log.warning(F("Ignoring unknown char '%c' in string!" CR), current);
+  }
+}
+
+// IntegerParser
+
+template<class Integer>
+IntegerParser<Integer>::IntegerParser(char endDelimiter) :
+  endDelimiter(endDelimiter)
+{}
+
+template<class Integer>
+void IntegerParser<Integer>::setup() {}
+
+template<class Integer>
+bool IntegerParser<Integer>::onChar(char current) {
+  if (current == endDelimiter) {
+    state.update(State::parsed);
+    received = intermediate;
+    if (negative) received *= -1;
+    intermediate = 0;
+    negative = false;
+    return false;
+  } else {
+    parse(current);
+    state.update(State::parsing, true);
+    return true;
+  }
+}
+
+template<class Integer>
+void IntegerParser<Integer>::reset() {
+  intermediate = 0;
+  negative = false;
+  length = 0;
+  state.update(State::parsing);
+}
+
+template<class Integer>
+bool IntegerParser<Integer>::justReceived() const {
+  return state.justEntered(State::parsed);
+}
+
+template<class Integer>
+uint8_t IntegerParser<Integer>::parsedLength() const {
+  return length;
+}
+
+template<class Integer>
+void IntegerParser<Integer>::parse(char current) {
+  if ((current == '-') && state.justEntered(State::parsing)) {
+    negative = true;
+    ++length;
+  } else if (isDigit(current)) {
+    intermediate *= 10;
+    intermediate += current - '0';
+    ++length;
+  } else if (!isControl(current)) {
+    Log.warning(F("Ignoring unknown char '%c' in integer!" CR), current);
   }
 }
 
@@ -148,7 +208,8 @@ void StringParser<maxLength>::parse(char current) {
 
 template<class Transport>
 MessageParser<Transport>::MessageParser(Transport &transport) :
-  transport(transport), channelParser(kChannelEndDelimiter)
+  transport(transport), channelParser(kChannelEndDelimiter),
+  payloadParser(kPayloadEndDelimiter)
 {}
 
 template<class Transport>
@@ -156,6 +217,7 @@ void MessageParser<Transport>::setup() {
   if (setupCompleted) return;
 
   channelParser.setup();
+  payloadParser.setup();
   state.setup(State::awaitingChannel);
 
   setupCompleted = true;
@@ -171,21 +233,18 @@ void MessageParser<Transport>::update() {
 
 template<class Transport>
 void MessageParser<Transport>::receive() {
-  while (transport.available() > 0) {
-    wdt_reset();
-    onChar(transport.read());
-  }
+  while (transport.available() > 0 && onChar(transport.read())) wdt_reset();
 }
 
 template<class Transport>
-void MessageParser<Transport>::onChar(char current) {
+bool MessageParser<Transport>::onChar(char current) {
   switch (state.current()) {
     case State::awaitingChannel:
       if (current == kChannelStartDelimiter) {
         channelParser.reset();
         state.update(State::parsingChannel);
       }
-      break;
+      return true;
     case State::parsingChannel:
       if (current == kChannelStartDelimiter) {
         channelParser.reset();
@@ -195,22 +254,27 @@ void MessageParser<Transport>::onChar(char current) {
         if (channelParser.justReceived()) state.update(State::awaitingPayload);
         else state.update(State::parsingChannel, true);
       }
-      break;
+      return true;
     case State::awaitingPayload:
       if (current == kPayloadStartDelimiter) {
-        onParsingPayload();
+        payloadParser.reset();
         state.update(State::parsingPayload);
       }
-      break;
+      return true;
     case State::parsingPayload:
-      if (current == kPayloadEndDelimiter) {
-        onParsedMessage();
-        state.update(State::parsedMessage);
-        return; // don't parse more messages until the next update() call
+      if (current == kPayloadStartDelimiter) {
+        payloadParser.reset();
+        Log.warning(F("Payload interrupted by start delimiter, resetting!" CR));
       } else {
-        parsePayload(current);
-        state.update(State::parsingPayload, true);
+        payloadParser.onChar(current);
+        if (payloadParser.justReceived()) {
+          state.update(State::parsedMessage);
+          return false; // signal the caller not to parse more messages
+        } else {
+          state.update(State::parsingPayload, true);
+        }
       }
+      return true;
   }
 }
 
@@ -231,39 +295,12 @@ bool MessageParser<Transport>::justReceived() const {
 
 template<class Transport>
 unsigned int MessageParser<Transport>::payloadParsedLength() const {
-  return payloadLength;
+  return payloadParser.parsedLength();
 }
 
 template<class Transport>
 unsigned int MessageParser<Transport>::channelParsedLength() const {
   return channelParser.parsedLength();
-}
-
-template<class Transport>
-void MessageParser<Transport>::onParsingPayload() {
-  receivedNumber = 0;
-  payloadLength = 0;
-  negative = false;
-}
-
-template<class Transport>
-void MessageParser<Transport>::onParsedMessage() {
-  if (negative) payload = -1 * receivedNumber;
-  else payload = receivedNumber;
-}
-
-template<class Transport>
-void MessageParser<Transport>::parsePayload(char current) {
-  if (current == '-' && state.justEntered(State::parsingPayload)) {
-    negative = true;
-    ++payloadLength;
-  } else if (isDigit(current)) {
-    receivedNumber *= 10;
-    receivedNumber += current - '0';
-    ++payloadLength;
-  } else if (!isControl(current)) {
-    Log.warning(F("Payload on channel '%s' has unknown character '%c'. Ignoring it!" CR), channel, current);
-  }
 }
 
 // Messager
