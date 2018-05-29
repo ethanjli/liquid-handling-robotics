@@ -14,7 +14,7 @@ void hardReset() {
 
 template<class Messager>
 CoreProtocol<Messager>::CoreProtocol(Messager &messager) :
-  messager(messager)
+  led(LED_BUILTIN), messager(messager)
 {}
 
 template<class Messager>
@@ -22,6 +22,7 @@ void CoreProtocol<Messager>::setup() {
   if (setupCompleted) return;
 
   wdt_disable();
+  led.setup();
 
   setupCompleted = true;
 }
@@ -36,6 +37,9 @@ void CoreProtocol<Messager>::update() {
   handleEchoCommand();
   wdt_reset();
   handleIOCommand();
+  wdt_reset();
+  handleBuiltinLEDCommand();
+  led.update();
   wdt_reset();
 }
 
@@ -94,10 +98,7 @@ void CoreProtocol<Messager>::handleEchoCommand() {
         messager.parser.channel[0] == kEchoChannel &&
         messager.parser.channelParsedLength() == 1)) return;
 
-  messager.sender.sendChannelStart();
-  messager.sender.sendChannelChar(kEchoChannel);
-  messager.sender.sendChannelEnd();
-  messager.sender.sendPayload(messager.parser.payload);
+  messager.sendResponse(messager.parser.payload);
 }
 
 template<class Messager>
@@ -119,6 +120,27 @@ void CoreProtocol<Messager>::handleIOCommand() {
       messager.sendResponse(digitalRead(pin));
       break;
   }
+}
+
+template<class Messager>
+void CoreProtocol<Messager>::handleBuiltinLEDCommand() {
+  if (!(messager.parser.justReceived() &&
+        messager.parser.channel[0] == kBuiltinLEDChannel &&
+        messager.parser.channelParsedLength() == 1)) return;
+
+  switch (messager.parser.payload) {
+    case 0:
+      led.off();
+      break;
+    case 1:
+      led.on();
+      break;
+    case -1:
+      led.blink();
+      break;
+  }
+
+  //messager.sendResponse(messager.parser.payload);
 }
 
 }

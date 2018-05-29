@@ -1,6 +1,8 @@
 #ifndef CoreProtocol_h
 #define CoreProtocol_h
 
+#include <LED.h>
+
 #include "Messages.h"
 
 namespace LiquidHandlingRobotics {
@@ -33,6 +35,7 @@ const char kIOChannel = 'i';
 const char kIOReadChannel = 'r';
 const char kIOReadAnalogChannel = 'a';
 const char kIOReadDigitalChannel = 'd';
+const char kBuiltinLEDChannel = 'l';
 
 const uint8_t kAnalogPinOffset = 14;
 const uint8_t kAnalogReadMinPin = 0;
@@ -44,6 +47,8 @@ template<class Messager>
 class CoreProtocol {
   public:
     CoreProtocol(Messager &messager);
+
+    LinearPositionControl::Components::SimpleLED led;
 
     void setup();
     void update();
@@ -61,6 +66,7 @@ class CoreProtocol {
     void handleVersionCommand();
     void handleEchoCommand();
     void handleIOCommand();
+    void handleBuiltinLEDCommand();
 };
 
 }
