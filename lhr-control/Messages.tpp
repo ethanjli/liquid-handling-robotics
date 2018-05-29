@@ -95,8 +95,10 @@ void MessageParser<Transport>::setup() {
 
 template<class Transport>
 void MessageParser<Transport>::update() {
+  wdt_reset();
   if (state.current() == State::parsedMessage) state.update(State::awaitingChannel);
   receive();
+  wdt_reset();
 }
 
 template<class Transport>

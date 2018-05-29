@@ -1,6 +1,8 @@
 #ifndef LinearActuatorModule_tpp
 #define LinearActuatorModule_tpp
 
+#include <avr/wdt.h>
+
 namespace LiquidHandlingRobotics {
 
 // LinearActuatorModule
@@ -54,7 +56,9 @@ void LinearActuatorModule<LinearActuator, Messager>::setup() {
 
 template <class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::update() {
+  wdt_reset();
   actuator.update();
+  wdt_reset();
   smoother.update();
 
   if (messager.parser.justReceived() && messager.parser.channel[0] == moduleChannel) {
@@ -92,14 +96,19 @@ void LinearActuatorModule<LinearActuator, Messager>::update() {
       break;
   }
 
+  wdt_reset();
   if (streamingPositionReportInterval > 0) {
     if (streamingPositionClock == 0) reportPosition(kReportingStreamingChannel);
     streamingPositionClock = (streamingPositionClock + 1) % streamingPositionReportInterval;
   }
+
+  wdt_reset();
   if (queryPositionCountdown > 0) {
     reportPosition(kReportingQueryChannel);
     --queryPositionCountdown;
   }
+
+  wdt_reset();
 }
 
 template <class LinearActuator, class Messager>

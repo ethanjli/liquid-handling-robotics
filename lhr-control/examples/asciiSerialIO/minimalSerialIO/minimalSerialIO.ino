@@ -24,7 +24,6 @@ void setup() {
 }
 
 void loop() {
-  wdt_reset();
   messager.update();
   // Standard protocol
   wdt_reset();

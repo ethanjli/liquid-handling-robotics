@@ -40,7 +40,6 @@ void setup() {
 }
 
 void loop() {
-  wdt_reset();
   messager.update();
   // Standard protocol
   wdt_reset();
@@ -49,11 +48,8 @@ void loop() {
   handleEchoCommand(messager);
   handleIOCommand(messager);
   // Modules
-  wdt_reset();
   pipettor.update();
-  wdt_reset();
   verticalPositioner.update();
-  wdt_reset();
   if (yPositionerCalibrator.calibrated()) {
     yPositioner.update();
   } else { // initialize positions of z-axis and y-axis

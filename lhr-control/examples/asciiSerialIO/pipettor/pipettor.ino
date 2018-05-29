@@ -32,7 +32,6 @@ void setup() {
 }
 
 void loop() {
-  wdt_reset();
   messager.update();
   // Standard protocol
   wdt_reset();
@@ -41,6 +40,5 @@ void loop() {
   handleEchoCommand(messager);
   handleIOCommand(messager);
   // Modules
-  wdt_reset();
   pipettor.update();
 }
