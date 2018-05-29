@@ -17,8 +17,10 @@ const char kPayloadEndDelimiter = ')';
 template <class Transport>
 class MessageSender {
   public:
-    MessageSender();
+    MessageSender(); // needs to be implemented by specialization
     MessageSender(Transport &transport);
+
+    void setup(); // needs to be implemented by specialization
 
     void sendMessage(const String &channel, int payload);
     void sendMessage(const char *channel, int payload);
@@ -33,6 +35,7 @@ class MessageSender {
 
   private:
     Transport &transport;
+    bool setupCompleted = false;
 };
 
 // Message Parsing
@@ -52,7 +55,7 @@ const unsigned int kChannelMaxLength = 8;
 template <class Transport>
 class MessageParser {
   public:
-    MessageParser();
+    MessageParser(); // needs to be implemented by specialization
     MessageParser(Transport &transport);
 
     using State = States::Parsing;
@@ -107,16 +110,22 @@ class MessageParser {
 template <class Transport>
 class Messager {
   public:
-    Messager();
+    Messager(); // needs to be implemented by specialization
     Messager(Transport &transport);
 
-    void setup();
+    MessageParser<Transport> parser;
+    MessageSender<Transport> sender;
+
+    void setup(); // needs to be implemented by specialization
     void update();
 
-    MessageSender<Transport> sender;
-    MessageParser<Transport> parser;
+    void establishConnection(); // needs to be implemented by specialization
 
     void sendResponse(int payload);
+
+  private:
+    Transport &transport;
+    bool setupCompleted = false;
 };
 
 }

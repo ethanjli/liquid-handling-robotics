@@ -235,13 +235,8 @@ void MessageParser<Transport>::parsePayload(char current) {
 
 template<class Transport>
 Messager<Transport>::Messager(Transport &transport) :
-  sender(transport), parser(transport)
+  parser(transport), sender(transport), transport(transport)
 {}
-
-template<class Transport>
-void Messager<Transport>::setup() {
-  parser.setup();
-}
 
 template<class Transport>
 void Messager<Transport>::update() {

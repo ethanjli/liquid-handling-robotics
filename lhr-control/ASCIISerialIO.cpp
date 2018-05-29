@@ -6,26 +6,26 @@
 
 namespace LiquidHandlingRobotics {
 
-void waitForSerialHandshake(char handshakeChar, unsigned long waitDelay) {
+void waitForHandshake(HardwareSerial &serial, unsigned long waitDelay) {
   elapsedMillis timer;
 
-  // Wait for Serial to become ready
-  while (!Serial) wdt_reset();
+  // Wait for serial to become ready
+  while (!serial) wdt_reset();
 
   // Print handshake char until input is received
-  while (Serial.available() < 1) {
-    Serial.println(handshakeChar);
+  while (serial.available() < 1) {
+    serial.println(ASCIISerial::kHandshakeChar);
     timer = 0;
     while (timer < waitDelay) wdt_reset();
   }
 
   // Wait for (and read) input until a newline is received
-  while (Serial.available() > 0) {
-    if (Serial.read() == '\n') break;
+  while (serial.available() > 0) {
+    if (serial.read() == '\n') break;
   }
 
   // Send a newline response
-  Serial.println();
+  serial.println();
 
   // Wait a bit longer
   timer = 0;
@@ -39,6 +39,9 @@ MessageSender<HardwareSerial>::MessageSender() :
   transport(Serial)
 {}
 
+template<>
+void MessageSender<HardwareSerial>::setup() {}
+
 // MessageParser
 
 template<>
@@ -50,8 +53,25 @@ MessageParser<HardwareSerial>::MessageParser() :
 
 template<>
 Messager<HardwareSerial>::Messager() :
-  sender(Serial), parser(Serial)
+  sender(Serial), parser(Serial), transport(Serial)
 {}
+
+template<>
+void Messager<HardwareSerial>::setup() {
+  if (setupCompleted) return;
+
+  transport.begin(ASCIISerial::kDataRate);
+
+  parser.setup();
+  sender.setup();
+
+  setupCompleted = true;
+}
+
+template<>
+void Messager<HardwareSerial>::establishConnection() {
+  waitForHandshake(transport);
+}
 
 }
 

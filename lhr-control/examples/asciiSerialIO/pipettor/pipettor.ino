@@ -1,5 +1,3 @@
-#include <avr/wdt.h>
-
 #define DISABLE_LOGGING
 #include <ArduinoLog.h>
 
@@ -21,13 +19,12 @@ AbsoluteLinearActuator<SerialMessager> pipettor(messager, motors, kPipettorParam
 
 void setup() {
   coreProtocol.setup();
-  Serial.begin(115200);
+  messager.setup();
 #ifndef DISABLE_LOGGING
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 #endif
-  messager.setup();
   pipettor.setup();
-  waitForSerialHandshake();
+  messager.establishConnection();
   coreProtocol.onConnect();
 }
 

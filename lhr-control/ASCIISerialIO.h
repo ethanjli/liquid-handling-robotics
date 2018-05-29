@@ -5,7 +5,12 @@
 
 namespace LiquidHandlingRobotics {
 
-void waitForSerialHandshake(char handshakeChar = '~', unsigned long waitDelay = 500);
+namespace ASCIISerial {
+  const long kDataRate = 115200;
+  const char kHandshakeChar = '~';
+}
+
+void waitForHandshake(HardwareSerial& serial = Serial, unsigned long waitDelay = 500);
 
 using SerialMessageSender = MessageSender<HardwareSerial>;
 using SerialMessageParser = MessageParser<HardwareSerial>;
