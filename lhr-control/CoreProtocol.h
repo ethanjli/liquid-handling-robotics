@@ -6,10 +6,25 @@
 namespace LiquidHandlingRobotics {
 
 const uint16_t kVersion[] PROGMEM = {
-  0, // Major
-  1, // Minor
-  0  // Patch
+  0, // Major, position 0
+  1, // Minor, position 1
+  0  // Patch, position 2
 };
+
+enum class WatchdogTimeout : uint8_t {
+  to15ms = WDTO_15MS,
+  to30ms = WDTO_30MS,
+  to60ms = WDTO_60MS,
+  to120ms = WDTO_120MS,
+  to250ms = WDTO_250MS,
+  to500ms = WDTO_500MS,
+  to1s = WDTO_1S,
+  to2s = WDTO_2S,
+  to4s = WDTO_4S,
+  to8s = WDTO_8S
+};
+
+void hardReset();
 
 const char kResetChannel = 'r';
 const char kVersionChannel = 'v';
@@ -25,22 +40,28 @@ const uint8_t kAnalogReadMaxPin = 5;
 const uint8_t kDigitalReadMinPin = 2;
 const uint8_t kDigitalReadMaxPin = 13;
 
-template<class Transport>
-void handleResetCommand(Messager<Transport> &messager);
-void hardReset();
+template<class Messager>
+class CoreProtocol {
+  public:
+    CoreProtocol(Messager &messager);
 
-template<class Transport>
-void handleVersionCommand(Messager<Transport> &messager);
-template<class Transport>
-void sendVersionMessage(char versionPosition, MessageSender<Transport> &messageSender);
-template<class Transport>
-void sendAllVersionMessages(MessageSender<Transport> &messageSender);
+    void setup();
+    void update();
 
-template<class Transport>
-void handleEchoCommand(Messager<Transport> &messager);
+    void onConnect(WatchdogTimeout timeout = WatchdogTimeout::to2s);
 
-template<class Transport>
-void handleIOCommand(Messager<Transport> &messager);
+    void sendVersionMessage(char versionPosition);
+    void sendAllVersionMessages();
+
+  private:
+    Messager &messager;
+    bool setupCompleted = false;
+
+    void handleResetCommand();
+    void handleVersionCommand();
+    void handleEchoCommand();
+    void handleIOCommand();
+};
 
 }
 

@@ -5,8 +5,69 @@
 
 namespace LiquidHandlingRobotics {
 
-template<class Transport>
-void handleResetCommand(Messager<Transport> &messager) {
+void hardReset() {
+  wdt_enable(static_cast<uint8_t>(WatchdogTimeout::to15ms));
+  while (true); // Hang to force the AVR watchdog timer to reset the Arduino
+}
+
+// CoreProtocol
+
+template<class Messager>
+CoreProtocol<Messager>::CoreProtocol(Messager &messager) :
+  messager(messager)
+{}
+
+template<class Messager>
+void CoreProtocol<Messager>::setup() {
+  if (setupCompleted) return;
+
+  wdt_reset();
+
+  setupCompleted = true;
+}
+
+template<class Messager>
+void CoreProtocol<Messager>::update() {
+  wdt_reset();
+  handleResetCommand();
+  wdt_reset();
+  handleVersionCommand();
+  wdt_reset();
+  handleEchoCommand();
+  wdt_reset();
+  handleIOCommand();
+  wdt_reset();
+}
+
+template<class Messager>
+void CoreProtocol<Messager>::onConnect(WatchdogTimeout timeout) {
+  sendAllVersionMessages();
+  wdt_enable(static_cast<uint8_t>(timeout));
+}
+
+template<class Messager>
+void CoreProtocol<Messager>::sendVersionMessage(char versionPosition) {
+  int channelPosition = versionPosition - '0';
+  if (channelPosition < 0 || channelPosition >= 3) return;
+  messager.sender.sendChannelStart();
+  messager.sender.sendChannelChar(kVersionChannel);
+  messager.sender.sendChannelChar(versionPosition);
+  messager.sender.sendChannelEnd();
+  messager.sender.sendPayload((int) pgm_read_word_near(kVersion + channelPosition));
+}
+
+template<class Messager>
+void CoreProtocol<Messager>::sendAllVersionMessages() {
+  sendVersionMessage('2');
+  wdt_reset();
+  sendVersionMessage('1');
+  wdt_reset();
+  sendVersionMessage('0');
+  wdt_reset();
+}
+
+template<class Messager>
+void CoreProtocol<Messager>::handleResetCommand() {
   if (!(messager.parser.justReceived() &&
         messager.parser.channel[0] == kResetChannel &&
         messager.parser.channelParsedLength() == 1)) return;
@@ -17,44 +78,18 @@ void handleResetCommand(Messager<Transport> &messager) {
   hardReset();
 }
 
-void hardReset() {
-  wdt_enable(WDTO_15MS);
-  while (true); // Hang to force the AVR watchdog timer to reset the Arduino
-}
-
-template<class Transport>
-void handleVersionCommand(Messager<Transport> &messager) {
+template<class Messager>
+void CoreProtocol<Messager>::handleVersionCommand() {
   if (!(messager.parser.justReceived() &&
         messager.parser.channel[0] == kVersionChannel &&
         messager.parser.channelParsedLength() <= 2)) return;
 
-  if (messager.parser.channelParsedLength() == 1) sendAllVersionMessages(messager.sender);
-  else sendVersionMessage(messager.parser.channel[1], messager.sender);
+  if (messager.parser.channelParsedLength() == 1) sendAllVersionMessages();
+  else sendVersionMessage(messager.parser.channel[1]);
 }
 
-template<class Transport>
-void sendVersionMessage(char versionPosition, MessageSender<Transport> &messageSender) {
-  int channelPosition = versionPosition - '0';
-  if (channelPosition < 0 || channelPosition >= 3) return;
-  messageSender.sendChannelStart();
-  messageSender.sendChannelChar(kVersionChannel);
-  messageSender.sendChannelChar(versionPosition);
-  messageSender.sendChannelEnd();
-  messageSender.sendPayload((int) pgm_read_word_near(kVersion + channelPosition));
-}
-
-template<class Transport>
-void sendAllVersionMessages(MessageSender<Transport> &messageSender) {
-  sendVersionMessage('2', messageSender);
-  wdt_reset();
-  sendVersionMessage('1', messageSender);
-  wdt_reset();
-  sendVersionMessage('0', messageSender);
-  wdt_reset();
-}
-
-template<class Transport>
-void handleEchoCommand(Messager<Transport> &messager) {
+template<class Messager>
+void CoreProtocol<Messager>::handleEchoCommand() {
   if (!(messager.parser.justReceived() &&
         messager.parser.channel[0] == kEchoChannel &&
         messager.parser.channelParsedLength() == 1)) return;
@@ -65,8 +100,8 @@ void handleEchoCommand(Messager<Transport> &messager) {
   messager.sender.sendPayload(messager.parser.payload);
 }
 
-template<class Transport>
-void handleIOCommand(Messager<Transport> &messager) {
+template<class Messager>
+void CoreProtocol<Messager>::handleIOCommand() {
   if (!messager.parser.justReceived()) return;
   if (messager.parser.channel[0] != kIOChannel) return;
   if (messager.parser.channel[1] != kIOReadChannel) return;
