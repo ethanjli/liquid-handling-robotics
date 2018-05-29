@@ -85,8 +85,12 @@ MessageParser<Transport>::MessageParser(Transport &transport) :
 
 template<class Transport>
 void MessageParser<Transport>::setup() {
+  if (setupCompleted) return;
+
   channelBuffer[0] = '\0';
   state.setup(State::awaitingChannel);
+
+  setupCompleted = true;
 }
 
 template<class Transport>

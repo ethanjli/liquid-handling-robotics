@@ -40,11 +40,12 @@ namespace States {
   };
 }
 
-template <class LinearActuator>
+template <class LinearActuator, class Messager>
 class LinearActuatorModule {
   public:
     LinearActuatorModule(
-        MessageParser &messageParser, LinearPositionControl::Components::Motors &motors,
+        Messager &messager,
+        LinearPositionControl::Components::Motors &motors,
         char actuatorChannelPrefix,
         MotorPort motorPort, uint8_t sensorId,
         int minPosition, int maxPosition,
@@ -63,7 +64,7 @@ class LinearActuatorModule {
     using Smoother = LinearPositionControl::Smoother<Position, int>;
     using State = States::LinearActuatorControlMode;
 
-    MessageParser &messageParser;
+    Messager &messager;
 
     LinearActuator actuator;
     LinearPositionControl::StateVariable<State> state;

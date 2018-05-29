@@ -80,6 +80,7 @@ class MessageParser {
 
   private:
     Transport &transport;
+    bool setupCompleted = false;
 
     // Channel
     int channelBufferPosition = 0;

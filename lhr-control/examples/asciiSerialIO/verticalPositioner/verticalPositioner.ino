@@ -10,14 +10,14 @@
 using namespace LiquidHandlingRobotics;
 
 // ASCII Serial communications
-MessageParser messageParser;
+SerialMessager messager;
 
 // Shared Components
 LinearPositionControl::Components::Motors motors;
 
 // Subsystems
-AbsoluteLinearActuator pipettor(messageParser, motors, kPipettorParams);
-AbsoluteLinearActuator verticalPositioner(messageParser, motors, kVerticalPositionerParams);
+AbsoluteLinearActuator<SerialMessager> pipettor(messager, motors, kPipettorParams);
+AbsoluteLinearActuator<SerialMessager> verticalPositioner(messager, motors, kVerticalPositionerParams);
 
 void setup() {
   wdt_disable();
@@ -25,23 +25,23 @@ void setup() {
 #ifndef DISABLE_LOGGING
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 #endif
-  messageParser.setup();
+  messager.setup();
   pipettor.setup();
   verticalPositioner.setup();
   waitForSerialHandshake();
   wdt_enable(WDTO_2S);
-  sendAllVersionMessages();
+  sendAllVersionMessages(messager.sender);
 }
 
 void loop() {
   wdt_reset();
-  messageParser.update();
+  messager.update();
   // Standard protocol
   wdt_reset();
-  handleResetCommand(messageParser);
-  handleVersionCommand(messageParser);
-  handleEchoCommand(messageParser);
-  handleIOCommand(messageParser);
+  handleResetCommand(messager);
+  handleVersionCommand(messager);
+  handleEchoCommand(messager);
+  handleIOCommand(messager);
   // Modules
   wdt_reset();
   pipettor.update();
