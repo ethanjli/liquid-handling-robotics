@@ -21,7 +21,7 @@ template<class Messager>
 void CoreProtocol<Messager>::setup() {
   if (setupCompleted) return;
 
-  wdt_reset();
+  wdt_disable();
 
   setupCompleted = true;
 }
