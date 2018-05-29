@@ -11,6 +11,7 @@ const char kChannelStartDelimiter = '<';
 const char kChannelEndDelimiter = '>';
 const char kPayloadStartDelimiter = '(';
 const char kPayloadEndDelimiter = ')';
+const unsigned int kChannelMaxLength = 8;
 
 // Message Sending
 
@@ -41,16 +42,53 @@ class MessageSender {
 // Message Parsing
 
 namespace States {
-  enum class Parsing : uint8_t {
-    awaitingChannel,
-    parsingChannel,
-    awaitingPayload,
-    parsingPayload,
-    parsedMessage
-  };
+  namespace Parsing {
+    enum class Field : uint8_t {
+      parsing,
+      parsed
+    };
+
+    enum class Message : uint8_t {
+      awaitingChannel,
+      parsingChannel,
+      awaitingPayload,
+      parsingPayload,
+      parsedMessage
+    };
+  }
 }
 
-const unsigned int kChannelMaxLength = 8;
+template <uint8_t maxLength>
+class StringParser {
+  public:
+    StringParser(char endDelimiter = '\0');
+
+    using State = States::Parsing::Field;
+
+    LinearPositionControl::StateVariable<State> state;
+
+    char endDelimiter;
+    char received[maxLength + 1];
+
+    void setup();
+
+    bool matches(const char queryString[]) const;
+    bool justReceived() const;
+    uint8_t parsedLength() const;
+
+    void onChar(char current);
+    void reset();
+
+  private:
+    bool setupCompleted = false;
+
+    // Buffer
+    uint8_t bufferPosition = 0;
+    char buffer[maxLength + 1];
+    uint8_t length = 0;
+
+    void parse(char current);
+};
 
 template <class Transport>
 class MessageParser {
@@ -58,12 +96,12 @@ class MessageParser {
     MessageParser(); // needs to be implemented by specialization
     MessageParser(Transport &transport);
 
-    using State = States::Parsing;
+    using State = States::Parsing::Message;
 
-    LinearPositionControl::StateVariable<States::Parsing> state;
+    LinearPositionControl::StateVariable<State> state;
 
     // Channel
-    char channel[kChannelMaxLength + 1];
+    char (&channel)[kChannelMaxLength + 1] = channelParser.received;
 
     // Payload
     int payload = 0;
@@ -83,23 +121,14 @@ class MessageParser {
 
   private:
     Transport &transport;
+    StringParser<kChannelMaxLength> channelParser;
     bool setupCompleted = false;
-
-    // Channel
-    int channelBufferPosition = 0;
-    char channelBuffer[kChannelMaxLength + 1];
-    char *channelBufferString = channelBuffer;
 
     // Payload
     int receivedNumber;
     bool negative = false;
     unsigned int payloadLength = 0;
-    unsigned int channelLength = 0;
 
-    LinearPositionControl::StateVariable<char> received;
-
-    void onParsingChannel();
-    void parseChannel(char current);
     void onAwaitingPayload();
     void onParsingPayload();
     void parsePayload(char current);

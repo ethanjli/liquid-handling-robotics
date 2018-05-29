@@ -76,18 +76,86 @@ void MessageSender<Transport>::sendPayload(int payload) {
   transport.println();
 }
 
+// StringParser
+
+template<uint8_t maxLength>
+StringParser<maxLength>::StringParser(char endDelimiter) :
+  endDelimiter(endDelimiter)
+{}
+
+template<uint8_t maxLength>
+void StringParser<maxLength>::setup() {
+  if (setupCompleted) return;
+
+  memset(buffer, '\0', maxLength + 1);
+  state.setup(State::parsing);
+
+  setupCompleted = true;
+}
+
+template<uint8_t maxLength>
+void StringParser<maxLength>::onChar(char current) {
+  if (current == endDelimiter) {
+    state.update(State::parsed);
+    bufferPosition = 0;
+    strlcpy(received, buffer, maxLength + 1);
+    buffer[0] = '\0';
+  } else {
+    parse(current);
+    state.update(State::parsing, true);
+  }
+}
+
+template<uint8_t maxLength>
+void StringParser<maxLength>::reset() {
+  memset(buffer, '\0', maxLength + 1);
+  length = 0;
+  bufferPosition = 0;
+  state.update(State::parsing);
+}
+
+template<uint8_t maxLength>
+bool StringParser<maxLength>::matches(const char queryString[]) const {
+  return strncmp(queryString, received, maxLength + 1) == 0;
+}
+
+template<uint8_t maxLength>
+bool StringParser<maxLength>::justReceived() const {
+  return state.justEntered(State::parsed);
+}
+
+template<uint8_t maxLength>
+uint8_t StringParser<maxLength>::parsedLength() const {
+  return length;
+}
+
+template<uint8_t maxLength>
+void StringParser<maxLength>::parse(char current) {
+  if (isAlphaNumeric(current)) {
+    if (bufferPosition < maxLength) {
+      buffer[bufferPosition] = current;
+      ++bufferPosition;
+      ++length;
+    } else {
+      Log.warning(F("Ignoring char '%c' beyond max string length!" CR), current);
+    }
+  } else if (!isControl(current)) {
+    Log.warning(F("Ignoring unknown char '%c'!" CR), current);
+  }
+}
+
 // MessageParser
 
 template<class Transport>
 MessageParser<Transport>::MessageParser(Transport &transport) :
-  transport(transport)
+  transport(transport), channelParser(kChannelEndDelimiter)
 {}
 
 template<class Transport>
 void MessageParser<Transport>::setup() {
   if (setupCompleted) return;
 
-  channelBuffer[0] = '\0';
+  channelParser.setup();
   state.setup(State::awaitingChannel);
 
   setupCompleted = true;
@@ -114,20 +182,18 @@ void MessageParser<Transport>::onChar(char current) {
   switch (state.current()) {
     case State::awaitingChannel:
       if (current == kChannelStartDelimiter) {
-        onParsingChannel();
+        channelParser.reset();
         state.update(State::parsingChannel);
       }
       break;
     case State::parsingChannel:
-      if (current == kChannelEndDelimiter) {
-        state.update(State::awaitingPayload);
-        onAwaitingPayload();
-      } else if (current == kChannelStartDelimiter) {
-        onParsingChannel();
-        Log.warning(F("Channel name starting with '%s' was interrupted in the middle by a '%c' character. Resetting channel name!" CR), channelBufferString, current);
+      if (current == kChannelStartDelimiter) {
+        channelParser.reset();
+        Log.warning(F("Channel name interrupted by start delimiter, resetting!" CR));
       } else {
-        parseChannel(current);
-        state.update(State::parsingChannel, true);
+        channelParser.onChar(current);
+        if (channelParser.justReceived()) state.update(State::awaitingPayload);
+        else state.update(State::parsingChannel, true);
       }
       break;
     case State::awaitingPayload:
@@ -150,12 +216,12 @@ void MessageParser<Transport>::onChar(char current) {
 
 template<class Transport>
 bool MessageParser<Transport>::isChannel(const char queryChannel[]) const {
-  return strncmp(queryChannel, channel, kChannelMaxLength + 1) == 0;
+  return channelParser.matches(queryChannel);
 }
 
 template<class Transport>
 bool MessageParser<Transport>::justReceived(const char queryChannel[]) const {
-  return state.justEntered(State::parsedMessage) && isChannel(queryChannel);
+  return state.justEntered(State::parsedMessage) && channelParser.matches(queryChannel);
 }
 
 template<class Transport>
@@ -170,21 +236,7 @@ unsigned int MessageParser<Transport>::payloadParsedLength() const {
 
 template<class Transport>
 unsigned int MessageParser<Transport>::channelParsedLength() const {
-  return channelLength;
-}
-
-template<class Transport>
-void MessageParser<Transport>::onParsingChannel() {
-  memset(channelBuffer, '\0', kChannelMaxLength + 1);
-  channelLength = 0;
-  channelBufferPosition = 0;
-}
-
-template<class Transport>
-void MessageParser<Transport>::onAwaitingPayload() {
-  channelBuffer[channelBufferPosition] = '\0';
-  channelBufferPosition = -1;
-  strlcpy(channel, channelBuffer, kChannelMaxLength + 1);
+  return channelParser.parsedLength();
 }
 
 template<class Transport>
@@ -201,23 +253,6 @@ void MessageParser<Transport>::onParsedMessage() {
 }
 
 template<class Transport>
-void MessageParser<Transport>::parseChannel(char current) {
-  if (channelBufferPosition >= 0) {
-    if (isAlphaNumeric(current)) {
-      if (channelBufferPosition < kChannelMaxLength) {
-        channelBuffer[channelBufferPosition] = current;
-        ++channelBufferPosition;
-        ++channelLength;
-      } else {
-        Log.error(F("Channel name starting with '%s' is too long. Ignoring extra character '%c'!" CR), channelBufferString, current);
-      }
-    } else if (!isControl(current)) {
-      Log.warning(F("Channel name starting with '%s' has unknown character '%c'. Ignoring it!" CR), channelBufferString, current);
-    }
-  }
-}
-
-template<class Transport>
 void MessageParser<Transport>::parsePayload(char current) {
   if (current == '-' && state.justEntered(State::parsingPayload)) {
     negative = true;
@@ -227,7 +262,7 @@ void MessageParser<Transport>::parsePayload(char current) {
     receivedNumber += current - '0';
     ++payloadLength;
   } else if (!isControl(current)) {
-    Log.warning(F("Payload on channel '%s' has unknown character '%c'. Ignoring it!" CR), channelBufferString, current);
+    Log.warning(F("Payload on channel '%s' has unknown character '%c'. Ignoring it!" CR), channel, current);
   }
 }
 
