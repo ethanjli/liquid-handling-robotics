@@ -171,6 +171,8 @@ void Messager<FirmataTransport>::setup() {
 template<>
 void Messager<FirmataTransport>::establishConnection() {
   while (transport.state.current() == FirmataTransport::State::connecting) transport.update();
+  sender.sendMessageStart();
+  sender.sendMessageEnd();
 }
 
 }

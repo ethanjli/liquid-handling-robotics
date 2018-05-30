@@ -10,10 +10,23 @@ board = PyMata3()
 
 MESSAGE_SYSEX_COMMAND = 0x0F
 
+establishedConnection = False
+
+
+def send_handshake(board):
+    """Start a serial connection."""
+    print('Sending handshake')
+    send_sysex(board, MESSAGE_SYSEX_COMMAND, [])
+
 
 async def message_sysex_listener(sysex_data):
     """Handle a message sysex."""
-    print('Received message: {}'.format(''.join([chr(byte) for byte in sysex_data[1:-1]])))
+    if len(sysex_data) == 2:
+        print('Established connection!')
+        global establishedConnection
+        establishedConnection = True
+        return
+    print('Received message: "{}"'.format(''.join([chr(byte) for byte in sysex_data[1:-1]])))
 
 
 def register_sysex_listener(board, command, callback):
@@ -29,10 +42,7 @@ def send_sysex(board, command, data):
 
 def encode_message(message_string):
     """Build a message to send in a sysex command."""
-    encoded = [ord(char) for char in message_string]
-    encoded_hex = [hex(ord(char)) for char in message_string]
-    print('Encoded message {} as {}'.format(message_string, encoded_hex))
-    return encoded
+    return [ord(char) for char in message_string]
 
 
 def main_manual():
@@ -49,7 +59,10 @@ def main_manual():
 
 def main_indirect():
     """Blink with indirect Firmata control."""
-    send_sysex(board, MESSAGE_SYSEX_COMMAND, [])
+    global establishedConnection
+    while not establishedConnection:
+        send_handshake(board)
+        board.sleep(1.0)
     message_template = '<l>({})'
     while True:
         print('LED On')
