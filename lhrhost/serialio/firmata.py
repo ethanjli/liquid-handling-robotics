@@ -48,10 +48,7 @@ def main_indirect():
 
 def main_automatic():
     """Blink with indirect Firmata control."""
-    send_sysex(board, MESSAGE_SYSEX_COMMAND, build_message('<l>(-1)'))  # LinearPositionControl's LED has a bug, this is a temporary workaround
     send_sysex(board, MESSAGE_SYSEX_COMMAND, build_message('<l>(-1)'))
-    while True:
-        pass
 
 
 if __name__ == '__main__':

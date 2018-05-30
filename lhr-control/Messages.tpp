@@ -88,7 +88,7 @@ void StringParser<maxLength>::setup() {
   if (setupCompleted) return;
 
   memset(buffer, '\0', maxLength + 1);
-  state.setup(State::parsing);
+  state.setup(State::ready);
 
   setupCompleted = true;
 }
@@ -154,7 +154,13 @@ IntegerParser<Integer>::IntegerParser(char endDelimiter) :
 {}
 
 template<class Integer>
-void IntegerParser<Integer>::setup() {}
+void IntegerParser<Integer>::setup() {
+  if (setupCompleted) return;
+
+  state.setup(State::ready);
+
+  setupCompleted = true;
+}
 
 template<class Integer>
 bool IntegerParser<Integer>::onChar(char current) {
@@ -166,6 +172,7 @@ bool IntegerParser<Integer>::onChar(char current) {
     negative = false;
     return false;
   } else {
+    if (state.current() == State::ready) state.update(State::parsing);
     parse(current);
     state.update(State::parsing, true);
     return true;

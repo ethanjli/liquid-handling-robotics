@@ -45,6 +45,7 @@ class MessageSender {
 namespace States {
   namespace Parsing {
     enum class Field : uint8_t {
+      ready,
       parsing,
       parsed
     };
@@ -111,6 +112,8 @@ class IntegerParser {
     uint8_t parsedLength() const;
 
   private:
+    bool setupCompleted = false;
+
     Integer intermediate;
     bool negative = false;
     uint8_t length = 0;
