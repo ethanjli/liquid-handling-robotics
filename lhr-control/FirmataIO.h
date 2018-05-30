@@ -21,7 +21,7 @@ namespace FirmataIO {
   void resetPinModes();
 }
 
-class FirmataTranslator : public FirmataFeature {
+class FirmataMessageListener : public FirmataFeature {
   public:
     // Implement FirmataFeature
     bool handlePinMode(uint8_t pin, int mode);
@@ -29,7 +29,7 @@ class FirmataTranslator : public FirmataFeature {
     bool handleSysex(uint8_t command, uint8_t argc, uint8_t *argv);
     void reset();
 
-    // Implement Serial-like interface
+    // Implement Stream-like interface
     uint8_t available() const;
     char read();
     char peek() const;
@@ -40,7 +40,7 @@ class FirmataTranslator : public FirmataFeature {
     uint8_t bufferPosition = 0;
 };
 
-class FirmataTransport {
+class FirmataTransport : public Print {
   public:
     FirmataExt firmataExt;
 
@@ -51,16 +51,18 @@ class FirmataTransport {
     AnalogOutputFirmata analogOutput;
     FirmataReporting reporting;
     // Firmata message transport feature
-    FirmataTranslator firmataTranslator;
+    FirmataMessageListener messageListener;
 
     void setup();
+    void update();
     void reset();
 
-    // Implement Serial-like interface
+    // Implement Stream-like interface
     void begin();
     uint8_t available() const;
     char read();
     char peek() const;
+    virtual size_t write(uint8_t nextChar);
 
   private:
     bool setupCompleted = false;

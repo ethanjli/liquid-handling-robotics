@@ -29,7 +29,6 @@ void CoreProtocol<Messager>::setup() {
 
 template<class Messager>
 void CoreProtocol<Messager>::update() {
-  /*
   wdt_reset();
   handleResetCommand();
   wdt_reset();
@@ -39,7 +38,6 @@ void CoreProtocol<Messager>::update() {
   wdt_reset();
   handleIOCommand();
   wdt_reset();
-  */
   handleBuiltinLEDCommand();
   led.update();
   wdt_reset();
@@ -142,7 +140,7 @@ void CoreProtocol<Messager>::handleBuiltinLEDCommand() {
       break;
   }
 
-  //messager.sendResponse(messager.parser.payload);
+  messager.sendResponse(messager.parser.payload);
 }
 
 }

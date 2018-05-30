@@ -1,5 +1,7 @@
 #include "FirmataIO.h"
 
+#include <avr/wdt.h>
+
 #include <AnalogWrite.h> // needed for successful compilation
 
 namespace LiquidHandlingRobotics {
@@ -18,17 +20,17 @@ void resetPinModes() {
 
 }
 
-// FirmataTranslator
+// FirmataMessageListener
 
-bool FirmataTranslator::handlePinMode(uint8_t pin, int mode) {
+bool FirmataMessageListener::handlePinMode(uint8_t pin, int mode) {
   return false;
 }
 
-void FirmataTranslator::handleCapability(uint8_t pin) {
+void FirmataMessageListener::handleCapability(uint8_t pin) {
   return false;
 }
 
-bool FirmataTranslator::handleSysex(uint8_t command, uint8_t argc, uint8_t *argv) {
+bool FirmataMessageListener::handleSysex(uint8_t command, uint8_t argc, uint8_t *argv) {
   if (command != FirmataIO::kTranslatorCommand) {
     bufferLength = 0;
     buffer = nullptr;
@@ -42,18 +44,18 @@ bool FirmataTranslator::handleSysex(uint8_t command, uint8_t argc, uint8_t *argv
   return true;
 }
 
-void FirmataTranslator::reset() {
+void FirmataMessageListener::reset() {
   bufferLength = 0;
   buffer = nullptr;
   bufferPosition = 0;
 }
 
-uint8_t FirmataTranslator::available() const {
+uint8_t FirmataMessageListener::available() const {
   if (buffer == nullptr) return 0;
   return bufferLength - bufferPosition;
 }
 
-char FirmataTranslator::read() {
+char FirmataMessageListener::read() {
   if (buffer == nullptr) return -1;
 
   char current = peek();
@@ -61,7 +63,7 @@ char FirmataTranslator::read() {
   return current;
 }
 
-char FirmataTranslator::peek() const {
+char FirmataMessageListener::peek() const {
   if (buffer == nullptr) return -1;
 
   return static_cast<char>(*(buffer + bufferPosition));
@@ -81,9 +83,21 @@ void FirmataTransport::setup() {
   firmataExt.addFeature(analogInput);
   firmataExt.addFeature(analogOutput);
   firmataExt.addFeature(reporting);
-  firmataExt.addFeature(firmataTranslator);
+  firmataExt.addFeature(messageListener);
 
   setupCompleted = true;
+}
+
+void FirmataTransport::update() {
+  wdt_reset();
+  if (reporting.elapsed()) analogInput.report();
+  wdt_reset();
+  digitalInput.report();
+  while (Firmata.available() && !messageListener.available()) {
+    wdt_reset();
+    Firmata.processInput();
+  }
+  wdt_reset();
 }
 
 void FirmataTransport::reset() {
@@ -98,21 +112,36 @@ void FirmataTransport::begin() {
 }
 
 uint8_t FirmataTransport::available() const {
-  return firmataTranslator.available();
+  return messageListener.available();
 }
 
 char FirmataTransport::read() {
-  return firmataTranslator.read();
+  return messageListener.read();
 }
 
 char FirmataTransport::peek() const {
-  return firmataTranslator.peek();
+  return messageListener.peek();
+}
+
+size_t FirmataTransport::write(uint8_t nextChar) {
+  Firmata.write(nextChar);
 }
 
 // MessageSender
 
 template<>
 void MessageSender<FirmataTransport>::setup() {}
+
+template<>
+void MessageSender<FirmataTransport>::sendMessageStart() {
+  transport.write(START_SYSEX);
+  transport.write(FirmataIO::kTranslatorCommand);
+}
+
+template<>
+void MessageSender<FirmataTransport>::sendMessageEnd() {
+  transport.write(END_SYSEX);
+}
 
 // MessageParser
 

@@ -24,16 +24,16 @@ class MessageSender {
 
     void setup(); // needs to be implemented by specialization
 
-    void sendMessage(const String &channel, int payload);
     void sendMessage(const char *channel, int payload);
+    void sendMessageStart(); // needs to be implemented by specialization
+    void sendChannel(const char *channel);
     void sendChannelStart();
     void sendChannelChar(char channelChar);
     void sendChannelEnd();
-    void sendChannel(const String &channel);
-    void sendChannel(const char *channel);
+    void sendPayload(int payload);
     void sendPayloadStart();
     void sendPayloadEnd();
-    void sendPayload(int payload);
+    void sendMessageEnd(); // needs to be implemented by specialization
 
   private:
     Transport &transport;

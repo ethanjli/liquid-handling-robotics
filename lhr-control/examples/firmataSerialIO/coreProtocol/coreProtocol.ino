@@ -1,5 +1,4 @@
 #define DISABLE_LOGGING
-#include <ArduinoLog.h>
 
 #include <FirmataIO.h>
 #include <CoreProtocol.h>
@@ -20,13 +19,12 @@ void setup()
   transport.setup();
   attachFirmataTransportResetCallback(transport);
   messager.setup();
+  // messager.establishConnection(); // this needs to do transport.update() but wait for a handshake
+  // coreProtocol.onConnect();
 }
 
 void loop() {
-  if (transport.reporting.elapsed()) transport.analogInput.report();
-  transport.digitalInput.report();
-  while (Firmata.available() && !transport.available()) Firmata.processInput();
-  
+  transport.update();
   messager.update();
   coreProtocol.update();
 }

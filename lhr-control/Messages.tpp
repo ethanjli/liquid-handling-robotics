@@ -13,67 +13,57 @@ MessageSender<Transport>::MessageSender(Transport &transport) :
 {}
 
 template<class Transport>
-void MessageSender<Transport>::sendMessage(const String &channel, int payload) {
-  sendChannel(channel);
-  sendPayload(payload);
-}
-
-template<class Transport>
 void MessageSender<Transport>::sendMessage(const char *channel, int payload) {
   sendChannel(channel);
   sendPayload(payload);
 }
 
 template<class Transport>
-void MessageSender<Transport>::sendChannel(const String &channel) {
-  transport.print(kChannelStartDelimiter);
-  transport.print(channel);
-  transport.print(kChannelEndDelimiter);
-}
-
-template<class Transport>
 void MessageSender<Transport>::sendChannel(const char *channel) {
-  transport.print(kChannelStartDelimiter);
+  sendChannelStart();
   transport.print(channel);
-  //char *curr = channel;
-  //while (curr != nullptr && *curr != '\0') {
-  //  transport.print(*curr);
-  //  ++curr;
-  //}
-  transport.print(kChannelEndDelimiter);
+  /*
+  char *curr = channel;
+  while (curr != nullptr && *curr != '\0') {
+    transport.write(*curr); // or sendChannelChar(*curr) for generalizability
+    ++curr;
+  }
+  */
+  sendChannelEnd();
 }
 
 template<class Transport>
 void MessageSender<Transport>::sendChannelStart() {
-  transport.print(kChannelStartDelimiter);
+  sendMessageStart();
+  transport.write(kChannelStartDelimiter);
 }
 
 template<class Transport>
 void MessageSender<Transport>::sendChannelChar(char channelChar) {
-  transport.print(channelChar);
+  if (isAlphaNumeric(channelChar)) transport.write(channelChar);
 }
 
 template<class Transport>
 void MessageSender<Transport>::sendChannelEnd() {
-  transport.print(kChannelEndDelimiter);
+  transport.write(kChannelEndDelimiter);
 }
 
 template<class Transport>
 void MessageSender<Transport>::sendPayloadStart() {
-  transport.print(kPayloadStartDelimiter);
+  transport.write(kPayloadStartDelimiter);
 }
 
 template<class Transport>
 void MessageSender<Transport>::sendPayloadEnd() {
-  transport.print(kPayloadEndDelimiter);
+  transport.write(kPayloadEndDelimiter);
+  sendMessageEnd();
 }
 
 template<class Transport>
 void MessageSender<Transport>::sendPayload(int payload) {
-  transport.print(kPayloadStartDelimiter);
+  sendPayloadStart();
   transport.print(payload);
-  transport.print(kPayloadEndDelimiter);
-  transport.println();
+  sendPayloadEnd();
 }
 
 // StringParser
@@ -102,6 +92,7 @@ bool StringParser<maxLength>::onChar(char current) {
     buffer[0] = '\0';
     return false;
   } else {
+    if (state.current() == State::ready) state.update(State::parsing);
     parse(current);
     state.update(State::parsing, true);
     return true;
@@ -205,6 +196,7 @@ void IntegerParser<Integer>::parse(char current) {
   } else if (isDigit(current)) {
     intermediate *= 10;
     intermediate += current - '0';
+    if (intermediate < 0) Log.warning(F("Integer overflowed to '%d'!" CR), intermediate);
     ++length;
   } else if (!isControl(current)) {
     Log.warning(F("Ignoring unknown char '%c' in integer!" CR), current);

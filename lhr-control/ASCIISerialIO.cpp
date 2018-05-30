@@ -42,6 +42,14 @@ MessageSender<HardwareSerial>::MessageSender() :
 template<>
 void MessageSender<HardwareSerial>::setup() {}
 
+template<>
+void MessageSender<HardwareSerial>::sendMessageStart() {}
+
+template<>
+void MessageSender<HardwareSerial>::sendMessageEnd() {
+  transport.write('\n');
+}
+
 // MessageParser
 
 template<>
