@@ -10,6 +10,8 @@
 #include <FirmataReporting.h>
 #include <FirmataExt.h>
 
+#include <StateVariable.h>
+
 #include "Messages.h"
 
 namespace LiquidHandlingRobotics {
@@ -19,10 +21,19 @@ namespace FirmataIO {
   const char kTranslatorCommand = 0x0F; // sysex command reserved for user-defined commands
 
   void resetPinModes();
+
+  namespace States {
+    enum class Transport : uint8_t {
+      connecting,
+      connected
+    };
+  }
 }
 
 class FirmataMessageListener : public FirmataFeature {
   public:
+    bool receivedEmptyMessage = false;
+
     // Implement FirmataFeature
     bool handlePinMode(uint8_t pin, int mode);
     void handleCapability(uint8_t pin);
@@ -42,16 +53,19 @@ class FirmataMessageListener : public FirmataFeature {
 
 class FirmataTransport : public Print {
   public:
-    FirmataExt firmataExt;
+    using State = FirmataIO::States::Transport;
 
+    FirmataExt firmataExt;
     // Firmata core features
     DigitalInputFirmata digitalInput;
     DigitalOutputFirmata digitalOutput;
     AnalogInputFirmata analogInput;
     AnalogOutputFirmata analogOutput;
     FirmataReporting reporting;
-    // Firmata message transport feature
+    // Firmata message listener feature
     FirmataMessageListener messageListener;
+
+    LinearPositionControl::SimpleStateVariable<FirmataIO::States::Transport> state;
 
     void setup();
     void update();

@@ -29,7 +29,10 @@ def send_sysex(board, command, data):
 
 def encode_message(message_string):
     """Build a message to send in a sysex command."""
-    return [ord(char) for char in message_string]
+    encoded = [ord(char) for char in message_string]
+    encoded_hex = [hex(ord(char)) for char in message_string]
+    print('Encoded message {} as {}'.format(message_string, encoded_hex))
+    return encoded
 
 
 def main_manual():
@@ -46,6 +49,7 @@ def main_manual():
 
 def main_indirect():
     """Blink with indirect Firmata control."""
+    send_sysex(board, MESSAGE_SYSEX_COMMAND, [])
     message_template = '<l>({})'
     while True:
         print('LED On')
@@ -56,16 +60,10 @@ def main_indirect():
         board.sleep(1.0)
 
 
-def main_automatic():
-    """Blink with indirect Firmata control."""
-    send_sysex(board, MESSAGE_SYSEX_COMMAND, encode_message('<l>(-1)'))
-    for i in range(64):
-        send_sysex(board, MESSAGE_SYSEX_COMMAND, encode_message('<e>({})'.format(i)))
-        board.sleep(0.25)
-
-
 if __name__ == '__main__':
     register_sysex_listener(board, MESSAGE_SYSEX_COMMAND, message_sysex_listener)
-    # main_manual()
-    # main_indirect()
-    main_automatic()
+    try:
+        # main_manual()
+        main_indirect()
+    except KeyboardInterrupt:
+        print('Quitting!')

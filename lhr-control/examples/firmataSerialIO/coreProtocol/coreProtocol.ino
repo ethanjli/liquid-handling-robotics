@@ -19,8 +19,8 @@ void setup()
   transport.setup();
   attachFirmataTransportResetCallback(transport);
   messager.setup();
-  // messager.establishConnection(); // this needs to do transport.update() but wait for a handshake
-  // coreProtocol.onConnect();
+  messager.establishConnection();
+  coreProtocol.onConnect();
 }
 
 void loop() {

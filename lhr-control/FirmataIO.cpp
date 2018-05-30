@@ -35,12 +35,14 @@ bool FirmataMessageListener::handleSysex(uint8_t command, uint8_t argc, uint8_t 
     bufferLength = 0;
     buffer = nullptr;
     bufferPosition = 0;
+    receivedEmptyMessage = false;
     return false;
   }
 
   bufferLength = argc;
   buffer = argv;
   bufferPosition = 0;
+  receivedEmptyMessage = bufferLength == 0;
   return true;
 }
 
@@ -78,6 +80,8 @@ void FirmataTransport::setup() {
       FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION
   );
 
+  state.setup(State::connecting);
+
   firmataExt.addFeature(digitalInput);
   firmataExt.addFeature(digitalOutput);
   firmataExt.addFeature(analogInput);
@@ -93,7 +97,12 @@ void FirmataTransport::update() {
   if (reporting.elapsed()) analogInput.report();
   wdt_reset();
   digitalInput.report();
-  while (Firmata.available() && !messageListener.available()) {
+  while (Firmata.available()) {
+    if (messageListener.available()) break;
+    if (messageListener.receivedEmptyMessage && (state.current() == State::connecting)) {
+      state.update(State::connected);
+      break;
+    }
     wdt_reset();
     Firmata.processInput();
   }
@@ -161,6 +170,7 @@ void Messager<FirmataTransport>::setup() {
 
 template<>
 void Messager<FirmataTransport>::establishConnection() {
+  while (transport.state.current() == FirmataTransport::State::connecting) transport.update();
 }
 
 }
