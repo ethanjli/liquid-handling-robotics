@@ -19,6 +19,7 @@ namespace LiquidHandlingRobotics {
 namespace FirmataIO {
   const long kDataRate = 57600;
   const char kTranslatorCommand = 0x0F; // sysex command reserved for user-defined commands
+  const unsigned int kPostHandshakeDelay = 500;
 
   void resetPinModes();
 

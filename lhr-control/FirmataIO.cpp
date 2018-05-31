@@ -2,6 +2,8 @@
 
 #include <avr/wdt.h>
 
+#include <elapsedMillis.h>
+
 #include <AnalogWrite.h> // needed for successful compilation
 
 namespace LiquidHandlingRobotics {
@@ -170,9 +172,16 @@ void Messager<FirmataTransport>::setup() {
 
 template<>
 void Messager<FirmataTransport>::establishConnection() {
+  elapsedMillis timer;
+
+  // Run Firmata as usual, but ignore any special messages received
   while (transport.state.current() == FirmataTransport::State::connecting) transport.update();
+  // Send a response
   sender.sendMessageStart();
   sender.sendMessageEnd();
+  // Wait a bit longer
+  timer = 0;
+  while (timer < FirmataIO::kPostHandshakeDelay) wdt_reset();
 }
 
 }
