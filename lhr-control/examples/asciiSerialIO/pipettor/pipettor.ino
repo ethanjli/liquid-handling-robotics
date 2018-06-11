@@ -1,31 +1,36 @@
-//#define DISABLE_LOGGING
+#define DISABLE_LOGGING
 #include <ArduinoLog.h>
 
 #include <ASCIISerialIO.h>
+#include <CoreProtocol.h>
 #include <Modules.h>
 
 using namespace LiquidHandlingRobotics;
 
 // ASCII Serial communications
-MessageParser messageParser;
+SerialMessager messager;
 
 // Shared Components
+CoreProtocol<SerialMessager> coreProtocol(messager);
 LinearPositionControl::Components::Motors motors;
 
 // Subsystems
-AbsoluteLinearActuator pipettor(messageParser, motors, kPipettorParams);
+AbsoluteLinearActuator<SerialMessager> pipettor(messager, motors, kPipettorParams);
 
 void setup() {
-  Serial.begin(115200);
+  coreProtocol.setup();
+  messager.setup();
 #ifndef DISABLE_LOGGING
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 #endif
-  messageParser.setup();
   pipettor.setup();
-  waitForSerialHandshake();
+  messager.establishConnection();
+  coreProtocol.onConnect();
 }
 
 void loop() {
-  messageParser.update();
+  messager.update();
+  coreProtocol.update();
+  // Modules
   pipettor.update();
 }

@@ -7,8 +7,17 @@
 
 namespace LiquidHandlingRobotics {
 
-using AbsoluteLinearActuator = LinearActuatorModule<LinearPositionControl::AbsoluteLinearActuator>;
-using CumulativeLinearActuator = LinearActuatorModule<LinearPositionControl::CumulativeLinearActuator>;
+template<class Messager>
+using AbsoluteLinearActuator = LinearActuatorModule<
+  LinearPositionControl::AbsoluteLinearActuator,
+  Messager
+>;
+
+template<class Messager>
+using CumulativeLinearActuator = LinearActuatorModule<
+  LinearPositionControl::CumulativeLinearActuator,
+  Messager
+>;
 
 }
 

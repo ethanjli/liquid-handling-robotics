@@ -1,58 +1,47 @@
-#include <avr/wdt.h>
-
 #define DISABLE_LOGGING
 #include <ArduinoLog.h>
 
 #include <ASCIISerialIO.h>
+#include <CoreProtocol.h>
 #include <Modules.h>
 
 using namespace LiquidHandlingRobotics;
 
 // ASCII Serial communications
-MessageParser messageParser;
+SerialMessager messager;
 
 // Shared Components
+CoreProtocol<SerialMessager> coreProtocol(messager);
 LinearPositionControl::Components::Motors motors;
 
 // Subsystems
-AbsoluteLinearActuator pipettor(messageParser, motors, kPipettorParams);
-AbsoluteLinearActuator verticalPositioner(messageParser, motors, kVerticalPositionerParams);
-CumulativeLinearActuator yPositioner(messageParser, motors, kYPositionerParams);
+AbsoluteLinearActuator<SerialMessager> pipettor(messager, motors, kPipettorParams);
+AbsoluteLinearActuator<SerialMessager> verticalPositioner(messager, motors, kVerticalPositionerParams);
+CumulativeLinearActuator<SerialMessager> yPositioner(messager, motors, kYPositionerParams);
 LinearPositionControl::SmoothedCumulativePositionCalibrator yPositionerCalibrator(
   yPositioner.actuator, yPositioner.smoother, kYPositionerCalibrationParams
 );
 
 void setup() {
-  wdt_disable();
-  Serial.begin(115200);
+  coreProtocol.setup();
+  messager.setup();
 #ifndef DISABLE_LOGGING
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 #endif
-  messageParser.setup();
   pipettor.setup();
   verticalPositioner.setup();
   yPositioner.setup();
   yPositionerCalibrator.setup();
-  waitForSerialHandshake();
-  wdt_enable(WDTO_2S);
-  sendAllVersionMessages();
+  messager.establishConnection();
+  coreProtocol.onConnect();
 }
 
 void loop() {
-  wdt_reset();
-  messageParser.update();
-  // Standard protocol
-  wdt_reset();
-  handleResetCommand(messageParser);
-  handleVersionCommand(messageParser);
-  handleEchoCommand(messageParser);
-  handleIOCommand(messageParser);
+  messager.update();
+  coreProtocol.update();
   // Modules
-  wdt_reset();
   pipettor.update();
-  wdt_reset();
   verticalPositioner.update();
-  wdt_reset();
   if (yPositionerCalibrator.calibrated()) {
     yPositioner.update();
   } else { // initialize positions of z-axis and y-axis
