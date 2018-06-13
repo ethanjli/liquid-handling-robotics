@@ -7,7 +7,7 @@ skinparam monochrome true
 skinparam defaultFontName Lato
 skinparam shadowing false
 
-state SerialHandshake
+state ConnectionHandshake
 state Operational {
   note "P Axis" as PAxis
   [*] --> PReady : / init
@@ -44,11 +44,11 @@ state Operational {
   YDutyControl --> YPIDTargeting : string(<yt>[...])
 }
 
-[*] --> SerialHandshake : / setup
-SerialHandshake --> SerialHandshake : / string(~)
-SerialHandshake --> Operational : string(\\n) / string(\\n)
+[*] --> ConnectionHandshake : / setup
+ConnectionHandshake --> ConnectionHandshake : / string(~)
+ConnectionHandshake --> Operational : string(\\n) / string(\\n)
 Operational --> Operational : / update
-Operational --> SerialHandshake : string(<r>[...]) / hard reset, setup
+Operational --> ConnectionHandshake : string(<r>[...]) / hard reset, setup
 
 
 @enduml

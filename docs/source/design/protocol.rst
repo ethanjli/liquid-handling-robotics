@@ -12,7 +12,7 @@ Communication between the host and the peripheral is based on passing messages o
 
 Overview of Protocol Layers
 ---------------------------
-The messaging system between the host and the peripheral is partitioned into layers of abstraction roughly conforming to the layers of the `OSI model <https://en.wikipedia.org/wiki/OSI_model>`_:
+The messaging system between the host and the peripheral is partitioned into layers of abstraction roughly conforming to the layers of the `OSI model <https://en.wikipedia.org/wiki/OSI_model>`_ (:numref:`layers`):
 
 - The lowest layer is the *physical layer*, which specifies the physical connection between the host and the peripheral. Currently, this is provided by USB.
 - The next layer is the *data link layer*, for transport of raw data between the host and the peripheral. Currently, this is provided by UART.
@@ -20,17 +20,17 @@ The messaging system between the host and the peripheral is partitioned into lay
 - Above the transport layer is the *presentation layer*, which specifies the encoding for representing messages. Currently, the protocol for this layer specifies a human-readable representation for messages.
 - The final layer for the messaging protocol is the *application layer*, at which messages are sent and received. The protocol for this layer specifies the set of commands and responses which may be passed between the host and the peripheral.
 
-Any implementation of a host controller or peripheral controller will need to implement the protocols for the transport, presentation, and application layers.
+.. _layers:
+.. uml:: layers.uml
+   :align: center
+   :caption: : Examples of data sent at the application, presentation, and transport layers. Messages are sent at the application layer, encoded message strings are sent at the presentation layer, and message packets are sent at the transport layer. The transport layer consists of either an ASCII-based protocol or a Firmata-based protocol.
+
+Any implementation of a host controller or peripheral controller will need to implement the protocols for the transport, presentation, and application layers, which together specify how a message is sent over the data link layer between the host and the peripheral (:numref:`asciilayers`).
 
 .. graphviz:: asciilayers.dot
    :name: asciilayers
    :align: center
-   :caption: : Overview of protocol layer architecture using the ASCII-based transport layer, with transmission of an echo command as an illustrative example.
-
-.. graphviz:: firmatalayers.dot
-   :name: firmatalayers
-   :align: center
-   :caption: : Overview of protocol layer architecture using the Firmata-based transport layer, with transmission of an echo command as an illustrative example.
+   :caption: : Overview of protocol layer architecture using the ASCII-based transport layer, with transmission of an echo command as an illustrative example. On the host controller, a message at the application layer is encoded into a string at the presentation layer, which is packaged in a packet at the transport layer before being sent at the data link layer to the peripheral, where it is unpacked from a transport-layer packet into a presentation-layer message string and decoded into an application-layer message.
 
 Transport Layer
 ---------------
@@ -39,6 +39,8 @@ The transport layer provides a mechanism for transmitting and receiving messages
 
 - An ASCII-based transport layer is simplest and runs with the least memory overhead on the peripheral. It allows a user (acting in place of the host application and presentation layers) to send commands and receive responses via a host computer's serial console directly, without any additional software.
 - A Firmata-based transport layer enables the peripheral to communicate with host controller software which requires using Firmata to connect to the Arduino.
+
+The transport layer specifies a character marking the end of a packet; the transport layer may also optionally specify a character or character sequence marking the start of a packet.
 
 ASCII-Based Transport
 ~~~~~~~~~~~~~~~~~~~~~
@@ -99,33 +101,28 @@ And the following strings are examples of malformed (syntatically invalid) strin
   W: Payload on channel 'zt' has unknown character '98'. Ignoring it!
   W: Payload on channel 'zt' has unknown character '99'. Ignoring it!
 
-
-
-Overview of Peripheral States
------------------------------
-
-At a simplified level, the peripheral controller's externally-visible behavior can be described as a hierarchical state machine (:numref:`peripheral`). After it is first turned on, the peripheral runs a setup routine and enters the **SerialHandshake** state.
-
-TODO: generalize this and explain transport layer-specific nuances.
-It remains in this state, looping and sending out a tilde ``~`` ping character over the serial connection at a constant rate. When the peripheral receives a newline ``\n`` ping reply character from the host, it will proceed to the **Operational** state.
-
-In the **Operational** state, the peripheral loops and:
-
-- Updates its substates and internal state variables based on sensor signals received from hardware and serial commands received from the host.
-- Emits actuator effort signals to the hardware.
-
-An **Operational** peripheral can also transition back into the **SerialHandshake** state by restarting when it receives a ``<r>(...)`` reset command, as if the hardware reset button of the Arduino running the peripheral controller has been pressed. Command syntax, and the semantics of this reset command, are described later.
-
-.. _peripheral:
-.. uml:: peripheral.uml
-   :align: center
-   :caption: : Overview of peripheral controller's behavior. The peripheral starts by entering the **SerialHandshake** state and transitions between the **SerialHandshake** and **Operational** states based on serial inputs received from the host.
-
-The **Operational** state is actually a superstate with several orthogonal regions, each of which controls a single axis of the robot hardware and can be thought of as its own independent state machine. Thus, we will refer to each orthogonal region of the **Operational** superstate as an *axis controller*. Each axis controller receives all command messages received by the peripheral and is able to send response messages to the host. Each axis controller also generally behaves the same way (exceptions are documented later), follows the standard command/response message syntax, and has the same command/response protocol, so we will next discuss command/response syntax in the **Operational** state.
-
 Application Layer
 -----------------
 
 Core Protocol
 ~~~~~~~~~~~~~
+
+Overview of Peripheral States
+-----------------------------
+
+At a simplified level, the peripheral's externally-visible behavior can be described as a hierarchical state machine (:numref:`peripheral`). After it is first turned on, the peripheral runs a setup routine and enters the **ConnectionHandshake** state. It remains in this state, looping to establish a transport-layer connection session with the host. When a connection session is established, the peripheral will proceed to the **Operational** state.
+
+In the **Operational** state, the peripheral loops and:
+
+- Updates its substates and internal state variables based on sensor signals received from hardware and commands received from the host.
+- Emits actuator effort signals to the hardware.
+
+An **Operational** peripheral can also transition back into the **ConnectionHandshake** state by restarting when it receives a ``<r>(...)`` reset command, as if the hardware reset button of the Arduino running the peripheral controller has been pressed. Command syntax, and the semantics of this reset command, are described later.
+
+.. _peripheral:
+.. uml:: peripheral.uml
+   :align: center
+   :caption: : Overview of peripheral controller's behavior. The peripheral starts by entering the **ConnectionHandshake** state and transitions between the **ConnectionHandshake** and **Operational** states based on commands received from the host.
+
+The **Operational** state is actually a superstate with several orthogonal regions, each of which controls a single axis of the robot hardware and can be thought of as its own independent state machine. Thus, we will refer to each orthogonal region of the **Operational** superstate as an *axis controller*. Each axis controller receives all command messages received by the peripheral and is able to send response messages to the host. Each axis controller also generally behaves the same way (exceptions are documented later), follows the standard command/response message syntax, and has the same command/response protocol, so we will next discuss command/response syntax in the **Operational** state.
 
