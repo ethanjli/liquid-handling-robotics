@@ -1,0 +1,30 @@
+@startuml
+
+hide footbox
+skinparam monochrome true
+skinparam defaultFontName Lato
+skinparam shadowing false
+
+Host -> Peripheral: Version/Major()
+note left: READ Command
+Peripheral -> Host: Version/Major(1)
+note right: READ response
+Host -> Peripheral: Version/Minor()
+note left: READ command
+Peripheral -> Host: Version/Minor(0)
+note right: READ response
+Host -> Peripheral: Version/Patch()
+note left: READ command
+Peripheral -> Host: Version/Patch(0)
+note right: READ response
+Host -> Peripheral: Version()
+note left: READ command
+Peripheral -> Host: Version/Major(1)
+note right: READ response
+Peripheral -> Host: Version/Minor(0)
+note right: READ response
+Peripheral -> Host: Version/Patch(0)
+note right: READ response
+
+@enduml
+

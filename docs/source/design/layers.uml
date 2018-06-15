@@ -5,11 +5,11 @@ skinparam monochrome true
 skinparam defaultFontName Lato
 skinparam shadowing false
 
-Application : Echo(123)
-Application : Version/GetAll()
-Application : Version/GetMajor()
-Application : Version/GetMinor()
+Application : Echo(1234)
 Application : Reset()
+Application : Version()
+Application : Version/Major()
+Application : Version/Minor()
 Application : BuiltinLED/Mode/Get()
 Application : BuiltinLED/Mode/SetOff()
 Application : BuiltinLED/Mode/SetOn()
@@ -18,10 +18,10 @@ Application : PinIO/Read/Digital(5)
 Application : ...
 
 Presentation : <font:monospace><e>(1234)</font>
+Presentation : <font:monospace><r>()</font>
 Presentation : <font:monospace><v>()</font>
 Presentation : <font:monospace><v0>()</font>
 Presentation : <font:monospace><v1>()</font>
-Presentation : <font:monospace><r>()</font>
 Presentation : <font:monospace><l>(0)</font>
 Presentation : <font:monospace><l>(1)</font>
 Presentation : <font:monospace><ira>(4)</font>
@@ -33,10 +33,10 @@ state Transport {
   "ASCII-Based" : <font:monospace>\\n</font>
   "ASCII-Based" : \n
   "ASCII-Based" : <font:monospace><b><e>(1234)</b>\\n</font>
+  "ASCII-Based" : <font:monospace><b><r>()</b>\\n</font>
   "ASCII-Based" : <font:monospace><b><v>()</b>\\n</font>
   "ASCII-Based" : <font:monospace><b><v0>()</b>\\n</font>
   "ASCII-Based" : <font:monospace><b><v1>()</b>\\n</font>
-  "ASCII-Based" : <font:monospace><b><r>()</b>\\n</font>
   "ASCII-Based" : <font:monospace><b><l>()</b>\\n</font>
   "ASCII-Based" : <font:monospace><b><l>(0)</b>\\n</font>
   "ASCII-Based" : <font:monospace><b><l>(1)</b>\\n</font>
@@ -49,10 +49,10 @@ state Transport {
   "Firmata-Based" : \n<font:monospace>\\xF0\\x0F\\xF7</font>
   "Firmata-Based" : \n
   "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><e>(1234)</b>\\xF7</font>
+  "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><r>()</b>\\xF7</font>
   "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><v>()</b>\\xF7</font>
   "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><v0>()</b>\\xF7</font>
   "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><v1>()</b>\\xF7</font>
-  "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><r>()</b>\\xF7</font>
   "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><l>()</b>\\xF7</font>
   "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><l>(0)</b>\\xF7</font>
   "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><l>(1)</b>\\xF7</font>

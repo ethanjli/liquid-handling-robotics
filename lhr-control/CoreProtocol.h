@@ -61,6 +61,7 @@ class CoreProtocol {
   private:
     Messager &messager;
     bool setupCompleted = false;
+    int echoValue = 0;
 
     void handleResetCommand();
     void handleVersionCommand();

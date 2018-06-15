@@ -62,11 +62,11 @@ void CoreProtocol<Messager>::sendVersionMessage(char versionPosition) {
 
 template<class Messager>
 void CoreProtocol<Messager>::sendAllVersionMessages() {
-  sendVersionMessage('2');
+  sendVersionMessage('0');
   wdt_reset();
   sendVersionMessage('1');
   wdt_reset();
-  sendVersionMessage('0');
+  sendVersionMessage('2');
   wdt_reset();
 }
 
@@ -97,8 +97,9 @@ void CoreProtocol<Messager>::handleEchoCommand() {
   if (!(messager.parser.justReceived() &&
         messager.parser.channel[0] == kEchoChannel &&
         messager.parser.channelParsedLength() == 1)) return;
+  if (messager.parser.payloadParsedLength()) echoValue = messager.parser.payload;
 
-  messager.sendResponse(messager.parser.payload);
+  messager.sendResponse(echoValue);
 }
 
 template<class Messager>

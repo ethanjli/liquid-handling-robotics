@@ -1,0 +1,26 @@
+@startuml
+
+hide footbox
+skinparam monochrome true
+skinparam defaultFontName Lato
+skinparam shadowing false
+
+Host -> Peripheral: Reset()
+note left: READ Command
+Peripheral -> Host: Reset(0)
+note right: READ response
+Host -> Peripheral: Reset(0)
+note left: WRITE+READ+Actions Command
+Peripheral -> Host: Reset(0)
+note right: READ response
+Host -> Peripheral: Reset(1)
+note left: WRITE+READ+Actions Command
+Peripheral -> Host: Reset(1)
+note right: READ response
+...peripheral performs hard reset...
+...host and peripheral reestablish their connection...
+Host -> Peripheral: Reset()
+Peripheral -> Host: Reset(0)
+
+@enduml
+

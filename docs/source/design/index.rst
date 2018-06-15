@@ -7,6 +7,7 @@ This is a reference for the design of the liquid-handling robot.
    :maxdepth: 3
    :caption: Contents:
 
-   protocol
    standards
+   protocol
+   messages/index
 
