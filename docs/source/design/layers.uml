@@ -6,15 +6,16 @@ skinparam defaultFontName Lato
 skinparam shadowing false
 
 Application : Echo(1234)
-Application : Reset()
+Application : Reset(1)
 Application : Version()
 Application : Version/Major()
 Application : Version/Minor()
-Application : BuiltinLED/Mode/Get()
-Application : BuiltinLED/Mode/SetOff()
-Application : BuiltinLED/Mode/SetOn()
-Application : PinIO/Read/Analog(4)
-Application : PinIO/Read/Digital(5)
+Application : BuiltinLED(1)
+Application : BuiltinLED/Blink(1)
+Application : BuiltinLED/Blink/HighInterval(250)
+Application : BuiltinLED/Blink/LowInterval(750)
+Application : PinIO/Analog/4()
+Application : PinIO/Digital/5()
 Application : ...
 
 Presentation : <font:monospace><e>(1234)</font>

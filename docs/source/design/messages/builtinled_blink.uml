@@ -1,0 +1,175 @@
+@startuml
+
+skinparam monochrome true
+skinparam defaultFontName Lato
+skinparam shadowing false
+
+group Basic example
+  == Set Blinking Parameters ==
+  Host -> Peripheral: BuiltinLED/Blink/HighInterval(250)
+  note left: WRITE+READ Command
+  Peripheral -> Host: BuiltinLED/Blink/HighInterval(250)
+  note right: READ response
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/LowInterval(250)
+  note left: WRITE+READ Command
+  Peripheral -> Host: BuiltinLED/Blink/LowInterval(250)
+  note right: READ response
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/Periods(-1)
+  note left: WRITE+READ Command
+  Peripheral -> Host: BuiltinLED/Blink/Periods(-1)
+  note right: READ response
+
+  == Start Blinking ==
+  Host -> Peripheral: BuiltinLED/Blink(1)
+  note left: WRITE+READ+Actions Command
+  Peripheral -> Host: BuiltinLED/Blink(1)
+  note right: READ response
+  note over Peripheral: Built-in LED turns on.
+
+  == Blinking ==
+  ...250 ms pass...
+  note over Peripheral: Built-in LED turns off.
+  ...750 ms pass...
+  note over Peripheral: Built-in LED turns on.
+  ...250 ms pass...
+  note over Peripheral: Built-in LED turns off.
+  Host -> Peripheral: BuiltinLED()
+  Peripheral -> Host: BuiltinLED(0)
+  ...750 ms pass...
+  note over Peripheral: Built-in LED turns on.
+  Host -> Peripheral: BuiltinLED()
+  Peripheral -> Host: BuiltinLED(1)
+  ...250 ms pass...
+  note over Peripheral: Built-in LED turns off.
+  ...750 ms pass...
+  note over Peripheral: Built-in LED turns on.
+  ...250 ms pass...
+  note over Peripheral: Built-in LED turns off.
+  ...750 ms pass...
+  note over Peripheral: Built-in LED turns on.
+  ...cycle continues indefinitely...
+
+  == Stop Blinking ==
+  Host -> Peripheral: BuiltinLED/Blink(0)
+  note left: WRITE+READ+Actions Command
+  Peripheral -> Host: BuiltinLED/Blink(0)
+  note right: READ response
+  note over Peripheral: Built-in LED stops blinking and turns off.
+end
+
+group Example with blinking notifications
+  == Set Blinking Parameters ==
+  Host -> Peripheral: BuiltinLED/Blink/HighInterval(250)
+  Peripheral -> Host: BuiltinLED/Blink/HighInterval(250)
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/LowInterval(250)
+  Peripheral -> Host: BuiltinLED/Blink/LowInterval(250)
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/Periods(-1)
+  Peripheral -> Host: BuiltinLED/Blink/Periods(-1)
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/Notify(1)
+  note left: WRITE+READ Command
+  Peripheral -> Host: BuiltinLED/Blink/Notify(1)
+  note right: READ response
+
+  == Start Blinking ==
+  Host -> Peripheral: BuiltinLED/Blink(1)
+  Peripheral -> Host: BuiltinLED/Blink(1)
+  note over Peripheral: Built-in LED turns on.
+  Peripheral -> Host: BuiltinLED(1)
+
+  == Blinking ==
+  ...250 ms pass...
+  note over Peripheral: Built-in LED turns off.
+  Peripheral -> Host: BuiltinLED(0)
+  ...750 ms pass...
+  note over Peripheral: Built-in LED turns on.
+  Peripheral -> Host: BuiltinLED(1)
+  ...250 ms pass...
+  note over Peripheral: Built-in LED turns off.
+  Peripheral -> Host: BuiltinLED(0)
+  ...750 ms pass...
+  note over Peripheral: Built-in LED turns on.
+  Peripheral -> Host: BuiltinLED(1)
+  ...250 ms pass...
+  note over Peripheral: Built-in LED turns off.
+  Peripheral -> Host: BuiltinLED(0)
+  ...cycle continues indefinitely...
+
+  == Stop Blinking ==
+  Host -> Peripheral: BuiltinLED/Blink(0)
+  Peripheral -> Host: BuiltinLED/Blink(0)
+  note over Peripheral: Built-in LED stops blinking and turns off.
+end
+
+group Example with finite blinking duration
+  == Set Blinking Parameters ==
+  Host -> Peripheral: BuiltinLED/Blink/HighInterval(250)
+  Peripheral -> Host: BuiltinLED/Blink/HighInterval(250)
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/LowInterval(250)
+  Peripheral -> Host: BuiltinLED/Blink/LowInterval(250)
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/Periods(-1)
+  Peripheral -> Host: BuiltinLED/Blink/Periods(-1)
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/Periods(3)
+  note left: WRITE+READ Command
+  Peripheral -> Host: BuiltinLED/Blink/Periods(3)
+  note right: READ response
+
+  == Start Blinking ==
+  Host -> Peripheral: BuiltinLED/Blink(1)
+  Peripheral -> Host: BuiltinLED/Blink(1)
+  note over Peripheral: Built-in LED turns on.
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/Periods()
+  Peripheral -> Host: BuiltinLED/Blink/Periods(3)
+
+  == Blinking ==
+  ...250 ms pass...
+  note over Peripheral: Built-in LED turns off.
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/Periods()
+  Peripheral -> Host: BuiltinLED/Blink/Periods(3)
+  |||
+  ...750 ms pass...
+  note over Peripheral: Built-in LED turns on.
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/Periods()
+  Peripheral -> Host: BuiltinLED/Blink/Periods(2)
+  |||
+  ...250 ms pass...
+  note over Peripheral: Built-in LED turns off.
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/Periods()
+  Peripheral -> Host: BuiltinLED/Blink/Periods(2)
+  |||
+  ...750 ms pass...
+  note over Peripheral: Built-in LED turns on.
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/Periods()
+  Peripheral -> Host: BuiltinLED/Blink/Periods(1)
+  |||
+  ...250 ms pass...
+  note over Peripheral: Built-in LED turns off.
+  |||
+  Host -> Peripheral: BuiltinLED/Blink/Periods()
+  Peripheral -> Host: BuiltinLED/Blink/Periods(1)
+  |||
+  ...750 ms pass...
+  note over Peripheral: Blinking ends.
+
+  == Stop Blinking ==
+  Host -> Peripheral: BuiltinLED/Blink/Periods()
+  Peripheral -> Host: BuiltinLED/Blink/Periods(0)
+  |||
+  Host -> Peripheral: BuiltinLED/Blink()
+  Peripheral -> Host: BuiltinLED/Blink(0)
+end
+
+@enduml
+

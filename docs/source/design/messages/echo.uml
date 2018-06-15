@@ -1,6 +1,5 @@
 @startuml
 
-hide footbox
 skinparam monochrome true
 skinparam defaultFontName Lato
 skinparam shadowing false
@@ -10,23 +9,28 @@ group Basic example
   note left: WRITE+READ Command
   Peripheral -> Host: Echo(1234)
   note right: READ response
+  |||
   Host -> Peripheral: Echo()
   note left: READ command
   Peripheral -> Host: Echo(1234)
   note right: READ response
+  |||
   Host -> Peripheral: Echo(-1)
   Peripheral -> Host: Echo(-1)
+  |||
   Host -> Peripheral: Echo()
   Peripheral -> Host: Echo(-1)
 end
-
+|||
 group Example of testing for integer overflow
   Host -> Peripheral: Echo(32767)
   note left: Won't overflow
   Peripheral -> Host: Echo(32767)
+  |||
   Host -> Peripheral: Echo(32768)
   note left: Will overflow
   Peripheral -> Host: Echo(-32768)
+  |||
   Host -> Peripheral: Echo(32769)
   note left: Will overflow
   Peripheral -> Host: Echo(-32767)

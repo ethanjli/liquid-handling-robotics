@@ -1,0 +1,36 @@
+@startuml
+
+hide footbox
+skinparam monochrome true
+skinparam defaultFontName Lato
+skinparam shadowing false
+
+Host -> Peripheral: BuiltinLED(1)
+note left: WRITE+READ+Actions Command
+note over Peripheral: Pin 13 goes to HIGH,\nbuilt-in LED turns on
+Peripheral -> Host: BuiltinLED(1)
+note right: READ response
+|||
+Host -> Peripheral: BuiltinLED()
+note left: READ command
+Peripheral -> Host: BuiltinLED(1)
+note right: READ response
+|||
+Host -> Peripheral: BuiltinLED(0)
+note left: WRITE+READ+Actions Command
+note over Peripheral: Pin 13 goes to LOW,\nbuilt-in LED turns off
+Peripheral -> Host: BuiltinLED(0)
+note right: READ response
+|||
+Host -> Peripheral: BuiltinLED()
+note left: READ command
+Peripheral -> Host: BuiltinLED(0)
+note right: READ response
+|||
+Host -> Peripheral: BuiltinLED(-1)
+note left: WRITE+READ+Actions Command\nwith invalid payload
+Peripheral -> Host: BuiltinLED(0)
+note right: READ response
+
+@enduml
+

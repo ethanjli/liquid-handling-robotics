@@ -1,7 +1,11 @@
-Core Protocol
+Core Application-Layer Protocol
 =============
 
-All peripherals must support the core application-layer protocol, which provides basic functionality. Here are the channels specified by the core protocol:
+All peripherals must support the core application-layer protocol, which provides basic functionality. Channels are organized hierarchically, and the names of child channels contain the names of their parent channels as prefixes. Each level in the hierarchy corresponds to one character of the channel name.
+
+All channels support a READ command which simpy causes the peripheral to send a READ response on that same channel, so READ commands are only explicitly documented for channels which are READ-only.
+
+Here are the channels specified by the core protocol:
 
 Echo
 ----
@@ -11,7 +15,6 @@ Echo
 - **Semantics**: READ/WRITE
 
   - **WRITE+READ command**: If payload is provided in the command, the peripheral uses it to set the internal variable named by the Echo channel to the payload's value, and then the peripheral sends a READ response.
-  - **READ command**: If payload is empty in the command, the peripheral simply sends a READ response.
   - **READ response**: The peripheral sends a response on the Echo channel with the latest value of the internal variable named by the Echo channel.
 
 .. _echo:
@@ -27,7 +30,6 @@ Reset
 - **Semantics**: READ/WRITE + actions
 
   - **WRITE+READ+Actions command**: If the payload is `1`, the peripheral will send a READ response and then perform a hard reset by executing the actions described below. Otherwise, the peripheral will send a READ response and do nothing.
-  - **READ command**: If the payload is empty in the command, the peripheral simply sends a READ response.
   - **READ response**: The peripheral sends a response on the Reset channel with payload `1`, if the peripheral is about to perform a hard reset, or else with payload `0`.
   - **Actions**: The peripheral will enter a brief infinite loop which blocks the peripheral's event loop and causes an internal watchdog timer in the peripheral to hard reset the entire peripheral, including resetting the host-peripheral connection.
 
@@ -39,8 +41,20 @@ Reset
 Version
 -------
 
-- **Child channels**: Version/Major, Version/Minor, Version/Patch
-- **Channel names**: Version: `v`, Version/Major: `v0`, Version/Minor: `v1`, Version/Patch: `v2`
+- **Child channels**:
+
+  - Version/Major
+  - Version/Minor
+  - Version/Patch
+
+- **Channel names**:
+
+  - Version: `v`
+
+    - Version/Major: `v0`
+    - Version/Minor: `v1`
+    - Version/Patch: `v2`
+
 - **Description**: These commands allow the host to query the peripheral for its protocol version. The full version has three components (major, minor, patch), and so the Version/Major, Version/Minor, and Version/Patch child channels (each with their own channel name) enable querying the three respective components individually. The Version channel can also be used to query the three components together.
 - **Semantics** for child channels: READ
 
@@ -56,3 +70,75 @@ Version
 .. uml:: version.uml
    :align: center
    :caption: : Examples of commands and responses associated with the Version channel and its child channels.
+
+BuiltinLED
+----------
+
+- **Child channels**:
+
+  - BuiltinLED/Blink (child channels of BuiltinLED/Blink documented below)
+
+- **Channel names**:
+
+  - BuiltinLED: `l` (the lower-case letter "L")
+
+    - BuiltinLED/Blink: `lb` (names of child channels of BuiltinLED/Blink documented below)
+
+- **Description**: These commands allow the host to control the built-in LED (on pin 13) of the Arduino board.
+- **Semantics** for child channels documented below.
+- **Semantics** for BuiltinLED channel: READ/WRITE + Actions
+
+  - **WRITE+READ+Actions command**: If the payload is `1`, the peripheral will set the built-in LED to HIGH and send a READ response. If the payload is `0`, the peripheral will set the built-in LED to LOW and send a READ response. Otherwise, the peripheral will send a READ response and do nothing.
+  - **READ response**: The peripheral sends a response on the BuiltinLED channel with payload `1` if the built-in LED is HIGH and `0` if the built-in LED is LOW.
+  - **Actions**: If the WRITE+READ+ACTIONS command has a valid payload, the peripheral will set the state of the built-in LED accordingly.
+
+.. _builtinled:
+.. uml:: builtinled.uml
+   :align: center
+   :caption: : Examples of commands and responses associated with the BuiltinLED channel.
+
+BuiltinLED/Blink
+~~~~~~~~~~~~~~~~
+
+- **Child channels**:
+
+  - BuiltinLED/Blink/HighInterval
+  - BuiltinLED/Blink/LowInterval
+  - BuiltinLED/Blink/Periods
+  - BuiltinLED/Blink/Notify
+
+- **Channel names**:
+
+  - BuiltinLED/Blink: `lb`
+
+    - BuiltinLED/Blink/HighInterval: `lbh`
+    - BuiltinLED/Blink/LowInterval: `lbl`
+    - BuiltinLED/Blink/Periods: `lbp`
+    - BuiltinLED/Blink/Notify: `lbn`
+
+- **Description**: These commands allow the host to blink the built-in LED:
+
+  - BuiltinLED/Blink instructs the peripheral to start or stop blinking the built-in LED.
+  - BuiltinLED/Blink/HighInterval and BuiltinLED/Blink/LowInterval together specify the amounts of time (in milliseconds) the LED will be on and off, respectively, while the LED blinks.
+  - BuiltinLED/Blink/Periods specifies the number of periods the LED will blink for, before turning off.
+  - BuiltinLED/Blink/Notify sets the blinking notification mode - when it is enabled and the built-in LED is blinking, the peripheral will send a BuiltinLED READ response every time the built-in LED goes to HIGH or LOW.
+
+- **Semantics** for child channels: READ/WRITE
+
+  - **WRITE+READ command**: The peripheral updates the variable named by the child channel with the value specified in the payload and sends a READ response with the new value of the variable:
+
+    - BuiltinLED/Blink/HighInterval and BuiltinLED/Blink/LowInterval: the payload's value must be a positive number (in milliseconds) for the corresponding variable to be updated with it; otherwise, the corresponding variable will remain at its previous value.
+    - BuiltinLED/Blink/Periods: if the payload's value is negative, then the LED will blink forever (at least until a BuiltinLED/Blink command is set to stop blinking). If the payload's value is nonnegative, then the LED will blink for that number of HIGH/LOW cycles before the LED stops blinking and stays at LOW.
+    - BuiltinLED/Blink/Notify: if the payload is `1`, the peripheral will enable the blinking notification mode. If the payoad is `0`, the peripheral will disable the blinking notification mode. Otherwise, the mode will not change from its previous value.
+
+  - **READ response**: The peripheral sends a response with the whose payload is the value for the blinking parameter/mode named by the (child) channel.
+
+- **Semantics** for BuiltinLED/Blink channel: READ/WRITE + Actions
+
+  - **WRITE+READ+Actions command**: If the payload is `1`, the peripheral will start blinking the built-in LED and send a READ response. If the payload is `0`, the peripheral will stop blinking the built-in LED and send a READ response. Otherwise, the peripheral will send a READ response and do nothing. After completion of every HIGH/LOW blink cycle, if the variable associated with BuiltinLED/Blink/Periods is nonnegative, that variable is decremented by `1`.
+  - **READ response**: The peripheral sends a response on the BuiltinLED/Blink channel with payload `1` if the built-in LED is blinking and `0` if the built-in LED is not blinking.
+
+.. _builtinled_blink:
+.. uml:: builtinled_blink.uml
+   :align: center
+   :caption: : Examples of commands and responses associated with the BuiltinLED/Blink channel.
