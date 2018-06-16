@@ -1,7 +1,7 @@
 Core Application-Layer Protocol
 =============
 
-All peripherals must support the core application-layer protocol, which provides basic functionality. Channels are organized hierarchically, and the names of child channels contain the names of their parent channels as prefixes. Each level in the hierarchy corresponds to one character of the channel name.
+All peripherals must support the core application-layer protocol, which provides basic functionality. Channels are organized hierarchically, and the names of child channels contain the names of their parent channels as prefixes. Each level in the hierarchy corresponds to either one character of the channel name or a multi-digit number.
 
 All channels support a READ command which simpy causes the peripheral to send a READ response on that same channel, so READ commands are only explicitly documented for channels which are READ-only.
 
@@ -59,7 +59,7 @@ Version
 - **Semantics** for child channels: READ
 
   - **READ command**: The peripheral simply sends a READ response to any command on the Version/Major, Version/Minor, and Version/Patch channels.
-  - **READ response**: The peripheral sends a response with the version component's value as the payload on for the version component named by the (child) channel.
+  - **READ response**: The peripheral sends a response with the version component's value as the payload for the version component named by the (child) channel.
 
 - **Semantics** for Version channel: READ
 
@@ -142,3 +142,71 @@ BuiltinLED/Blink
 .. uml:: builtinled_blink.uml
    :align: center
    :caption: : Examples of commands and responses associated with the BuiltinLED/Blink channel.
+
+IOPins
+------
+
+- **Child channels**:
+
+  - IOPins/Analog
+
+    - IOPins/Analog/0
+    - IOPins/Analog/1
+    - IOPins/Analog/2
+    - IOPins/Analog/3
+
+  - IOPins/Digital
+
+    - IOPins/Digital/0
+    - IOPins/Digital/1
+    - IOPins/Digital/2
+    - IOPins/Digital/3
+    - IOPins/Digital/4
+    - IOPins/Digital/5
+    - IOPins/Digital/6
+    - IOPins/Digital/7
+    - IOPins/Digital/8
+    - IOPins/Digital/9
+    - IOPins/Digital/10
+    - IOPins/Digital/11
+    - IOPins/Digital/12
+    - IOPins/Digital/13
+
+- **Channel names**:
+
+  - IOPins: `i`
+
+    - IOPins/Analog: `ia`
+
+      - IOPins/Analog/0: `ia0`
+      - IOPins/Analog/1: `ia1`
+      - IOPins/Analog/2: `ia2`
+      - IOPins/Analog/3: `ia3`
+
+    - IOPins/Digital: `id`
+
+      - IOPins/Digital/0: `id0`
+      - IOPins/Digital/1: `id1`
+      - IOPins/Digital/2: `id2`
+      - IOPins/Digital/3: `id3`
+      - IOPins/Digital/4: `id4`
+      - IOPins/Digital/5: `id5`
+      - IOPins/Digital/6: `id6`
+      - IOPins/Digital/7: `id7`
+      - IOPins/Digital/8: `id8`
+      - IOPins/Digital/9: `id9`
+      - IOPins/Digital/10: `id10`
+      - IOPins/Digital/11: `id11`
+      - IOPins/Digital/12: `id12`
+      - IOPins/Digital/13: `id13`
+
+- **Description**: These commands allow the host to read the value of a specified pin of the peripheral. Note that IOPins, IOPins/Analog, and IOPins/Digital are not currently used for messaging - only the child channels of IOPins/Analog and IOPins/Digital are used. For more complete pin I/O functionality, it is recommended to use the Firmata-based transport layer, which enables support for more advanced pin modes, notification of pin value changes, and writing to pins.
+- **Semantics** for child channels: READ
+
+  - **READ command**: The peripheral simply sends a READ response to any command which is a child of IOPins/Analog or IOPins/Digital.
+  - **READ response**: The peripheral performs an analog read of an analog pin (for a message on a child channel of IOPins/Analog) or a digital read of a digital pin (for a message on a child channel of IOPins/Digital) sends a response with that reading as the payload for the pin named by the (child) channel. Analog reads produce values in range 0-1023, inclusive; digital reads produce values in the set {0, 1}.
+
+.. _IOPins:
+.. uml:: iopins.uml
+   :align: center
+   :caption: : Examples of commands and responses associated with the child chnnels of the IOPins/Analog and IOPins/Digital channels.

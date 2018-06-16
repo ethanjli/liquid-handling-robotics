@@ -39,7 +39,7 @@ const char kBuiltinLEDChannel = 'l';
 
 const uint8_t kAnalogPinOffset = 14;
 const uint8_t kAnalogReadMinPin = 0;
-const uint8_t kAnalogReadMaxPin = 5;
+const uint8_t kAnalogReadMaxPin = 3;
 const uint8_t kDigitalReadMinPin = 2;
 const uint8_t kDigitalReadMaxPin = 13;
 

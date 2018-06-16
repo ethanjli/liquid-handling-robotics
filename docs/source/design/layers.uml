@@ -14,8 +14,8 @@ Application : BuiltinLED(1)
 Application : BuiltinLED/Blink(1)
 Application : BuiltinLED/Blink/HighInterval(250)
 Application : BuiltinLED/Blink/LowInterval(750)
-Application : PinIO/Analog/4()
-Application : PinIO/Digital/5()
+Application : IOPins/Analog/3()
+Application : IOPins/Digital/12()
 Application : ...
 
 Presentation : <font:monospace><e>(1234)</font>
@@ -25,8 +25,8 @@ Presentation : <font:monospace><v0>()</font>
 Presentation : <font:monospace><v1>()</font>
 Presentation : <font:monospace><l>(0)</font>
 Presentation : <font:monospace><l>(1)</font>
-Presentation : <font:monospace><ira>(4)</font>
-Presentation : <font:monospace><ird>(5)</font>
+Presentation : <font:monospace><ia3>()</font>
+Presentation : <font:monospace><id12>()</font>
 Presentation : ...
 
 state Transport {
@@ -41,8 +41,8 @@ state Transport {
   "ASCII-Based" : <font:monospace><b><l>()</b>\\n</font>
   "ASCII-Based" : <font:monospace><b><l>(0)</b>\\n</font>
   "ASCII-Based" : <font:monospace><b><l>(1)</b>\\n</font>
-  "ASCII-Based" : <font:monospace><b><ira>(4)</b>\\n</font>
-  "ASCII-Based" : <font:monospace><b><ird>(5)</b>\\n</font>
+  "ASCII-Based" : <font:monospace><b><ia3>()</b>\\n</font>
+  "ASCII-Based" : <font:monospace><b><id12>()</b>\\n</font>
   "ASCII-Based" : ...
 
   ||
@@ -57,8 +57,8 @@ state Transport {
   "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><l>()</b>\\xF7</font>
   "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><l>(0)</b>\\xF7</font>
   "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><l>(1)</b>\\xF7</font>
-  "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><ira>(4)</b>\\xF7</font>
-  "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><ird>(5)</b>\\xF7</font>
+  "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><ia3>()</b>\\xF7</font>
+  "Firmata-Based" : <font:monospace>\\xF0\\x0F<b><id12>()</b>\\xF7</font>
   "Firmata-Based" : ...
 }
 

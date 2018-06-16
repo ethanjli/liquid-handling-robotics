@@ -1,0 +1,40 @@
+@startuml
+
+hide footbox
+skinparam monochrome true
+skinparam defaultFontName Lato
+skinparam shadowing false
+
+Host -> Peripheral: IOPins()
+note over Peripheral: IOPins is an unhandled channel
+Host -> Peripheral: IOPins/Analog()
+note over Peripheral: IOPins/Analog is an unhandled channel
+Host -> Peripheral: IOPins/Digital()
+note over Peripheral: IOPins/Digital is an unhandled channel
+|||
+note over Peripheral: pin A3 is connected to the 5V pin
+Host -> Peripheral: IOPins/Analog/3()
+note left: READ Command
+Peripheral -> Host: IOPins/Analog/3(1023)
+note right: READ response
+|||
+note over Peripheral: pin A3 is connected to the GND pin
+Host -> Peripheral: IOPins/Analog/3()
+note left: READ Command
+Peripheral -> Host: IOPins/Analog/3(0)
+note right: READ response
+|||
+note over Peripheral: pin 12 is connected to the 5V pin
+Host -> Peripheral: IOPins/Digital/12()
+note left: READ Command
+Peripheral -> Host: IOPins/Digital/12(1)
+note right: READ response
+|||
+note over Peripheral: pin 12 is connected to the GND pin
+Host -> Peripheral: IOPins/Digital/12()
+note left: READ Command
+Peripheral -> Host: IOPins/Digital/12(0)
+note right: READ response
+
+@enduml
+
