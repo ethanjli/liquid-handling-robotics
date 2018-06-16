@@ -75,11 +75,13 @@ void CoreProtocol<Messager>::handleResetCommand() {
   if (!(messager.parser.justReceived() &&
         messager.parser.channel[0] == kResetChannel &&
         messager.parser.channelParsedLength() == 1)) return;
+  bool reset = false;
   messager.sender.sendChannelStart();
   messager.sender.sendChannelChar(kResetChannel);
   messager.sender.sendChannelEnd();
-  messager.sender.sendPayload(messager.parser.payload);
-  hardReset();
+  reset = (messager.parser.payloadParsedLength() > 0 && messager.parser.payload == 1);
+  messager.sender.sendPayload(reset);
+  if (reset) hardReset();
 }
 
 template<class Messager>
@@ -106,17 +108,24 @@ template<class Messager>
 void CoreProtocol<Messager>::handleIOCommand() {
   if (!messager.parser.justReceived()) return;
   if (messager.parser.channel[0] != kIOChannel) return;
-  if (messager.parser.channel[1] != kIOReadChannel) return;
-  const int pin = messager.parser.payload;
+  if (messager.parser.channelParsedLength() < 3) return;
+  if (messager.parser.channelParsedLength() > 4) return;
 
-  switch (messager.parser.channel[2]) {
-    case kIOReadAnalogChannel:
-      if (messager.parser.channelParsedLength() != 3) break;
+  // Parse pin number from channels
+  if (!isDigit(messager.parser.channel[2])) return;
+  uint8_t pin = messager.parser.channel[2] - '0';
+  if (messager.parser.channelParsedLength() == 4) {
+    pin *= 10;
+    if (!isDigit(messager.parser.channel[3])) return;
+    pin += messager.parser.channel[3] - '0';
+  }
+
+  switch (messager.parser.channel[1]) {
+    case kIOAnalogChannel:
       if (pin < kAnalogReadMinPin || pin > kAnalogReadMaxPin) break;
       messager.sendResponse(analogRead(pin + kAnalogPinOffset));
       break;
-    case kIOReadDigitalChannel:
-      if (messager.parser.channelParsedLength() != 3) break;
+    case kIODigitalChannel:
       if (pin < kDigitalReadMinPin || pin > kDigitalReadMaxPin) break;
       messager.sendResponse(digitalRead(pin));
       break;

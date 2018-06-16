@@ -32,9 +32,8 @@ const char kResetChannel = 'r';
 const char kVersionChannel = 'v';
 const char kEchoChannel = 'e';
 const char kIOChannel = 'i';
-const char kIOReadChannel = 'r';
-const char kIOReadAnalogChannel = 'a';
-const char kIOReadDigitalChannel = 'd';
+const char kIOAnalogChannel = 'a';
+const char kIODigitalChannel = 'd';
 const char kBuiltinLEDChannel = 'l';
 
 const uint8_t kAnalogPinOffset = 14;
