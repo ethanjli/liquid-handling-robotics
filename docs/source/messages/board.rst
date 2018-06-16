@@ -1,5 +1,5 @@
-Board Protocol
-==============
+Board Protocol Subset
+=====================
 
 Peripherals are using the ASCII-based transport layer are required to support the Board protocol subset, which provides basic hardware pin functionality for Arduino boards. The Board protocol subset should only be excluded if the peripheral does not have enough memory to support it or if the peripheral is running a Firmata-based transort layer, which also provides application-layer functionality redundant to (and more complete than) the Board protocol subset. Channels are organized hierarchically, and the names of child channels contain the names of their parent channels as prefixes. Each level in the hierarchy corresponds to either one character of the channel name or a multi-digit number.
 

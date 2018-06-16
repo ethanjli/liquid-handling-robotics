@@ -1,5 +1,5 @@
-Core Protocol
-=============
+Core Protocol Subset
+====================
 
 All peripherals must support the Core protocol subset, which provides basic protocol functionality. Channels are organized hierarchically, and the names of child channels contain the names of their parent channels as prefixes. Each level in the hierarchy corresponds to one character of the channel name.
 

@@ -145,7 +145,7 @@ These design principles were chosen towards the principle of least astonishment,
 Messaging Protocol
 ~~~~~~~~~~~~~~~~~~
 
-At the application layer, all peripherals must support the :doc:`/messages/core`, which provides basic functionality.
+At the application layer, all peripherals must support the :doc:`/messages/core`, which provides basic communication functionality. Additionally, all peripherals must support either the minimal subset of the Firmata application-layer protocol provided by the Firmata-based transport layer or the :doc:`/messages/board`; either application-layer protocol subset allows control of the built-in LED on the peripheral, along with reading of hardware pin values. Note that the minimal subset of the Firmata application-layer protocol also enables writing of values to hardware pins, while the Board Protocol Subset currently does not.
 
 Overview of Peripheral States
 -----------------------------
