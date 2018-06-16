@@ -35,6 +35,11 @@ const char kIOChannel = 'i';
 const char kIOAnalogChannel = 'a';
 const char kIODigitalChannel = 'd';
 const char kBuiltinLEDChannel = 'l';
+const char kBuiltinLEDBlinkChannel = 'b';
+const char kBuiltinLEDBlinkHighIntervalChannel = 'h';
+const char kBuiltinLEDBlinkLowIntervalChannel = 'l';
+const char kBuiltinLEDBlinkPeriodsChannel = 'p';
+const char kBuiltinLEDBlinkNotifyChannel = 'n';
 
 const uint8_t kAnalogPinOffset = 14;
 const uint8_t kAnalogReadMinPin = 0;
@@ -45,9 +50,11 @@ const uint8_t kDigitalReadMaxPin = 13;
 template<class Messager>
 class CoreProtocol {
   public:
+    using LED = LinearPositionControl::Components::SimpleLED;
+
     CoreProtocol(Messager &messager);
 
-    LinearPositionControl::Components::SimpleLED led;
+    LED led;
 
     void setup();
     void update();
@@ -59,14 +66,24 @@ class CoreProtocol {
 
   private:
     Messager &messager;
+    typename Messager::Parser &parser;
+    typename Messager::Sender &sender;
     bool setupCompleted = false;
     int echoValue = 0;
+    bool reportBlinkUpdates = false;
+    LED::State previousLEDState = LED::State::off;
+    bool reportedBlinkEnd = false;
 
     void handleResetCommand();
     void handleVersionCommand();
     void handleEchoCommand();
     void handleIOCommand();
     void handleBuiltinLEDCommand();
+    void handleBuiltinLEDBlinkCommand();
+
+    void sendBuiltinLEDState();
+    void sendBuiltinLEDBlinkState();
+    void sendBuiltinLEDBlinkPeriods();
 };
 
 }

@@ -135,7 +135,7 @@ BuiltinLED/Blink
 
 - **Semantics** for BuiltinLED/Blink channel: READ/WRITE + Actions
 
-  - **WRITE+READ+Actions command**: If the payload is `1`, the peripheral will start blinking the built-in LED and send a READ response. If the payload is `0`, the peripheral will stop blinking the built-in LED and send a READ response. Otherwise, the peripheral will send a READ response and do nothing. After completion of every HIGH/LOW blink cycle, if the variable associated with BuiltinLED/Blink/Periods is nonnegative, that variable is decremented by `1`.
+  - **WRITE+READ+Actions command**: If the payload is `1`, the peripheral will start blinking the built-in LED and send a READ response. If the payload is `0`, the peripheral will stop blinking the built-in LED and send a READ response. Otherwise, the peripheral will send a READ response and do nothing. After completion of every HIGH/LOW blink cycle, if the variable associated with BuiltinLED/Blink/Periods is nonnegative, that variable is decremented by `1`. If that variable becomes `0`, then its value is reset to `-1`, blinking stops, and the peripheral sends a READ response for BuiltinLED/Blink and a READ response for BuiltinLED/Blink/Periods.
   - **READ response**: The peripheral sends a response on the BuiltinLED/Blink channel with payload `1` if the built-in LED is blinking and `0` if the built-in LED is not blinking.
 
 .. _builtinled_blink:

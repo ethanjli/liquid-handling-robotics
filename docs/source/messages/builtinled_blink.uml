@@ -162,12 +162,7 @@ group Example with finite blinking duration
   |||
   ...750 ms pass...
   note over Peripheral: Blinking ends.
-
-  == Stop Blinking ==
-  Host -> Peripheral: BuiltinLED/Blink/Periods()
-  Peripheral -> Host: BuiltinLED/Blink/Periods(0)
-  |||
-  Host -> Peripheral: BuiltinLED/Blink()
+  Peripheral -> Host: BuiltinLED/Blink/Periods(-1)
   Peripheral -> Host: BuiltinLED/Blink(0)
 end
 

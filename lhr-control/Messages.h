@@ -157,11 +157,14 @@ class MessageParser {
 template <class Transport>
 class Messager {
   public:
+    using Parser = MessageParser<Transport>;
+    using Sender = MessageSender<Transport>;
+
     Messager(); // needs to be implemented by specialization
     Messager(Transport &transport);
 
-    MessageParser<Transport> parser;
-    MessageSender<Transport> sender;
+    Parser parser;
+    Sender sender;
 
     void setup(); // needs to be implemented by specialization
     void update();
