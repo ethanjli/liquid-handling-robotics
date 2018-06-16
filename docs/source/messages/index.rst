@@ -8,4 +8,5 @@ This is a reference for the messaging protocol (at the application layer of the 
    :caption: Contents:
 
    core
+   board
 
