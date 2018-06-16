@@ -31,7 +31,7 @@ void BoardProtocol<Messager>::update() {
   led.update();
   if (reportBlinkUpdates && !led.state.justEntered(previousLEDState) &&
       (led.state.justEntered(LED::State::blinkingHigh) ||
-        led.state.justEntered(LED::State::blinkingLow))) {
+       led.state.justEntered(LED::State::blinkingLow))) {
     sendBuiltinLEDState();
   }
   previousLEDState = led.state.current();

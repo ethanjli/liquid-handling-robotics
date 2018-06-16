@@ -17,10 +17,10 @@ BoardProtocol<SerialMessager> boardProtocol(messager);
 void setup() {
   coreProtocol.setup();
   messager.setup();
-  boardProtocol.setup();
 #ifndef DISABLE_LOGGING
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 #endif
+  boardProtocol.setup();
   messager.establishConnection();
   coreProtocol.onConnect();
   boardProtocol.onConnect();
