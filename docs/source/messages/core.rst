@@ -1,4 +1,4 @@
-Core Application-Layer Protocol
+Core Protocol
 =============
 
 All peripherals must support the core application-layer protocol, which provides basic functionality. Channels are organized hierarchically, and the names of child channels contain the names of their parent channels as prefixes. Each level in the hierarchy corresponds to either one character of the channel name or a multi-digit number.

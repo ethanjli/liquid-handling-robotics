@@ -11,6 +11,8 @@ Welcome to liquid-handling-robotics's documentation!
 
    design/index
 
+   messages/index
+
    api/lhrhost
 
 

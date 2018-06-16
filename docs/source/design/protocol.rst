@@ -142,10 +142,10 @@ All responses from the peripheral correspond to the result of a READ operation o
 
 These design principles were chosen towards the principle of least astonishment, and informed by experiences with an earlier version of the protocol in which inconsistent command semantics produced an unintuitive interface.
 
-Core Protocol
-~~~~~~~~~~~~~
+Messaging Protocol
+~~~~~~~~~~~~~~~~~~
 
-All peripherals must support the core application-layer protocol, which provides basic functionality. :doc:`messages/core` documents the messages specified by the core protocol.
+At the application layer, all peripherals must support the :doc:`/messages/core`, which provides basic functionality.
 
 Overview of Peripheral States
 -----------------------------

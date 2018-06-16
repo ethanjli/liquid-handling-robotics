@@ -9,5 +9,4 @@ This is a reference for the design of the liquid-handling robot.
 
    standards
    protocol
-   messages/core
 
