@@ -14,8 +14,8 @@ LinearActuator
 
   - LinearActuator/Position (its child channels are documented below)
   - LinearActuator/SmoothedPosition (its child channels are documented below)
-  - LinearActuator/FeedbackController (its child channels are documented below)
   - LinearActuator/Motor (its child channels are documented below)
+  - LinearActuator/FeedbackController (its child channels are documented below)
 
 - **Channel names**:
 
@@ -23,15 +23,15 @@ LinearActuator
 
     - LinearActuator/Position: `_p` (names of its child channels are documented below)
     - LinearActuator/SmoothedPosition: `_s` (names of its child channels are documented below)
-    - LinearActuator/FeedbackController: `_f` (names of its child channels are documented below)
     - LinearActuator/Motor: `_m` (names of its child channels are documented below)
+    - LinearActuator/FeedbackController: `_f` (names of its child channels are documented below)
 
 - **Description**: These commands allow the host to control a linear actuator of the liquid-handling robot.
 - **Semantics** for child channels documented below.
 - **Semantics** for LinearActuator channel: READ-only
 
   - **READ command**: The peripheral simply sends a READ response.
-  - **READ response**: The peripheral sends a response on the LinearActuator channel with payload `1` if the actuator is operating in direct motor duty control mode with a nonnegative duty, `2` if the actuator is operating in position feedback control mode, `0` if the actuator is operating in direct motor duty control mode with a null (zero) duty, `-1` if the actuator's controller has stopped from convergence to a feedback control target, `-2` if the actuator's controller has stopped from a motor stall, and `-3` if the actuator's controller has stopped from a timeout. Negative payloads correspond to stopped actuator states where the controller has stopped running, while positive payloads correspond to moving actuator states where the controller is still running, and null (zero) payload corresponds to the stopped actuator state where the controller was initially instructed to stop the actuator.
+  - **READ response**: The peripheral sends a response on the LinearActuator channel with payload `1` if the actuator is operating in direct motor duty control mode with a nonzero duty, `2` if the actuator is operating in position feedback control mode, `0` if the actuator is operating in direct motor duty control mode with a null (zero) duty, `-1` if the actuator's controller has stopped from a motor stall, `-2` if the actuator's controller has stopped from convergence to a feedback control target, and `-3` if the actuator's controller has stopped from a timeout. Negative payloads correspond to stopped actuator states where the controller has stopped running, while positive payloads correspond to moving actuator states where the controller is still running, and null (zero) payload corresponds to the stopped actuator state where the controller was initially instructed to stop the actuator.
 
 LinearActuator/Position
 -----------------------
@@ -112,8 +112,6 @@ LinearActuator/SmoothedPosition
 
 - **Child channels**:
 
-  - LinearActuator/SmoothedPosition/Smoothing
-
   - LinearActuator/SmoothedPosition/SnapMultiplier
   - LinearActuator/SmoothedPosition/RangeLow
   - LinearActuator/SmoothedPosition/RangeHigh
@@ -151,6 +149,47 @@ LinearActuator/SmoothedPosition
 
   - **READ command**: The peripheral simply sends a READ response.
   - **READ response**: The peripheral sends a response on the LinearActuator/Position channel with a payload whose value is the current smoothed position reading from the linear actuator's position sensor.
+
+LinearActuator/Motor
+--------------------
+
+- **Child channels**:
+
+  - LinearActuator/Motor/Notify (child channels are the same as for LinearActuator/Position/Notify)
+
+- **Channel names**:
+
+  - LinearActuator/Motor: `_m`
+
+    - LinearActuator/Motor/Notify: `_mn` (child channel names are the same as for LinearActuator/Position/Notify, except with `_m` instead of `_p`)
+    - LinearActuator/Motor/StallProtectorTimeout: `_ms`
+    - LinearActuator/Motor/TimerTimeout: `_mt`
+
+- **Description**: These commands relate to direct (open-loop) motor duty control and notification of the actuator effort for the motor in the linear actuator. Additionally, commands on child channels relate to conditions for interrupting motor controllers (such as direct motor duty control or feedback control) and stopping actuator effort.
+
+  - LinearActuator/Motor represents the actuator effort (roughly the duty cycle) of the actuator's motor. An actuator effort of `0` corresponds to putting the motor in brake mode, as if the actuator had a high (but finite) coefficient of friction. An actuator effort greater than `0` corresponds to moving the actuator towards higher positions. An actuator effort less than `0` corresponds to moving the actuator towards higher positions. A greater magnitude of actuator effort corresponds to a higher pulse-width modulation duty cycle for the motor, and thus more electric power delivered to the motor. Actuator efforts must be between `-255` and `255`, inclusive.
+
+    - LinearActuator/Motor/Notify behaves the same way as LinearActuator/Position/Notify, but notifies the actuator efforts of the motor instead of the raw position values.
+
+- **Semantics** for LinearActuator/Motor/Notify and its child channels are the same as for LinearActuator/Position/Notify
+
+- **Semantics** for child channels besides LinearActuator/SmoothedPosition/Notify: READ/WRITE
+
+  - **WRITE+READ command**: The peripheral updates the parameter named by the child channel with the value specified in the payload and sends a READ response with the new value of the parameter:
+
+    - LinearActuator/Motor/StallProtectorTimeout specifies how long the motor should run without any changes to the smoothed position (on the LinearActuator/SmoothedPosition channel) before the actuator concludes that the motor has stalled. When the motor has stalled, the actuator interrupts any running motor controller (such as direct motor duty control initiated by LinearActuator/Motor with a non-zero actuator effort or feedback control initiated by LinearActuator/FeedbackController) and sets the motor duty to zero; the peripheral responses triggered by this interruption of the direct motor duty controller are discussed below.
+
+  - **READ response**: The peripheral sends a response whose payload is the value for the motor control parameter named by the (child) channel.
+
+- **Semantics** for LinearActuator/Motor channel: READ/WRITE+Action
+
+  - **WRITE+READ+Actions command**: If the linear actuator was previously in another control mode, such as feedback control mode, it interrupts that control mode and changes the mode to direct motor duty control mode. The peripheral clamps the payload's value to be between `-255` and `255`, inclusive, and sets the result to be the actuator effort (namely, motor direction and PWM duty cycle) for the linear actuator's motor. Then the peripheral sends a READ response for LinearActuator/Motor. Then the peripheral sends a READ response for LinearActuator; if the actuator effort is `0`, the READ response will have payload `0` to indicate that the actuator is operating in direct motor duty control mode with a null duty; otherwise, the READ response will have payload `1` to indiate that the actuator is operating in direct motor duty control mode with nonzero duty. If/when the actuator interrupts the direct motor duty controller, the peripheral will send a response on the LinearActuator/Motor channel, then a response on the LinearActuator/Position channel, and finally a response on the LinearActuator channel.
+  - **READ response**: The peripheral sends a response on the LinearActuator/Motor channel with a payload whose value is the current actuator effort of the linear actuator's motor.
+
+.. _linearactuator_motor:
+.. uml:: linearactuator_motor.uml
+   :align: center
+   :caption: : Examples of commands and responses associated with the LinearActuator/Motor channel.
 
 References
 ----------
