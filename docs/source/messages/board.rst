@@ -1,9 +1,9 @@
 Board Protocol Subset
 =====================
 
-Peripherals are using the ASCII-based transport layer are required to support the Board protocol subset, which provides basic hardware pin functionality for Arduino boards. The Board protocol subset should only be excluded if the peripheral does not have enough memory to support it or if the peripheral is running a Firmata-based transort layer, which also provides application-layer functionality redundant to (and more complete than) the Board protocol subset. Channels are organized hierarchically, and the names of child channels contain the names of their parent channels as prefixes. Each level in the hierarchy corresponds to either one character of the channel name or a multi-digit number.
+Peripherals using the ASCII-based transport layer are required to support the Board protocol subset, which provides basic hardware pin functionality for Arduino boards. The Board protocol subset should only be excluded if the peripheral does not have enough memory to support it or if the peripheral is running a Firmata-based transort layer, which also provides application-layer functionality redundant to (and more complete than) the Board protocol subset. Channels are organized hierarchically, and the names of child channels contain the names of their parent channels as prefixes. Each level in the hierarchy corresponds to either one character of the channel name or a multi-digit number.
 
-All channels support a READ command which simpy causes the peripheral to send a READ response on that same channel, so READ commands are only explicitly documented for channels which are READ-only.
+All channels support a READ command which simply causes the peripheral to send a READ response on that same channel, so READ commands are only explicitly documented for channels which are READ-only.
 
 Here are the channels specified by the Board protocol subset:
 
@@ -24,7 +24,7 @@ BuiltinLED
 - **Semantics** for child channels documented below.
 - **Semantics** for BuiltinLED channel: READ/WRITE + Actions
 
-  - **WRITE+READ+Actions command**: If the payload is `1`, the peripheral will set the built-in LED to HIGH and send a READ response. If the payload is `0`, the peripheral will set the built-in LED to LOW and send a READ response. Otherwise, the peripheral will send a READ response and do nothing.
+  - **WRITE+READ+Actions command**: If the payload is `1`, the peripheral will set the built-in LED to HIGH and send a READ response. If the payload is `0`, the peripheral will set the built-in LED to LOW and send a READ response. If the payload is either `0` or `1` and the built-in LED was blinking, this command will interrupt the blinking first, so that a READ command on the BuiltinLED/Blink channel will return `0`. Otherwise, the peripheral will send a READ response and do nothing.
   - **READ response**: The peripheral sends a response on the BuiltinLED channel with payload `1` if the built-in LED is HIGH and `0` if the built-in LED is LOW.
   - **Actions**: If the WRITE+READ+ACTIONS command has a valid payload, the peripheral will set the state of the built-in LED accordingly.
 
@@ -67,11 +67,11 @@ BuiltinLED/Blink
     - BuiltinLED/Blink/Periods: if the payload's value is negative, then the LED will blink forever (at least until a BuiltinLED/Blink command is set to stop blinking). If the payload's value is nonnegative, then the LED will blink for that number of HIGH/LOW cycles before the LED stops blinking and stays at LOW.
     - BuiltinLED/Blink/Notify: if the payload is `1`, the peripheral will enable the blinking notification mode. If the payoad is `0`, the peripheral will disable the blinking notification mode. Otherwise, the mode will not change from its previous value.
 
-  - **READ response**: The peripheral sends a response with the whose payload is the value for the blinking parameter/mode named by the (child) channel.
+  - **READ response**: The peripheral sends a response whose payload is the value for the blinking parameter/mode named by the (child) channel.
 
 - **Semantics** for BuiltinLED/Blink channel: READ/WRITE + Actions
 
-  - **WRITE+READ+Actions command**: If the payload is `1`, the peripheral will start blinking the built-in LED and send a READ response. If the payload is `0`, the peripheral will stop blinking the built-in LED and send a READ response. Otherwise, the peripheral will send a READ response and do nothing. After completion of every HIGH/LOW blink cycle, if the variable associated with BuiltinLED/Blink/Periods is nonnegative, that variable is decremented by `1`. If that variable becomes `0`, then its value is reset to `-1`, blinking stops, and the peripheral sends a READ response for BuiltinLED/Blink and a READ response for BuiltinLED/Blink/Periods.
+  - **WRITE+READ+Actions command**: If the payload is `1`, the peripheral will start blinking the built-in LED and send a READ response; this blinking will interrupt the previous state on the BuiltinLED channel. If the payload is `0`, the peripheral will stop blinking the built-in LED and send a READ response. Otherwise, the peripheral will send a READ response and do nothing. After completion of every HIGH/LOW blink cycle, if the variable associated with BuiltinLED/Blink/Periods is nonnegative, that variable is decremented by `1`. If that variable becomes `0`, then its value is reset to `-1`, blinking stops, and the peripheral sends a READ response for BuiltinLED/Blink and a READ response for BuiltinLED/Blink/Periods.
   - **READ response**: The peripheral sends a response on the BuiltinLED/Blink channel with payload `1` if the built-in LED is blinking and `0` if the built-in LED is not blinking.
 
 .. _builtinled_blink:
@@ -137,7 +137,7 @@ IOPins
       - IOPins/Digital/13: `id13`
 
 - **Description**: These commands allow the host to read the value of a specified pin of the peripheral. Note that IOPins, IOPins/Analog, and IOPins/Digital are not currently used for messaging - only the child channels of IOPins/Analog and IOPins/Digital are used. For more complete pin I/O functionality, it is recommended to use the Firmata-based transport layer, which enables support for more advanced pin modes, notification of pin value changes, and writing to pins.
-- **Semantics** for child channels: READ
+- **Semantics** for child channels: READ-only
 
   - **READ command**: The peripheral simply sends a READ response to any command which is a child of IOPins/Analog or IOPins/Digital.
   - **READ response**: The peripheral performs an analog read of an analog pin (for a message on a child channel of IOPins/Analog) or a digital read of a digital pin (for a message on a child channel of IOPins/Digital) sends a response with that reading as the payload for the pin named by the (child) channel. Analog reads produce values in range 0-1023, inclusive; digital reads produce values in the set {0, 1}.

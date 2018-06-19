@@ -1,0 +1,140 @@
+@startuml
+
+skinparam monochrome true
+skinparam defaultFontName Lato
+skinparam shadowing false
+
+group Basic example
+  Host -> Peripheral: LinearActuator()
+  note left: READ Command
+  Peripheral -> Host: LinearActuator(0)
+  note right: READ response
+  |||
+  note over Peripheral: Linear actuator is moved to position 200.
+  Host -> Peripheral: LinearActuator/Position()
+  note left: READ Command
+  Peripheral -> Host: LinearActuator/Position(200)
+  note right: READ response
+end
+
+group Example with event loop iteration notifications
+  == Set Notification Parameters ==
+  Host -> Peripheral: LinearActuator/Position/Notify/Interval(250)
+  note left: WRITE+READ Command
+  Peripheral -> Host: LinearActuator/Position/Notify/Interval(250)
+  note right: READ response
+  |||
+  Host -> Peripheral: LinearActuator/Position/Notify/Number(-1)
+  note left: WRITE+READ Command
+  Peripheral -> Host: LinearActuator/Position/Notify/Number(-1)
+  note right: READ response
+  |||
+  note over Peripheral: Linear actuator is moved to position 200.
+
+  == Start Notifying ==
+  Host -> Peripheral: LinearActuator/Position/Notify(1)
+  note left: WRITE+READ+Actions\nCommand
+  Peripheral -> Host: LinearActuator/Position/Notify(1)
+  note over Peripheral: Linear actuator starts notifying\nposition updates.
+  note right: READ response
+  Peripheral -> Host: LinearActuator/Position(200)
+
+  == Notifying ==
+  note over Peripheral: Linear actuator is moved to position 100.
+  ...250 peripheral event loop iterations pass...
+  Peripheral -> Host: LinearActuator/Position(100)
+  note right: READ response
+  note over Peripheral: Linear actuator is moved to position 150.
+  ...250 peripheral event loop iterations pass...
+  Peripheral -> Host: LinearActuator/Position(150)
+  note right: READ response
+  note over Peripheral: Linear actuator is moved to position 50.
+  ...250 peripheral event loop iterations pass...
+  Peripheral -> Host: LinearActuator/Position(50)
+  note right: READ response
+  ...cycle continues indefinitely...
+
+  == Stop Notifying ==
+  Host -> Peripheral: LinearActuator/Position/Notify(0)
+  note left: WRITE+READ+Actions\nCommand
+  Peripheral -> Host: LinearActuator/Position/Notify(0)
+  note right: READ response
+  note over Peripheral: Linear actuator stops notifying\nposition updates.
+end
+
+group Example with timer notifications
+  == Set Notification Parameters ==
+  Host -> Peripheral: LinearActuator/Position/Notify/Interval(250)
+  Peripheral -> Host: LinearActuator/Position/Notify/Interval(250)
+  |||
+  Host -> Peripheral: LinearActuator/Position/Notify/Number(-1)
+  Peripheral -> Host: LinearActuator/Position/Notify/Number(-1)
+  |||
+  note over Peripheral: Linear actuator is moved to position 200.
+
+  == Start Notifying ==
+  Host -> Peripheral: LinearActuator/Position/Notify(2)
+  Peripheral -> Host: LinearActuator/Position/Notify(2)
+  note over Peripheral: Linear actuator starts notifying\nposition updates.
+  Peripheral -> Host: LinearActuator/Position(200)
+
+  == Notifying ==
+  note over Peripheral: Linear actuator is moved to position 100.
+  ...250 ms pass...
+  Peripheral -> Host: LinearActuator/Position(100)
+  note over Peripheral: Linear actuator is moved to position 150.
+  ...250 ms pass...
+  Peripheral -> Host: LinearActuator/Position(150)
+  note over Peripheral: Linear actuator is moved to position 50.
+  ...250 ms pass...
+  Peripheral -> Host: LinearActuator/Position(50)
+  ...cycle continues indefinitely...
+
+  == Stop Notifying ==
+  Host -> Peripheral: LinearActuator/Position/Notify(0)
+  Peripheral -> Host: LinearActuator/Position/Notify(0)
+  note over Peripheral: Linear actuator stops notifying\nposition updates.
+end
+
+group Example with finite number of notifications
+  == Set Notification Parameters ==
+  Host -> Peripheral: LinearActuator/Position/Notify/Interval(250)
+  Peripheral -> Host: LinearActuator/Position/Notify/Interval(250)
+  |||
+  Host -> Peripheral: LinearActuator/Position/Notify/Number(4)
+  Peripheral -> Host: LinearActuator/Position/Notify/Number(4)
+  |||
+  note over Peripheral: Linear actuator is moved to position 200.
+
+  == Start Notifying ==
+  Host -> Peripheral: LinearActuator/Position/Notify(2)
+  Peripheral -> Host: LinearActuator/Position/Notify(2)
+  note over Peripheral: Linear actuator starts notifying\nposition updates.
+  Peripheral -> Host: LinearActuator/Position(200)
+
+  == Notifying ==
+  Host -> Peripheral: LinearActuator/Position/Notify/Number()
+  Peripheral -> Host: LinearActuator/Position/Notify/Number(3)
+  |||
+  note over Peripheral: Linear actuator is moved to position 100.
+  ...250 ms pass...
+  Peripheral -> Host: LinearActuator/Position(100)
+  note over Peripheral: Linear actuator is moved to position 150.
+  ...250 ms pass...
+  Peripheral -> Host: LinearActuator/Position(150)
+  note over Peripheral: Linear actuator is moved to position 50.
+  |||
+  Host -> Peripheral: LinearActuator/Position/Notify/Number()
+  Peripheral -> Host: LinearActuator/Position/Notify/Number(1)
+  |||
+  ...250 ms pass...
+  Peripheral -> Host: LinearActuator/Position(50)
+
+  == Stop Notifying ==
+  Peripheral -> Host: LinearActuator/Position/Notify/Number(-1)
+  Peripheral -> Host: LinearActuator/Position/Notify(0)
+  note over Peripheral: Linear actuator stops notifying\nposition updates.
+end
+
+@enduml
+
