@@ -71,20 +71,12 @@ group Basic example with timer termination
   Peripheral -> Host: LinearActuator(-3)
 end
 
-group Basic example with interruption of previous control mode
+group Example with interruption of previous control mode
   == Initial State ==
   Host -> Peripheral: LinearActuator/FeedbackController(50)
   note over Peripheral: Linear actuator is operating\nin feedback control mode.
   Host -> Peripheral: LinearActuator()
   Peripheral -> Host: LinearActuator(2)
-
-  == Set Motor Direct Duty Control Parameters ==
-  Host -> Peripheral: LinearActuator/Motor/StallProtectorTimeout(100)
-  note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/Motor/StallProtectorTimeout(100)
-  |||
-  Host -> Peripheral: LinearActuator/Motor/TimerTimeout(100)
-  Peripheral -> Host: LinearActuator/Motor/TimerTimeout(100)
 
   == Start Motor Direct Duty Control ==
   note over Peripheral: Linear actuator is still operating\nin feedback control mode.
