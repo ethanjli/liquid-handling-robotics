@@ -48,7 +48,7 @@ void CoreProtocol<Messager>::sendVersionMessage(char versionPosition) {
   int channelPosition = versionPosition - '0';
   if (channelPosition < 0 || channelPosition >= 3) return;
   sender.sendChannelStart();
-  sender.sendChannelChar(kVersionChannel);
+  sender.sendChannelChar(Channels::CoreProtocol::kVersion);
   sender.sendChannelChar(versionPosition);
   sender.sendChannelEnd();
   sender.sendPayload((int) pgm_read_word_near(kVersion + channelPosition));
@@ -66,11 +66,13 @@ void CoreProtocol<Messager>::sendAllVersionMessages() {
 
 template<class Messager>
 void CoreProtocol<Messager>::handleResetCommand() {
-  if (!(parser.justReceived() && parser.channel[0] == kResetChannel &&
+  using namespace Channels::CoreProtocol;
+
+  if (!(parser.justReceived() && parser.channel[0] == kReset &&
         parser.channelParsedLength() == 1)) return;
   bool reset = false;
   sender.sendChannelStart();
-  sender.sendChannelChar(kResetChannel);
+  sender.sendChannelChar(kReset);
   sender.sendChannelEnd();
   reset = (parser.payloadParsedLength() > 0 && parser.payload == 1);
   sender.sendPayload(reset);
@@ -79,7 +81,7 @@ void CoreProtocol<Messager>::handleResetCommand() {
 
 template<class Messager>
 void CoreProtocol<Messager>::handleVersionCommand() {
-  if (!(parser.justReceived() && parser.channel[0] == kVersionChannel &&
+  if (!(parser.justReceived() && parser.channel[0] == Channels::CoreProtocol::kVersion &&
         parser.channelParsedLength() <= 2)) return;
 
   if (parser.channelParsedLength() == 1) sendAllVersionMessages();
@@ -88,7 +90,9 @@ void CoreProtocol<Messager>::handleVersionCommand() {
 
 template<class Messager>
 void CoreProtocol<Messager>::handleEchoCommand() {
-  if (!(parser.justReceived() && parser.channel[0] == kEchoChannel &&
+  using namespace Channels::CoreProtocol;
+
+  if (!(parser.justReceived() && parser.channel[0] == kEcho &&
         parser.channelParsedLength() == 1)) return;
   if (parser.payloadParsedLength()) echoValue = parser.payload;
 

@@ -54,8 +54,10 @@ void BoardProtocol<Messager>::onConnect() {
 
 template<class Messager>
 void BoardProtocol<Messager>::handleIOCommand() {
+  using namespace Channels::BoardProtocol;
+
   if (!parser.justReceived()) return;
-  if (parser.channel[0] != kIOChannel) return;
+  if (parser.channel[0] != kIO) return;
   if (parser.channelParsedLength() < 3) return;
   if (parser.channelParsedLength() > 4) return;
 
@@ -69,11 +71,11 @@ void BoardProtocol<Messager>::handleIOCommand() {
   }
 
   switch (parser.channel[1]) {
-    case kIOAnalogChannel:
+    case IO::kAnalog:
       if (pin < kAnalogReadMinPin || pin > kAnalogReadMaxPin) break;
       messager.sendResponse(analogRead(pin + kAnalogPinOffset));
       break;
-    case kIODigitalChannel:
+    case IO::kDigital:
       if (pin < kDigitalReadMinPin || pin > kDigitalReadMaxPin) break;
       messager.sendResponse(digitalRead(pin));
       break;
@@ -82,8 +84,10 @@ void BoardProtocol<Messager>::handleIOCommand() {
 
 template<class Messager>
 void BoardProtocol<Messager>::handleBuiltinLEDCommand() {
+  using namespace Channels::BoardProtocol;
+
   if (!(parser.justReceived() && parser.channelParsedLength() > 0 &&
-        parser.channel[0] == kBuiltinLEDChannel)) return;
+        parser.channel[0] == kBuiltinLED)) return;
 
   if (parser.channelParsedLength() == 1) {
     if (parser.payloadParsedLength()) {
@@ -100,8 +104,10 @@ void BoardProtocol<Messager>::handleBuiltinLEDCommand() {
 
 template<class Messager>
 void BoardProtocol<Messager>::handleBuiltinLEDBlinkCommand() {
+  using namespace Channels::BoardProtocol;
+
   if (!(parser.channelParsedLength() > 1 &&
-        parser.channel[1] == kBuiltinLEDBlinkChannel)) return;
+        parser.channel[1] == BuiltinLED::kBlink)) return;
 
   if (parser.channelParsedLength() == 2) {
     if (parser.payloadParsedLength()) {
@@ -118,19 +124,19 @@ void BoardProtocol<Messager>::handleBuiltinLEDBlinkCommand() {
 
   if (parser.channelParsedLength() > 3) return;
   switch (parser.channel[2]) {
-    case kBuiltinLEDBlinkHighIntervalChannel:
+    case BuiltinLED::Blink::kHighInterval:
       if (parser.payloadParsedLength() && parser.payload > 0) led.highInterval = parser.payload;
       messager.sendResponse(led.highInterval);
       return;
-    case kBuiltinLEDBlinkLowIntervalChannel:
+    case BuiltinLED::Blink::kLowInterval:
       if (parser.payloadParsedLength() && parser.payload > 0) led.lowInterval = parser.payload;
       messager.sendResponse(led.lowInterval);
       return;
-    case kBuiltinLEDBlinkPeriodsChannel:
+    case BuiltinLED::Blink::kPeriods:
       if (parser.payloadParsedLength()) led.periods = parser.payload;
       sendBuiltinLEDBlinkPeriods();
       return;
-    case kBuiltinLEDBlinkNotifyChannel:
+    case BuiltinLED::Blink::kNotify:
       if (parser.payloadParsedLength()) {
         if (parser.payload == 1) reportBlinkUpdates = true;
         else if (parser.payload == 0) reportBlinkUpdates = false;
@@ -142,48 +148,56 @@ void BoardProtocol<Messager>::handleBuiltinLEDBlinkCommand() {
 
 template<class Messager>
 void BoardProtocol<Messager>::sendBuiltinLEDState() {
-    int ledState;
-    switch (led.state.current()) {
-      case LED::State::on:
-      case LED::State::blinkingHigh:
-        ledState = 1;
-        break;
-      case LED::State::off:
-      case LED::State::blinkingLow:
-        ledState = 0;
-        break;
-      case LED::State::fadingHigh:
-      case LED::State::fadingLow:
-        ledState = -1;
-        break;
-      default:
-        return;
-    }
-    sender.sendChannelStart();
-    sender.sendChannelChar(kBuiltinLEDChannel);
-    sender.sendChannelEnd();
-    sender.sendPayload(ledState);
+  using namespace Channels::BoardProtocol;
+
+  int ledState;
+  switch (led.state.current()) {
+    case LED::State::on:
+    case LED::State::blinkingHigh:
+      ledState = 1;
+      break;
+    case LED::State::off:
+    case LED::State::blinkingLow:
+      ledState = 0;
+      break;
+    case LED::State::fadingHigh:
+    case LED::State::fadingLow:
+      ledState = -1;
+      break;
+    default:
+      return;
+  }
+
+  sender.sendChannelStart();
+  sender.sendChannelChar(kBuiltinLED);
+  sender.sendChannelEnd();
+  sender.sendPayload(ledState);
 }
 
 template<class Messager>
 void BoardProtocol<Messager>::sendBuiltinLEDBlinkState() {
-    bool blink = ((led.state.current() == LED::State::blinkingHigh) ||
-        (led.state.current() == LED::State::blinkingLow));
-    sender.sendChannelStart();
-    sender.sendChannelChar(kBuiltinLEDChannel);
-    sender.sendChannelChar(kBuiltinLEDBlinkChannel);
-    sender.sendChannelEnd();
-    sender.sendPayload(blink);
+  using namespace Channels::BoardProtocol;
+
+  bool blink = ((led.state.current() == LED::State::blinkingHigh) ||
+      (led.state.current() == LED::State::blinkingLow));
+
+  sender.sendChannelStart();
+  sender.sendChannelChar(kBuiltinLED);
+  sender.sendChannelChar(BuiltinLED::kBlink);
+  sender.sendChannelEnd();
+  sender.sendPayload(blink);
 }
 
 template<class Messager>
 void BoardProtocol<Messager>::sendBuiltinLEDBlinkPeriods() {
-    sender.sendChannelStart();
-    sender.sendChannelChar(kBuiltinLEDChannel);
-    sender.sendChannelChar(kBuiltinLEDBlinkChannel);
-    sender.sendChannelChar(kBuiltinLEDBlinkPeriodsChannel);
-    sender.sendChannelEnd();
-    sender.sendPayload(led.periods);
+  using namespace Channels::BoardProtocol;
+
+  sender.sendChannelStart();
+  sender.sendChannelChar(kBuiltinLED);
+  sender.sendChannelChar(BuiltinLED::kBlink);
+  sender.sendChannelChar(BuiltinLED::Blink::kPeriods);
+  sender.sendChannelEnd();
+  sender.sendPayload(led.periods);
 }
 
 }

@@ -7,15 +7,25 @@
 
 namespace LiquidHandlingRobotics {
 
-const char kIOChannel = 'i';
-const char kIOAnalogChannel = 'a';
-const char kIODigitalChannel = 'd';
-const char kBuiltinLEDChannel = 'l';
-const char kBuiltinLEDBlinkChannel = 'b';
-const char kBuiltinLEDBlinkHighIntervalChannel = 'h';
-const char kBuiltinLEDBlinkLowIntervalChannel = 'l';
-const char kBuiltinLEDBlinkPeriodsChannel = 'p';
-const char kBuiltinLEDBlinkNotifyChannel = 'n';
+namespace Channels {
+  namespace BoardProtocol {
+    const char kIO = 'i';
+    namespace IO {
+      const char kAnalog = 'a';
+      const char kDigital = 'd';
+    }
+    const char kBuiltinLED = 'l';
+    namespace BuiltinLED {
+      const char kBlink = 'b';
+      namespace Blink {
+        const char kHighInterval = 'h';
+        const char kLowInterval = 'l';
+        const char kPeriods = 'p';
+        const char kNotify = 'n';
+      }
+    }
+  }
+}
 
 const uint8_t kAnalogPinOffset = 14;
 const uint8_t kAnalogReadMinPin = 0;

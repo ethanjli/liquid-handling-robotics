@@ -24,11 +24,15 @@ enum class WatchdogTimeout : uint8_t {
   to8s = WDTO_8S
 };
 
-void hardReset();
+namespace Channels {
+  namespace CoreProtocol {
+    const char kReset = 'r';
+    const char kVersion = 'v';
+    const char kEcho = 'e';
+  }
+}
 
-const char kResetChannel = 'r';
-const char kVersionChannel = 'v';
-const char kEchoChannel = 'e';
+void hardReset();
 
 template<class Messager>
 class CoreProtocol {
