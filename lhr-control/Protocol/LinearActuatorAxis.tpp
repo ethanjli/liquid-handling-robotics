@@ -519,7 +519,7 @@ void LinearActuatorAxis<LinearActuator, Messager>::onFeedbackControllerMessage(
     return;
   }
 
-  // Expects channelLength == 3
+  // Expects channelLength >= 3
   if (channelLength == channelParsedLength + 1) {
     switch (parser.channel[channelParsedLength]) {
       case kConvergenceTimeout: // parsed as: _fc
@@ -530,7 +530,7 @@ void LinearActuatorAxis<LinearActuator, Messager>::onFeedbackControllerMessage(
     return;
   }
 
-  // Expects channelLength > channelParsedLength + 1
+  // Expects channelLength > 3
   switch (parser.channel[channelParsedLength]) {
     case kLimits: // parsed as: _fl
       onFeedbackControllerLimitsMessage(channelParsedLength + 1);
@@ -545,9 +545,7 @@ template <class LinearActuator, class Messager>
 void LinearActuatorAxis<LinearActuator, Messager>::onFeedbackControllerLimitsMessage(
     unsigned int channelParsedLength
 ) {
-  // TODO: decompose into a separate class
   using namespace Channels::LinearActuator;
-  using namespace Channels::LinearActuator::FeedbackController;
 
   // Expects parser.justReceived()
   // Expects channelParsedLength == 3
@@ -555,71 +553,104 @@ void LinearActuatorAxis<LinearActuator, Messager>::onFeedbackControllerLimitsMes
   uint8_t channelLength = parser.channelParsedLength;
   int payload = parser.payload;
 
-  if (channelLength <= channelParsedLength + 2) return;
+  if (channelLength < channelParsedLength + 2) return;
 
   // Expects channelLength >= 5
   switch (parser.channel[channelParsedLength]) {
     case kPosition: // parsed as: _flp
-      if (channelLength != channelParsedLength + 1) return;
-      // Expects channelLength == 5
+      onFeedbackControllerLimitsPositionMessage(channelParsedLength + 1);
+      break;
+    case kMotor: // parsed as: _flm
+      onFeedbackControllerLimitsMotorMessage(channelParsedLength + 1);
+      break;
+  }
+}
+
+template <class LinearActuator, class Messager>
+void LinearActuatorAxis<LinearActuator, Messager>::onFeedbackControllerLimitsPositionMessage(
+    unsigned int channelParsedLength
+) {
+  using namespace Channels::LinearActuator::FeedbackController;
+
+  // Expects parser.justReceived()
+  // Expects channelParsedLength == 4
+  // Expects previously parsed: _flp
+  uint8_t channelLength = parser.channelParsedLength;
+  int payload = parser.payload;
+
+  if (channelLength != channelParsedLength + 1) return;
+
+  // Expects channelLength == 5
+  switch (parser.channel[channelParsedLength]) {
+    case Limits::kLow: // parsed as: _flpl
+      if (parser.receivedPayload() && parser.payload <= actuator.pid.getMaxInput()) {
+        actuator.pid.setMinInput(parser.payload);
+      }
+      messager.sendResponse(actuator.pid.getMinInput());
+      break;
+    case Limits::kHigh: // parsed as: _flph
+      if (parser.receivedPayload() && parser.payload >= actuator.pid.getMinInput()) {
+        actuator.pid.setMaxInput(parser.payload);
+      }
+      messager.sendResponse(actuator.pid.getMaxInput());
+      break;
+  }
+}
+
+template <class LinearActuator, class Messager>
+void LinearActuatorAxis<LinearActuator, Messager>::onFeedbackControllerLimitsMotorMessage(
+    unsigned int channelParsedLength
+) {
+  using namespace Channels::LinearActuator;
+  using namespace Channels::LinearActuator::FeedbackController;
+
+  // Expects parser.justReceived()
+  // Expects channelParsedLength == 4
+  // Expects previously parsed: _flm
+  uint8_t channelLength = parser.channelParsedLength;
+  int payload = parser.payload;
+
+  if (channelLength != channelParsedLength + 2) return;
+
+  // Expects channelLength == 6
+  switch (parser.channel[channelParsedLength]) {
+    case Limits::Motor::kForwards: // parsed as: _flmf
       switch (parser.channel[channelParsedLength + 1]) {
-        case Limits::kLow: // parsed as: _flpl
-          if (parser.receivedPayload() && parser.payload <= actuator.pid.getMaxInput()) {
-            actuator.pid.setMinInput(parser.payload);
+        case Limits::kHigh: // parsed as: _flmh
+          if (parser.receivedPayload() &&
+              parser.payload <= 255 &&
+              parser.payload >= actuator.speedAdjuster.brakeUpperThreshold) {
+            actuator.pid.setMaxOutput(parser.payload);
           }
-          messager.sendResponse(actuator.pid.getMinInput());
+          messager.sendResponse(actuator.pid.getMaxOutput());
           break;
-        case Limits::kHigh: // parsed as: _flph
-          if (parser.receivedPayload() && parser.payload >= actuator.pid.getMinInput()) {
-            actuator.pid.setMaxInput(parser.payload);
+        case Limits::kLow: // parsed as: _flml
+          if (parser.receivedPayload() &&
+              parser.payload <= actuator.pid.getMaxOutput() &&
+              parser.payload >= actuator.speedAdjuster.brakeLowerThreshold) {
+            actuator.speedAdjuster.brakeUpperThreshold = parser.payload;
           }
-          messager.sendResponse(actuator.pid.getMaxInput());
+          messager.sendResponse(actuator.speedAdjuster.brakeUpperThreshold);
           break;
       }
       break;
-    case kMotor: // parsed as: _flm
-      if (channelLength != channelParsedLength + 3) return;
-      // Expects channelLength == 6
+    case Limits::Motor::kBackwards: // parsed as: _flmb
       switch (parser.channel[channelParsedLength + 1]) {
-        case Limits::Motor::kForwards: // parsed as: _flmf
-          switch (parser.channel[channelParsedLength + 2]) {
-            case Limits::kHigh: // parsed as: _flmh
-              if (parser.receivedPayload() &&
-                  parser.payload <= 255 &&
-                  parser.payload >= actuator.speedAdjuster.brakeUpperThreshold) {
-                actuator.pid.setMaxOutput(parser.payload);
-              }
-              messager.sendResponse(actuator.pid.getMaxOutput());
-              break;
-            case Limits::kLow: // parsed as: _flml
-              if (parser.receivedPayload() &&
-                  parser.payload <= actuator.pid.getMaxOutput() &&
-                  parser.payload >= actuator.speedAdjuster.brakeLowerThreshold) {
-                actuator.speedAdjuster.brakeUpperThreshold = parser.payload;
-              }
-              messager.sendResponse(actuator.speedAdjuster.brakeUpperThreshold);
-              break;
+        case Limits::kLow: // parsed as: _flml
+          if (parser.receivedPayload() &&
+              parser.payload <= actuator.speedAdjuster.brakeUpperThreshold &&
+              parser.payload >= actuator.pid.getMinOutput()) {
+            actuator.speedAdjuster.brakeLowerThreshold = parser.payload;
           }
+          messager.sendResponse(actuator.speedAdjuster.brakeLowerThreshold);
           break;
-        case Limits::Motor::kBackwards: // parsed as: _flmb
-          switch (parser.channel[channelParsedLength + 2]) {
-            case Limits::kLow: // parsed as: _flml
-              if (parser.receivedPayload() &&
-                  parser.payload <= actuator.speedAdjuster.brakeUpperThreshold &&
-                  parser.payload >= actuator.pid.getMinOutput()) {
-                actuator.speedAdjuster.brakeLowerThreshold = parser.payload;
-              }
-              messager.sendResponse(actuator.speedAdjuster.brakeLowerThreshold);
-              break;
-            case Limits::kHigh: // parsed as: _flmh
-              if (parser.receivedPayload() &&
-                  parser.payload <= actuator.speedAdjuster.brakeLowerThreshold &&
-                  parser.payload >= -255) {
-                actuator.pid.setMinOutput(parser.payload);
-              }
-              messager.sendResponse(actuator.pid.getMinOutput());
-              break;
+        case Limits::kHigh: // parsed as: _flmh
+          if (parser.receivedPayload() &&
+              parser.payload <= actuator.speedAdjuster.brakeLowerThreshold &&
+              parser.payload >= -255) {
+            actuator.pid.setMinOutput(parser.payload);
           }
+          messager.sendResponse(actuator.pid.getMinOutput());
           break;
       }
       break;

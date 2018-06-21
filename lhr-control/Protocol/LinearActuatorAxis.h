@@ -201,6 +201,8 @@ class LinearActuatorAxis {
     void onMotorMessage(unsigned int channelParsedLength);
     void onFeedbackControllerMessage(unsigned int channelParsedLength);
     void onFeedbackControllerLimitsMessage(unsigned int channelParsedLength);
+    void onFeedbackControllerLimitsPositionMessage(unsigned int channelParsedLength);
+    void onFeedbackControllerLimitsMotorMessage(unsigned int channelParsedLength);
     void onFeedbackControllerPIDMessage(unsigned int channelParsedLength);
 };
 
