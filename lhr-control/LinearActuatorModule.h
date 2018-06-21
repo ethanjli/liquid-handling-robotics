@@ -4,7 +4,6 @@
 #include <elapsedMillis.h>
 
 #include <Smoothing.h>
-#include <LinearActuator.h>
 
 #include "Messages.h"
 

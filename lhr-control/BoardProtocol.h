@@ -1,7 +1,7 @@
 #ifndef BoardProtocol_h
 #define BoardProtocol_h
 
-#include <LED.h>
+#include <Components/LED.h>
 
 #include "Messages.h"
 
