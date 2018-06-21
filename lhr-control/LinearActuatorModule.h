@@ -96,11 +96,12 @@ class Notifier {
     State state = State::silent;
     bool changeOnly = true;
     int number = -1;
+    unsigned int interval = 1;
 
     void update();
 
-    void notifyIterationIntervals(unsigned interval);
-    void notifyTimeIntervals(unsigned long interval);
+    void notifyIterationIntervals(unsigned int interval);
+    void notifyTimeIntervals(unsigned int interval);
     void notify();
     void notifyNumber();
     void notifyState();
@@ -116,8 +117,7 @@ class Notifier {
     const char axisChannel = '\0';
     const char signalChannel = '\0';
 
-    unsigned long interval = 1;
-    int iteration = 0;
+    unsigned int iteration = 0;
     elapsedMillis timer;
 
     void onReceivedMessage();

@@ -57,7 +57,7 @@ void Notifier<Messager, SignalType>::update() {
 }
 
 template <class Messager, class SignalType>
-void Notifier<Messager, SignalType>::notifyIterationIntervals(unsigned interval) {
+void Notifier<Messager, SignalType>::notifyIterationIntervals(unsigned int interval) {
   state = State::iterationIntervals;
   interval = max(1, interval);
   notify();
@@ -65,7 +65,7 @@ void Notifier<Messager, SignalType>::notifyIterationIntervals(unsigned interval)
 }
 
 template <class Messager, class SignalType>
-void Notifier<Messager, SignalType>::notifyTimeIntervals(unsigned long interval) {
+void Notifier<Messager, SignalType>::notifyTimeIntervals(unsigned int interval) {
   state = State::timeIntervals;
   interval = max(1, interval);
   notify();
