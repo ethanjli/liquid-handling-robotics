@@ -101,7 +101,7 @@ void FirmataTransport::update() {
   digitalInput.report();
   while (Firmata.available()) {
     if (messageListener.available()) break;
-    if (messageListener.receivedEmptyMessage && (state.current() == State::connecting)) {
+    if (messageListener.receivedEmptyMessage && (state.at(State::connecting))) {
       state.update(State::connected);
       break;
     }
@@ -175,7 +175,7 @@ void Messager<FirmataTransport>::establishConnection() {
   elapsedMillis timer;
 
   // Run Firmata as usual, but ignore any special messages received
-  while (transport.state.current() == FirmataTransport::State::connecting) transport.update();
+  while (transport.state.at(FirmataTransport::State::connecting)) transport.update();
   // Send a response
   sender.sendMessageStart();
   sender.sendMessageEnd();

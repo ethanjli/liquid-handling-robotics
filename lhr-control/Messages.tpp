@@ -92,7 +92,7 @@ bool StringParser<maxLength>::onChar(char current) {
     buffer[0] = '\0';
     return false;
   } else {
-    if (state.current() == State::ready) state.update(State::parsing);
+    if (state.at(State::ready)) state.update(State::parsing);
     parse(current);
     state.update(State::parsing, true);
     return true;
@@ -115,11 +115,6 @@ bool StringParser<maxLength>::matches(const char queryString[]) const {
 template<uint8_t maxLength>
 bool StringParser<maxLength>::justReceived() const {
   return state.justEntered(State::parsed);
-}
-
-template<uint8_t maxLength>
-uint8_t StringParser<maxLength>::parsedLength() const {
-  return length;
 }
 
 template<uint8_t maxLength>
@@ -163,7 +158,7 @@ bool IntegerParser<Integer>::onChar(char current) {
     negative = false;
     return false;
   } else {
-    if (state.current() == State::ready) state.update(State::parsing);
+    if (state.at(State::ready)) state.update(State::parsing);
     parse(current);
     state.update(State::parsing, true);
     return true;
@@ -181,11 +176,6 @@ void IntegerParser<Integer>::reset() {
 template<class Integer>
 bool IntegerParser<Integer>::justReceived() const {
   return state.justEntered(State::parsed);
-}
-
-template<class Integer>
-uint8_t IntegerParser<Integer>::parsedLength() const {
-  return length;
 }
 
 template<class Integer>
@@ -207,8 +197,11 @@ void IntegerParser<Integer>::parse(char current) {
 
 template<class Transport>
 MessageParser<Transport>::MessageParser(Transport &transport) :
-  transport(transport), channelParser(kChannelEndDelimiter),
-  payloadParser(kPayloadEndDelimiter)
+  transport(transport),
+  channelParser(kChannelEndDelimiter),
+  payloadParser(kPayloadEndDelimiter),
+  channelParsedLength(channelParser.parsedLength),
+  payloadParsedLength(payloadParser.parsedLength)
 {}
 
 template<class Transport>
@@ -225,7 +218,7 @@ void MessageParser<Transport>::setup() {
 template<class Transport>
 void MessageParser<Transport>::update() {
   wdt_reset();
-  if (state.current() == State::parsedMessage) state.update(State::awaitingChannel);
+  if (state.at(State::parsedMessage)) state.update(State::awaitingChannel);
   receive();
   wdt_reset();
 }
@@ -237,7 +230,7 @@ void MessageParser<Transport>::receive() {
 
 template<class Transport>
 bool MessageParser<Transport>::onChar(char current) {
-  switch (state.current()) {
+  switch (state.current) {
     case State::awaitingChannel:
       if (current == kChannelStartDelimiter) {
         channelParser.reset();
@@ -293,13 +286,8 @@ bool MessageParser<Transport>::justReceived() const {
 }
 
 template<class Transport>
-unsigned int MessageParser<Transport>::payloadParsedLength() const {
-  return payloadParser.parsedLength();
-}
-
-template<class Transport>
-unsigned int MessageParser<Transport>::channelParsedLength() const {
-  return channelParser.parsedLength();
+bool MessageParser<Transport>::receivedPayload() const {
+  return payloadParser.parsedLength > 0;
 }
 
 // Messager

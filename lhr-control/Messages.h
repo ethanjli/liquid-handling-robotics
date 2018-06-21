@@ -79,7 +79,7 @@ class StringParser {
 
     bool matches(const char queryString[]) const;
     bool justReceived() const;
-    uint8_t parsedLength() const;
+    const uint8_t &parsedLength = length;
 
   private:
     bool setupCompleted = false;
@@ -109,7 +109,7 @@ class IntegerParser {
     void reset();
 
     bool justReceived() const;
-    uint8_t parsedLength() const;
+    const uint8_t &parsedLength = length;
 
   private:
     bool setupCompleted = false;
@@ -143,14 +143,17 @@ class MessageParser {
     bool isChannel(const char queryChannel[]) const;
     bool justReceived(const char queryChannel[]) const;
     bool justReceived() const;
-    unsigned int payloadParsedLength() const;
-    unsigned int channelParsedLength() const;
+    bool receivedPayload() const;
 
   private:
     Transport &transport;
     StringParser<kChannelMaxLength> channelParser;
     IntegerParser<MessagePayload> payloadParser;
     bool setupCompleted = false;
+
+  public:
+    const uint8_t &channelParsedLength;
+    const uint8_t &payloadParsedLength;
 };
 
 // Messaging

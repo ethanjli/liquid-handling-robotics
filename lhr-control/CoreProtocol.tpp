@@ -69,12 +69,13 @@ void CoreProtocol<Messager>::handleResetCommand() {
   using namespace Channels::CoreProtocol;
 
   if (!(parser.justReceived() && parser.channel[0] == kReset &&
-        parser.channelParsedLength() == 1)) return;
+        parser.channelParsedLength == 1)) return;
+  // parsed as: r
   bool reset = false;
   sender.sendChannelStart();
   sender.sendChannelChar(kReset);
   sender.sendChannelEnd();
-  reset = (parser.payloadParsedLength() > 0 && parser.payload == 1);
+  reset = (parser.receivedPayload() && parser.payload == 1);
   sender.sendPayload(reset);
   if (reset) hardReset();
 }
@@ -82,10 +83,10 @@ void CoreProtocol<Messager>::handleResetCommand() {
 template<class Messager>
 void CoreProtocol<Messager>::handleVersionCommand() {
   if (!(parser.justReceived() && parser.channel[0] == Channels::CoreProtocol::kVersion &&
-        parser.channelParsedLength() <= 2)) return;
+        parser.channelParsedLength <= 2)) return;
 
-  if (parser.channelParsedLength() == 1) sendAllVersionMessages();
-  else sendVersionMessage(parser.channel[1]);
+  if (parser.channelParsedLength == 1) sendAllVersionMessages(); // parsed as: v
+  else sendVersionMessage(parser.channel[1]); // parsed as: v*
 }
 
 template<class Messager>
@@ -93,8 +94,9 @@ void CoreProtocol<Messager>::handleEchoCommand() {
   using namespace Channels::CoreProtocol;
 
   if (!(parser.justReceived() && parser.channel[0] == kEcho &&
-        parser.channelParsedLength() == 1)) return;
-  if (parser.payloadParsedLength()) echoValue = parser.payload;
+        parser.channelParsedLength == 1)) return;
+  // parsed as: e
+  if (parser.receivedPayload()) echoValue = parser.payload;
 
   messager.sendResponse(echoValue);
 }
