@@ -1,6 +1,8 @@
 #ifndef LinearActuatorModule_h
 #define LinearActuatorModule_h
 
+#include <elapsedMillis.h>
+
 #include <Smoothing.h>
 #include <LinearActuator.h>
 
@@ -8,35 +10,123 @@
 
 namespace LiquidHandlingRobotics {
 
-// Constants channel
-const char kConstantsChannel = 'k';
-const char kConstantsProportionalChannel = 'p';
-const char kConstantsDerivativeChannel = 'd';
-const char kConstantsIntegralChannel = 'i';
-const char kConstantsFeedforwardChannel = 'f';
-// Limits channel
-const char kLimitsChannel = 'l';
-const char kLimitsPositionChannel = 'p';
-const char kLimitsDutyChannel = 'd';
-const char kLimitsBrakeChannel = 'b';
-const char kLimitsLowerSubchannel = 'l';
-const char kLimitsUpperSubchannel = 'h';
-// Reporting channel
-const char kReportingChannel = 'r';
-const char kReportingQueryChannel = 'q';
-const char kReportingConvergenceChannel = 'c';
-const char kReportingStallTimeoutChannel = 't';
-const char kReportingStreamingChannel = 's';
-// PID Targeting channel
-const char kTargetingChannel = 't';
-// Direct Duty channel
-const char kDutyChannel = 'd';
+namespace Channels {
+  namespace LinearActuatorProtocol {
+    const char kPosition = 'p';
+    namespace Position {
+      // This includes Notify channels
+    }
+    const char kSmoothedPosition = 's';
+    namespace SmoothedPosition {
+      const char kSnapMultiplier = 's';
+      const char kRangeLow = 'l';
+      const char kRangeHigh = 'h';
+      const char kActivityThreshold = 't';
+      // This includes Notify channels
+    }
+    const char kMotor = 'm';
+    namespace Motor {
+      const char kStallProtectorTimeout = 's';
+      const char kTimerTimeout = 't';
+      const char kPolarity = 'p';
+    }
+    const char kFeedbackController = 'f';
+    namespace FeedbackController {
+      const char kConvergenceTimeout = 'c';
+      const char kLimits = 'l';
+      namespace Limits {
+        // This includes kPosition
+        namespace Position {
+          // This includes kLow/kHigh
+        }
+        // This includes kMotor
+        namespace Motor {
+          const char kForwards = 'f';
+          namespace Forwards {
+            // This includes kLow/kHigh
+          }
+          const char kBackwards = 'b';
+          namespace Backwards {
+            // This includes kLow/kHigh
+          }
+        }
+        // These are not channels at this level, but shared names of other child channels
+        const char kLow = 'l';
+        const char kHigh = 'h';
+      }
+      const char kPID = 'p';
+      namespace PID {
+        const char kKp = 'p';
+        const char kKd = 'd';
+        const char kKi = 'i';
+        const char kSampleInterval = 's';
+      }
+    }
+    // These are not channels at this level, but shared names of other child channels
+    const char kNotify = 'n';
+    namespace Notify {
+      const char kInterval = 'i';
+      const char kChangeOnly = 'c';
+      const char kNumber = 'n';
+    }
+  }
+}
 
 const float kConstantsFixedPointScaling = 100;
 
+float fixedPointToFloat(int fixedPointNum);
+float floatToFixedPoint(float floatNum);
+
 namespace States {
-  enum class LinearActuatorControlMode : uint8_t {
-    ready, pidTargeting, dutyControl
+  enum class NotifierMode : uint8_t {
+    silent = 0, iterationIntervals = 1, timeIntervals = 2
+  };
+}
+
+template <class Messager, class SignalType>
+class Notifier {
+  public:
+    Notifier(
+        Messager &messager, const SignalType &signalValue,
+        char axisChannel, char signalChannel
+    );
+
+    using State = States::NotifierMode;
+
+    State state = State::silent;
+    bool changeOnly = true;
+    int number = -1;
+
+    void update();
+
+    void notifyIterationIntervals(unsigned interval);
+    void notifyTimeIntervals(unsigned long interval);
+    void notify();
+    void notifyNumber();
+    void notifyState();
+
+  private:
+    Messager &messager;
+    typename Messager::Parser &parser;
+    typename Messager::Sender &sender;
+
+    const SignalType &signalValue;
+    SignalType prevSignalValue = 0;
+
+    const char axisChannel = '\0';
+    const char signalChannel = '\0';
+
+    unsigned long interval = 1;
+    int iteration = 0;
+    elapsedMillis timer;
+
+    void onReceivedMessage();
+};
+
+namespace States {
+  enum class LinearActuatorMode : int8_t {
+    directMotorDutyIdle = 0, directMotorDutyControl = 1, positionFeedbackControl = 2,
+    stallTimeoutStopped = -1, convergenceTimeoutStopped = -2, timerTimeoutStopped = -3
   };
 }
 
@@ -46,68 +136,73 @@ class LinearActuatorModule {
     LinearActuatorModule(
         Messager &messager,
         LinearPositionControl::Components::Motors &motors,
-        char actuatorChannelPrefix,
+        char axisChannel,
         MotorPort motorPort, uint8_t sensorId,
         int minPosition, int maxPosition,
         int minDuty, int maxDuty,
-        double pidKp, double pidKd, double pidKi,
-        int pidSampleTime,
+        double pidKp, double pidKd, double pidKi, int pidSampleTime,
         int feedforward,
         int brakeLowerThreshold, int brakeUpperThreshold,
         bool swapMotorPolarity,
-        int convergenceDelay,
-        int stallTimeout, float stallSmootherSnapMultiplier, int stallSmootherMax,
-        bool stallSmootherEnableSleep, float stallSmootherActivityThreshold
+        int convergenceTimeout, int stallTimeout, int timerTimeout,
+        float smootherSnapMultiplier, int smootherMax,
+        bool smootherEnableSleep, float smootherActivityThreshold
     );
 
     using Position = typename LinearActuator::Position;
     using Smoother = LinearPositionControl::Smoother<Position, int>;
-    using State = States::LinearActuatorControlMode;
-
-    Messager &messager;
+    using State = States::LinearActuatorMode;
 
     LinearActuator actuator;
     LinearPositionControl::StateVariable<State> state;
     Smoother smoother;
 
+    // Parameters
+    unsigned int convergenceTimeout;
+    unsigned int stallTimeout;
+    unsigned int timerTimeout = 0;
+
     void setup();
     void update();
 
-    bool converged(unsigned int convergenceTime = 0) const;
-    bool stopped(unsigned int convergenceTime = 0) const;
-    bool stalled(unsigned int stallTime = 0) const;
+    // Stopping conditions
+    bool converged() const;
+    bool stalled() const;
+    bool timed() const;
 
-    void targetPosition(Position position);
     void reportPosition(char reportingChannel);
-    void setDirectDuty(int duty);
+
+    void startPositionFeedbackControl(Position setpoint);
+    void startDirectMotorDutyControl(int duty);
+    void endControl(State nextState);
+
+    // State notifiers
+    void notifyState();
+    void notifyPosition();
+    void notifySmoothedPosition();
+    void notifyMotor();
+    void notifyFeedbackControllerSetpoint();
 
   private:
+    Messager &messager;
+    typename Messager::Parser &parser;
+    typename Messager::Sender &sender;
+
     bool setupCompleted = false;
 
-    const char moduleChannel = '\0';
+    const char axisChannel = '\0';
 
-    // Parameters
-    unsigned int convergenceDelay;
-    unsigned int stallTimeout;
-
-    // Convergence reporting state variables
-    bool reportedConvergence = false;
-    bool reportingConvergencePosition = true;
-    // Stall timeout reporting state variables
-    bool reportedStallTimeout = false;
-    bool reportingStallTimeoutPosition = true;
-    // Position streaming state variable
-    int streamingPositionReportInterval = 0;
-    int streamingPositionClock = 0;
-    // Position query state variable
-    int queryPositionCountdown = 0;
+    Notifier<Messager, Position> positionNotifier;
+    Notifier<Messager, int> smoothedPositionNotifier;
+    Notifier<Messager, int> motorDutyNotifier;
 
     void onReceivedMessage(unsigned int channelParsedLength);
-    void onConstantsMessage(unsigned int channelParsedLength);
-    void onLimitsMessage(unsigned int channelParsedLength);
-    void onReportingMessage(unsigned int channelParsedLength);
-    void onTargetingMessage(unsigned int channelParsedLength);
-    void onDutyMessage(unsigned int channelParsedLength);
+    void onPositionMessage(unsigned int channelParsedLength);
+    void onSmoothedPositionMessage(unsigned int channelParsedLength);
+    void onMotorMessage(unsigned int channelParsedLength);
+    void onFeedbackControllerMessage(unsigned int channelParsedLength);
+    void onFeedbackControllerLimitsMessage(unsigned int channelParsedLength);
+    void onFeedbackControllerPIDMessage(unsigned int channelParsedLength);
 };
 
 }

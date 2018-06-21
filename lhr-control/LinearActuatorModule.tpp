@@ -5,26 +5,172 @@
 
 namespace LiquidHandlingRobotics {
 
+// Notifier
+
+template <class Messager, class SignalType>
+Notifier<Messager, SignalType>::Notifier(
+    Messager &messager, const SignalType &signalValue,
+    char axisChannel, char signalChannel
+) :
+  messager(messager), parser(messager.parser), sender(messager.sender),
+  signalValue(signalValue),
+  axisChannel(axisChannel), signalChannel(signalChannel)
+{}
+
+template <class Messager, class SignalType>
+void Notifier<Messager, SignalType>::update() {
+  using namespace Channels::LinearActuatorProtocol;
+
+  if ((parser.justReceived() && parser.channelParsedLength >= 3 &&
+        parser.channel[0] == axisChannel &&
+        parser.channel[1] == signalChannel &&
+        parser.channel[2] == kNotify)) { // parsed as: _*n
+    onReceivedMessage();
+  }
+  if (state == State::silent) return;
+
+  switch (state) {
+    case State::iterationIntervals:
+      iteration = (iteration + 1) % interval;
+      if (iteration != 0) return;
+      break;
+    case State::timeIntervals:
+      if (timer < interval) return;
+      timer = 0;
+      break;
+    default:
+      return;
+  }
+
+  if (changeOnly && signalValue == prevSignalValue) return;
+  prevSignalValue = signalValue;
+
+  if (number == 0) {
+    number = -1;
+    notifyNumber();
+    state = State::silent;
+    notifyState();
+    return;
+  }
+  notify();
+  if (number > 0) --number;
+}
+
+template <class Messager, class SignalType>
+void Notifier<Messager, SignalType>::notifyIterationIntervals(unsigned interval) {
+  state = State::iterationIntervals;
+  interval = max(1, interval);
+  notify();
+  iteration = 0;
+}
+
+template <class Messager, class SignalType>
+void Notifier<Messager, SignalType>::notifyTimeIntervals(unsigned long interval) {
+  state = State::timeIntervals;
+  interval = max(1, interval);
+  notify();
+  timer = 0;
+}
+
+template <class Messager, class SignalType>
+void Notifier<Messager, SignalType>::notify() {
+  sender.sendChannelStart();
+  sender.sendChannelChar(axisChannel);
+  sender.sendChannelChar(signalChannel);
+  sender.sendChannelEnd();
+  sender.sendPayload(static_cast<int>(signalValue));
+}
+
+template<class Messager, class SignalType>
+void Notifier<Messager, SignalType>::notifyNumber() {
+  using namespace Channels::LinearActuatorProtocol;
+  using namespace Channels::LinearActuatorProtocol::Notify;
+
+  sender.sendChannelStart();
+  sender.sendChannelChar(axisChannel);
+  sender.sendChannelChar(signalChannel);
+  sender.sendChannelChar(kNotify);
+  sender.sendChannelChar(kNumber);
+  sender.sendChannelEnd();
+  sender.sendPayload(number);
+}
+template<class Messager, class SignalType>
+void Notifier<Messager, SignalType>::notifyState() {
+  using namespace Channels::LinearActuatorProtocol;
+
+  sender.sendChannelStart();
+  sender.sendChannelChar(axisChannel);
+  sender.sendChannelChar(kNotify);
+  sender.sendChannelEnd();
+  sender.sendPayload(static_cast<int>(state));
+}
+
+
+template <class Messager, class SignalType>
+void Notifier<Messager, SignalType>::onReceivedMessage() {
+  using namespace Channels::LinearActuatorProtocol;
+  using namespace Channels::LinearActuatorProtocol::Notify;
+
+  uint8_t channelLength = messager.parser.channelParsedLength;
+
+  if (channelLength == 3 && messager.parser.channel[2] == kNotify) { // parsed as: _*n
+    if (parser.receivedPayload()) {
+      switch (messager.parser.payload) {
+        case 0:
+          state = State::silent;
+          break;
+        case 1:
+          state = State::iterationIntervals;
+          break;
+        case 2:
+          state = State::timeIntervals;
+          break;
+      }
+    }
+    messager.sendResponse(static_cast<int>(state));
+    return;
+  }
+  if (channelLength == 4) {
+    switch (messager.parser.channel[3]) {
+      case kInterval: // parsed as: _*ni
+        if (parser.receivedPayload() && messager.parser.payload > 0) {
+          interval = messager.parser.payload;
+        }
+        messager.sendResponse(static_cast<int>(interval));
+        break;
+      case kChangeOnly: // parsed as: _*nc
+        if (parser.receivedPayload()) {
+          if (messager.parser.payload == 1) changeOnly = true;
+          else if (messager.parser.payload == 0) changeOnly = false;
+        }
+        messager.sendResponse(changeOnly);
+        break;
+      case kNumber: // parsed as: _*nn
+        if (parser.receivedPayload()) number = messager.parser.payload;
+        messager.sendResponse(number);
+        break;
+    }
+  }
+}
+
 // LinearActuatorModule
 
 template <class LinearActuator, class Messager>
 LinearActuatorModule<LinearActuator, Messager>::LinearActuatorModule(
     Messager &messager,
     LinearPositionControl::Components::Motors &motors,
-    char actuatorChannelPrefix,
+    char axisChannel,
     MotorPort motorPort, uint8_t sensorId,
     int minPosition, int maxPosition,
     int minDuty, int maxDuty,
-    double pidKp, double pidKd, double pidKi,
-    int pidSampleTime,
+    double pidKp, double pidKd, double pidKi, int pidSampleTime,
     int feedforward,
     int brakeLowerThreshold, int brakeUpperThreshold,
     bool swapMotorPolarity,
-    int convergenceDelay,
-    int stallTimeout, float stallSmootherSnapMultiplier, int stallSmootherMax,
-    bool stallSmootherEnableSleep, float stallSmootherActivityThreshold
+    int convergenceTimeout, int stallTimeout, int timerTimeout,
+    float smootherSnapMultiplier, int smootherMax,
+    bool smootherEnableSleep, float smootherActivityThreshold
 ) :
-  messager(messager),
   actuator(
     motors, motorPort,
     sensorId, minPosition, maxPosition,
@@ -35,11 +181,25 @@ LinearActuatorModule<LinearActuator, Messager>::LinearActuatorModule(
   ),
   smoother(
       actuator.position,
-      stallSmootherSnapMultiplier, stallSmootherMax,
-      stallSmootherEnableSleep, stallSmootherActivityThreshold
+      smootherSnapMultiplier, smootherMax,
+      smootherEnableSleep, smootherActivityThreshold
   ),
-  moduleChannel(actuatorChannelPrefix),
-  convergenceDelay(convergenceDelay), stallTimeout(stallTimeout)
+  convergenceTimeout(convergenceTimeout), stallTimeout(stallTimeout),
+  timerTimeout(timerTimeout),
+  messager(messager), parser(messager.parser), sender(messager.sender),
+  axisChannel(axisChannel),
+  positionNotifier(
+      messager, actuator.position.current,
+      axisChannel, Channels::LinearActuatorProtocol::kPosition
+  ),
+  smoothedPositionNotifier(
+      messager, smoother.output.current,
+      axisChannel, Channels::LinearActuatorProtocol::kSmoothedPosition
+  ),
+  motorDutyNotifier(
+      messager, actuator.motor.speed,
+      axisChannel, Channels::LinearActuatorProtocol::kMotor
+  )
 {}
 
 template <class LinearActuator, class Messager>
@@ -49,7 +209,7 @@ void LinearActuatorModule<LinearActuator, Messager>::setup() {
   actuator.setup();
   smoother.setup();
 
-  state.setup(State::ready);
+  state.setup(State::directMotorDutyIdle);
 
   setupCompleted = true;
 }
@@ -60,268 +220,419 @@ void LinearActuatorModule<LinearActuator, Messager>::update() {
   actuator.update();
   wdt_reset();
   smoother.update();
+  wdt_reset();
 
-  if (messager.parser.justReceived() && messager.parser.channel[0] == moduleChannel) {
+  if (parser.justReceived() && parser.channelParsedLength > 0 &&
+      parser.channel[0] == axisChannel) {
     onReceivedMessage(1);
   }
+  wdt_reset();
+  positionNotifier.update();
+  wdt_reset();
+  smoothedPositionNotifier.update();
+  wdt_reset();
+  motorDutyNotifier.update();
+  wdt_reset();
 
-  switch (state.current()) {
-    case State::ready:
-      if (reportingConvergencePosition &&
-          !reportedConvergence) reportPosition(kReportingConvergenceChannel);
-    case State::pidTargeting:
-      if (converged(convergenceDelay)) {
-        actuator.freeze(true);
-        state.update(State::dutyControl, true);
-        if (reportingConvergencePosition &&
-            !reportedConvergence) reportPosition(kReportingConvergenceChannel);
-      } else if (stalled(stallTimeout)) {
-        actuator.freeze(true);
-        state.update(State::dutyControl, true);
-        if (reportingStallTimeoutPosition && !reportedConvergence &&
-            !reportedStallTimeout) reportPosition(kReportingStallTimeoutChannel);
-      }
+  switch (state.current) {
+    case State::directMotorDutyControl:
+      if (stalled()) endControl(State::stallTimeoutStopped);
+      else if (timed()) endControl(State::timerTimeoutStopped);
       break;
-    case State::dutyControl:
-      if (stopped(convergenceDelay) &&
-          reportingConvergencePosition &&
-          !reportedConvergence &&
-          !reportedStallTimeout) reportPosition(kReportingConvergenceChannel);
-      else if (stalled(stallTimeout) &&
-          reportingStallTimeoutPosition &&
-          !reportedStallTimeout) {
-        actuator.freeze(true);
-        reportPosition(kReportingStallTimeoutChannel);
-      }
+    case State::positionFeedbackControl:
+      if (converged()) endControl(State::convergenceTimeoutStopped);
+      else if (stalled()) endControl(State::stallTimeoutStopped);
       break;
   }
 
   wdt_reset();
-  if (streamingPositionReportInterval > 0) {
-    if (streamingPositionClock == 0) reportPosition(kReportingStreamingChannel);
-    streamingPositionClock = (streamingPositionClock + 1) % streamingPositionReportInterval;
-  }
-
-  wdt_reset();
-  if (queryPositionCountdown > 0) {
-    reportPosition(kReportingQueryChannel);
-    --queryPositionCountdown;
-  }
-
-  wdt_reset();
 }
 
 template <class LinearActuator, class Messager>
-bool LinearActuatorModule<LinearActuator, Messager>::converged(unsigned int convergenceTime) const {
-  if (!convergenceTime) convergenceTime = convergenceDelay;
-  return actuator.pid.setpoint.settled(convergenceTime) &&
-    actuator.speedAdjuster.output.settledAt(0, convergenceTime) &&
-    state.settled(convergenceTime);
+bool LinearActuatorModule<LinearActuator, Messager>::converged() const {
+  return (
+      convergenceTimeout > 0 &&
+      state.settledAt(State::positionFeedbackControl, convergenceTimeout) &&
+      actuator.pid.setpoint.settled(convergenceTimeout) &&
+      actuator.speedAdjuster.output.settledAt(0, convergenceTimeout)
+  );
 }
 
 template <class LinearActuator, class Messager>
-bool LinearActuatorModule<LinearActuator, Messager>::stalled(unsigned int stallTime) const {
-  if (!stallTime) stallTime = stallTimeout;
-  return actuator.motor.speed != 0 &&
-    actuator.pid.setpoint.settled(stallTime) &&
-    smoother.output.settled(stallTime) &&
-    state.settled(stallTime);
+bool LinearActuatorModule<LinearActuator, Messager>::stalled() const {
+  return (
+      stallTimeout > 0 &&
+      state.settled(stallTimeout) &&
+      (
+       (state.at(State::directMotorDutyControl) && actuator.motor.speed != 0) ||
+       (state.at(State::positionFeedbackControl) &&
+        actuator.pid.setpoint.settled(stallTimeout) &&
+        !actuator.speedAdjuster.output.settledAt(0, stallTimeout)
+       )
+      ) &&
+      smoother.output.settled(stallTimeout)
+  );
 }
 
 template <class LinearActuator, class Messager>
-bool LinearActuatorModule<LinearActuator, Messager>::stopped(unsigned int convergenceTime) const {
-  if (!convergenceTime) convergenceTime = convergenceDelay;
-  return actuator.motor.speed == 0 &&
-    smoother.output.settled(convergenceTime) &&
-    state.settled(convergenceTime);
+bool LinearActuatorModule<LinearActuator, Messager>::timed() const {
+  return timerTimeout > 0 && state.settled(timerTimeout);
 }
 
 template<class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::targetPosition(Position position) {
-    actuator.pid.setSetpoint(position);
-    reportedConvergence = false;
-    reportedStallTimeout = false;
-    state.update(State::pidTargeting, true);
-    actuator.unfreeze();
-}
-
-template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::reportPosition(char reportingChannel) {
-  messager.sender.sendChannelStart();
-  messager.sender.sendChannelChar(moduleChannel);
-  messager.sender.sendChannelChar(kReportingChannel);
-  messager.sender.sendChannelChar(reportingChannel);
-  messager.sender.sendChannelEnd();
-  messager.sender.sendPayload(actuator.position.current());
-  switch (reportingChannel) {
-    case kReportingConvergenceChannel:
-      reportedConvergence = true;
-      break;
-    case kReportingStallTimeoutChannel:
-      reportedStallTimeout = true;
-      break;
-  }
+void LinearActuatorModule<LinearActuator, Messager>::startPositionFeedbackControl(Position setpoint) {
+  actuator.pid.setSetpoint(setpoint);
+  state.update(State::positionFeedbackControl, true);
+  actuator.unfreeze();
+  notifyFeedbackControllerSetpoint();
+  notifyState();
 }
 
 template<class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::setDirectDuty(int duty) {
-    reportedConvergence = false;
-    reportedStallTimeout = false;
-    state.update(State::dutyControl, true);
-    actuator.freeze(true);
-    actuator.motor.run(constrain(duty, -255, 255));
+void LinearActuatorModule<LinearActuator, Messager>::startDirectMotorDutyControl(int duty) {
+  if (duty == 0) state.update(State::directMotorDutyIdle, true);
+  else state.update(State::directMotorDutyControl, true);
+  actuator.freeze(true);
+  actuator.motor.run(constrain(duty, -255, 255));
+  notifyMotor();
+  notifyState();
+}
+
+template<class LinearActuator, class Messager>
+void LinearActuatorModule<LinearActuator, Messager>::endControl(State nextState) {
+  if (nextState == State::directMotorDutyIdle ||
+      nextState == State::directMotorDutyControl ||
+      nextState == State::positionFeedbackControl) return;
+  actuator.freeze(true);
+  actuator.motor.run(0);
+  notifyPosition();
+  switch (state.current) {
+    case State::directMotorDutyControl:
+      notifyMotor();
+      break;
+    case State::positionFeedbackControl:
+      notifyFeedbackControllerSetpoint();
+      break;
+  }
+  state.update(nextState);
+  notifyState();
+}
+
+template<class LinearActuator, class Messager>
+void LinearActuatorModule<LinearActuator, Messager>::notifyPosition() {
+  positionNotifier.notify();
+}
+
+template<class LinearActuator, class Messager>
+void LinearActuatorModule<LinearActuator, Messager>::notifySmoothedPosition() {
+  smoothedPositionNotifier.notify();
+}
+
+template<class LinearActuator, class Messager>
+void LinearActuatorModule<LinearActuator, Messager>::notifyMotor() {
+  motorDutyNotifier.notify();
+}
+
+template<class LinearActuator, class Messager>
+void LinearActuatorModule<LinearActuator, Messager>::notifyState() {
+  sender.sendChannelStart();
+  sender.sendChannelChar(axisChannel);
+  sender.sendChannelEnd();
+  sender.sendPayload(static_cast<int>(state.current));
+}
+
+template<class LinearActuator, class Messager>
+void LinearActuatorModule<LinearActuator, Messager>::notifyFeedbackControllerSetpoint() {
+  using namespace Channels::LinearActuatorProtocol;
+
+  sender.sendChannelStart();
+  sender.sendChannelChar(axisChannel);
+  sender.sendChannelChar(kFeedbackController);
+  sender.sendChannelEnd();
+  sender.sendPayload(static_cast<int>(actuator.pid.setpoint.current));
 }
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onReceivedMessage(unsigned int channelParsedLength) {
-  switch (messager.parser.channel[channelParsedLength]) {
-    case kConstantsChannel:
-      onConstantsMessage(channelParsedLength + 1);
+void LinearActuatorModule<LinearActuator, Messager>::onReceivedMessage(
+    unsigned int channelParsedLength
+) {
+  using namespace Channels::LinearActuatorProtocol;
+
+  // Expects parser.justReceived()
+  // Expects channelParsedLength == 1
+  // Expects previously parsed: _
+  uint8_t channelLength = parser.channelParsedLength;
+
+  if (channelLength == channelParsedLength) { // parsed as: _
+    messager.sendResponse(static_cast<int>(state.current));
+    return;
+  }
+
+  switch (parser.channel[channelParsedLength]) {
+    case kPosition: // parsed as: _p
+      onPositionMessage(channelParsedLength + 1);
       break;
-    case kLimitsChannel:
-      onLimitsMessage(channelParsedLength + 1);
+    case kSmoothedPosition: // parsed as: _s
+      onSmoothedPositionMessage(channelParsedLength + 1);
       break;
-    case kReportingChannel:
-      onReportingMessage(channelParsedLength + 1);
+    case kMotor: // parsed as: _m
+      onMotorMessage(channelParsedLength + 1);
       break;
-    case kTargetingChannel:
-      onTargetingMessage(channelParsedLength + 1);
-      break;
-    case kDutyChannel:
-      onDutyMessage(channelParsedLength + 1);
+    case kFeedbackController: // parsed as: _f
+      onFeedbackControllerMessage(channelParsedLength + 1);
       break;
   }
 }
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onConstantsMessage(unsigned int channelParsedLength) {
-  if (messager.parser.channelParsedLength() != channelParsedLength + 1) return;
-  switch (messager.parser.channel[channelParsedLength]) {
-    case kConstantsProportionalChannel:
-      if (messager.parser.payloadParsedLength()) {
-        actuator.pid.setKp((float) messager.parser.payload / kConstantsFixedPointScaling);
-      }
-      messager.sendResponse((int) (actuator.pid.getKp() * kConstantsFixedPointScaling));
+void LinearActuatorModule<LinearActuator, Messager>::onPositionMessage(
+    unsigned int channelParsedLength
+) {
+  // Expects parser.justReceived()
+  // Expects channelParsedLength == 2
+  // Expects previously parsed: _p
+  uint8_t channelLength = parser.channelParsedLength;
+
+  if (channelLength == channelParsedLength) { // parsed as: _p
+    notifyPosition();
+    return;
+  }
+
+  // Messages on LinearActuator/Position/Notify are handled separately
+  // by positionNotifier.update()
+}
+
+template <class LinearActuator, class Messager>
+void LinearActuatorModule<LinearActuator, Messager>::onSmoothedPositionMessage(
+    unsigned int channelParsedLength
+) {
+  // Expects parser.justReceived()
+  // Expects channelParsedLength == 2
+  // Expects previously parsed: _s
+  uint8_t channelLength = parser.channelParsedLength;
+
+  if (channelLength == channelParsedLength) { // parsed as: _s
+    notifySmoothedPosition();
+    return;
+  }
+
+  // Messages on LinearActuator/SmoothedPosition/Notify are handled separately
+  // by smoothedPositionNotifier.update()
+
+  // TODO: implement protocol and command handlers for other child channels
+}
+
+template <class LinearActuator, class Messager>
+void LinearActuatorModule<LinearActuator, Messager>::onMotorMessage(
+    unsigned int channelParsedLength
+) {
+  using namespace Channels::LinearActuatorProtocol::Motor;
+
+  // Expects parser.justReceived()
+  // Expects channelParsedLength == 2
+  // Expects previously parsed: _m
+  uint8_t channelLength = parser.channelParsedLength;
+  int payload = parser.payload;
+
+  if (channelLength == channelParsedLength) { // parsed as: _m
+    if (parser.receivedPayload()) startDirectMotorDutyControl(parser.payload);
+    else notifyMotor();
+    return;
+  }
+
+  // Messages on LinearActuator/Motor/Notify are handled separately
+  // by smoothedPositionNotifier.update()
+
+  if (channelLength == channelParsedLength + 1) {
+    switch (parser.channel[channelParsedLength]) {
+      case kStallProtectorTimeout: // parsed as: _ms
+        if (parser.receivedPayload() && payload >= 0) stallTimeout = payload;
+        messager.sendResponse(stallTimeout);
+        break;
+      case kTimerTimeout: // parsed as: _mt
+        if (parser.receivedPayload() && payload >= 0) timerTimeout = payload;
+        messager.sendResponse(timerTimeout);
+        break;
+      case kPolarity: // parsed as: _mp
+        if (parser.receivedPayload() &&
+            (payload == -1 && !actuator.motor.directionsSwapped()) ||
+            (payload == 1 && actuator.motor.directionsSwapped())) {
+          actuator.motor.swapDirections();
+        }
+        messager.sendResponse((actuator.motor.directionsSwapped()) ? -1 : 1);
+        break;
+    }
+  }
+}
+
+template <class LinearActuator, class Messager>
+void LinearActuatorModule<LinearActuator, Messager>::onFeedbackControllerMessage(
+    unsigned int channelParsedLength
+) {
+  using namespace Channels::LinearActuatorProtocol::FeedbackController;
+
+  // Expects parser.justReceived()
+  // Expects channelParsedLength == 2
+  // Expects previously parsed: _f
+  uint8_t channelLength = parser.channelParsedLength;
+  int payload = parser.payload;
+
+  if (channelLength == channelParsedLength) { // parsed as: _f
+    if (parser.receivedPayload()) startPositionFeedbackControl(parser.payload);
+    else notifyFeedbackControllerSetpoint();
+    return;
+  }
+
+  // Expects channelLength == 3
+  if (channelLength == channelParsedLength + 1) {
+    switch (parser.channel[channelParsedLength]) {
+      case kConvergenceTimeout: // parsed as: _fc
+        if (parser.receivedPayload() && payload >= 0) convergenceTimeout = payload;
+        messager.sendResponse(convergenceTimeout);
+        break;
+    }
+    return;
+  }
+
+  // Expects channelLength > channelParsedLength + 1
+  switch (parser.channel[channelParsedLength]) {
+    case kLimits: // parsed as: _fl
+      onFeedbackControllerLimitsMessage(channelParsedLength + 1);
       break;
-    case kConstantsDerivativeChannel:
-      if (messager.parser.payloadParsedLength()) {
-        actuator.pid.setKd((float) messager.parser.payload / kConstantsFixedPointScaling);
-      }
-      messager.sendResponse((int) (actuator.pid.getKd() * kConstantsFixedPointScaling));
-      break;
-    case kConstantsIntegralChannel:
-      if (messager.parser.payloadParsedLength()) {
-        actuator.pid.setKi((float) messager.parser.payload / kConstantsFixedPointScaling);
-      }
-      messager.sendResponse((int) (actuator.pid.getKi() * kConstantsFixedPointScaling));
-      break;
-    case kConstantsFeedforwardChannel:
-      if (messager.parser.payloadParsedLength()) {
-        actuator.speedAdjuster.speedBias = constrain(messager.parser.payload, -255 * 2, 255 * 2);
-      }
-      messager.sendResponse(actuator.speedAdjuster.speedBias);
+    case kPID: // parsed as: _fp
+      onFeedbackControllerPIDMessage(channelParsedLength + 1);
       break;
   }
 }
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onLimitsMessage(unsigned int channelParsedLength) {
-  if (messager.parser.channelParsedLength() != channelParsedLength + 2) return;
-  switch (messager.parser.channel[channelParsedLength]) {
-    case kLimitsPositionChannel:
-      switch (messager.parser.channel[channelParsedLength + 1]) {
-        case kLimitsLowerSubchannel:
-          if (messager.parser.payloadParsedLength() &&
-              messager.parser.payload <= actuator.pid.getMaxInput()) {
-            actuator.pid.setMinInput(messager.parser.payload);
+void LinearActuatorModule<LinearActuator, Messager>::onFeedbackControllerLimitsMessage(
+    unsigned int channelParsedLength
+) {
+  // TODO: decompose into a separate class
+  using namespace Channels::LinearActuatorProtocol;
+  using namespace Channels::LinearActuatorProtocol::FeedbackController;
+
+  // Expects parser.justReceived()
+  // Expects channelParsedLength == 3
+  // Expects previously parsed: _fl
+  uint8_t channelLength = parser.channelParsedLength;
+  int payload = parser.payload;
+
+  if (channelLength <= channelParsedLength + 2) return;
+
+  // Expects channelLength >= 5
+  switch (parser.channel[channelParsedLength]) {
+    case kPosition: // parsed as: _flp
+      if (channelLength != channelParsedLength + 1) return;
+      // Expects channelLength == 5
+      switch (parser.channel[channelParsedLength + 1]) {
+        case Limits::kLow: // parsed as: _flpl
+          if (parser.receivedPayload() && parser.payload <= actuator.pid.getMaxInput()) {
+            actuator.pid.setMinInput(parser.payload);
           }
           messager.sendResponse(actuator.pid.getMinInput());
           break;
-        case kLimitsUpperSubchannel:
-          if (messager.parser.payloadParsedLength() &&
-              messager.parser.payload >= actuator.pid.getMinInput()) {
-            actuator.pid.setMaxInput(messager.parser.payload);
+        case Limits::kHigh: // parsed as: _flph
+          if (parser.receivedPayload() && parser.payload >= actuator.pid.getMinInput()) {
+            actuator.pid.setMaxInput(parser.payload);
           }
           messager.sendResponse(actuator.pid.getMaxInput());
           break;
       }
       break;
-    case kLimitsDutyChannel:
-      switch (messager.parser.channel[channelParsedLength + 1]) {
-        case kLimitsLowerSubchannel:
-          if (messager.parser.payloadParsedLength()) {
-            actuator.pid.setMinOutput(constrain(messager.parser.payload, -255, 255));
+    case kMotor: // parsed as: _flm
+      if (channelLength != channelParsedLength + 3) return;
+      // Expects channelLength == 6
+      switch (parser.channel[channelParsedLength + 1]) {
+        case Limits::Motor::kForwards: // parsed as: _flmf
+          switch (parser.channel[channelParsedLength + 2]) {
+            case Limits::kHigh: // parsed as: _flmh
+              if (parser.receivedPayload() &&
+                  parser.payload <= 255 &&
+                  parser.payload >= actuator.speedAdjuster.brakeUpperThreshold) {
+                actuator.pid.setMaxOutput(parser.payload);
+              }
+              messager.sendResponse(actuator.pid.getMaxOutput());
+              break;
+            case Limits::kLow: // parsed as: _flml
+              if (parser.receivedPayload() &&
+                  parser.payload <= actuator.pid.getMaxOutput() &&
+                  parser.payload >= actuator.speedAdjuster.brakeLowerThreshold) {
+                actuator.speedAdjuster.brakeUpperThreshold = parser.payload;
+              }
+              messager.sendResponse(actuator.speedAdjuster.brakeUpperThreshold);
+              break;
           }
-          messager.sendResponse(actuator.pid.getMinOutput());
           break;
-        case kLimitsUpperSubchannel:
-          if (messager.parser.payloadParsedLength()) {
-            actuator.pid.setMaxOutput(constrain(messager.parser.payload, -255, 255));
+        case Limits::Motor::kBackwards: // parsed as: _flmb
+          switch (parser.channel[channelParsedLength + 2]) {
+            case Limits::kLow: // parsed as: _flml
+              if (parser.receivedPayload() &&
+                  parser.payload <= actuator.speedAdjuster.brakeUpperThreshold &&
+                  parser.payload >= actuator.pid.getMinOutput()) {
+                actuator.speedAdjuster.brakeLowerThreshold = parser.payload;
+              }
+              messager.sendResponse(actuator.speedAdjuster.brakeLowerThreshold);
+              break;
+            case Limits::kHigh: // parsed as: _flmh
+              if (parser.receivedPayload() &&
+                  parser.payload <= actuator.speedAdjuster.brakeLowerThreshold &&
+                  parser.payload >= -255) {
+                actuator.pid.setMinOutput(parser.payload);
+              }
+              messager.sendResponse(actuator.pid.getMinOutput());
+              break;
           }
-          messager.sendResponse(actuator.pid.getMaxOutput());
-          break;
-      }
-      break;
-    case kLimitsBrakeChannel:
-      switch (messager.parser.channel[channelParsedLength + 1]) {
-        case kLimitsLowerSubchannel:
-          if (messager.parser.payloadParsedLength()) {
-            actuator.speedAdjuster.brakeLowerThreshold = constrain(messager.parser.payload, -255, 255);
-          }
-          messager.sendResponse(actuator.speedAdjuster.brakeLowerThreshold);
-          break;
-        case kLimitsUpperSubchannel:
-          if (messager.parser.payloadParsedLength()) {
-            actuator.speedAdjuster.brakeUpperThreshold = constrain(messager.parser.payload, -255, 255);
-          }
-          messager.sendResponse(actuator.speedAdjuster.brakeUpperThreshold);
           break;
       }
       break;
   }
 }
 
+inline float fixedPointToFloat(int fixedPointNum) {
+  return static_cast<float>(fixedPointNum) / kConstantsFixedPointScaling;
+}
+
+inline float floatToFixedPoint(float floatNum) {
+  return static_cast<int>(floatNum * kConstantsFixedPointScaling);
+}
+
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onReportingMessage(unsigned int channelParsedLength) {
-  if (messager.parser.channelParsedLength() != channelParsedLength + 1) return;
-  switch (messager.parser.channel[channelParsedLength]) {
-    case kReportingConvergenceChannel:
-      if (messager.parser.payloadParsedLength()) {
-        reportingConvergencePosition = (messager.parser.payload > 0);
-      }
-      messager.sendResponse(reportingConvergencePosition);
+void LinearActuatorModule<LinearActuator, Messager>::onFeedbackControllerPIDMessage(
+    unsigned int channelParsedLength
+) {
+  // TODO: decompose into a separate class
+  using namespace Channels::LinearActuatorProtocol::FeedbackController::PID;
+
+  // Expects parser.justReceived()
+  // Expects channelParsedLength == 3
+  // Expects previously parsed: _fp
+  uint8_t channelLength = parser.channelParsedLength;
+  int payload = parser.payload;
+
+  if (channelLength != channelParsedLength + 1) return;
+
+  // Expects channelLength == 4
+  switch (parser.channel[channelParsedLength + 1]) {
+    case kKp:
+      if (parser.receivedPayload()) actuator.pid.setKp(fixedPointToFloat(parser.payload));
+      messager.sendResponse(floatToFixedPoint(actuator.pid.getKp()));
       break;
-    case kReportingStallTimeoutChannel:
-      if (messager.parser.payloadParsedLength()) {
-        reportingStallTimeoutPosition = (messager.parser.payload > 0);
-      }
-      messager.sendResponse(reportingStallTimeoutPosition);
+    case kKd:
+      if (parser.receivedPayload()) actuator.pid.setKd(fixedPointToFloat(parser.payload));
+      messager.sendResponse(floatToFixedPoint(actuator.pid.getKd()));
       break;
-    case kReportingStreamingChannel:
-      if (!messager.parser.payloadParsedLength()) break;
-      reportPosition(kReportingStreamingChannel);
-      streamingPositionReportInterval = max(messager.parser.payload, 0);
-      streamingPositionClock = 0;
+    case kKi:
+      if (parser.receivedPayload()) actuator.pid.setKi(fixedPointToFloat(parser.payload));
+      messager.sendResponse(floatToFixedPoint(actuator.pid.getKi()));
       break;
-    case kReportingQueryChannel:
-      reportPosition(kReportingQueryChannel);
-      queryPositionCountdown = max(messager.parser.payload, 0);
+    case kSampleInterval:
+      if (parser.receivedPayload() && parser.payload > 0) actuator.pid.setSampleTime(parser.payload);
+      messager.sendResponse(actuator.pid.getSampleTime());
       break;
   }
-}
-
-template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onTargetingMessage(unsigned int channelParsedLength) {
-  if (messager.parser.channelParsedLength() != channelParsedLength) return;
-  if (messager.parser.payloadParsedLength()) targetPosition(messager.parser.payload);
-  messager.sendResponse((int) actuator.pid.setpoint.current());
-}
-
-template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onDutyMessage(unsigned int channelParsedLength) {
-  if (messager.parser.channelParsedLength() != channelParsedLength) return;
-  if (messager.parser.payloadParsedLength()) setDirectDuty(messager.parser.payload);
-  messager.sendResponse(actuator.motor.speed);
+  return;
 }
 
 }

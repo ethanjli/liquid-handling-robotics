@@ -30,42 +30,39 @@ using CumulativeLinearActuator = LinearActuatorModule<
   /* motorPort, potentiometerPin */ M1, A0,\
   /* minPosition, maxPosition */ 20, 975,\
   /* minDuty, maxDuty */ -255, 255,\
-  /* pidKp, pidKd, pidKi */ 30, 1, 0.1,\
-  /* pidSampleTime */ 10,\
+  /* pidKp, pidKd, pidKi, pidSampleTime */ 30, 1, 0.1, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -180, 180,\
   /* swapMotorPolarity */ false,\
-  /* convergenceDelay */ 100,\
-  /* stallTimeout, stallSmootherSnapMultiplier, stallSmootherMax */ 200, 0.01, 1023,\
-  /* stallSmootherEnableSleep, stallSmootherActivityThreshold */ true, 4.0
+  /* convergenceTimeout, stallTimeout, timerTimeout */ 100, 200, 10000,\
+  /* smootherSnapMultiplier, smootherMax */ 0.01, 1023,\
+  /* smootherEnableSleep, smootherActivityThreshold */ true, 4.0
 
 #define kVerticalPositionerParams\
   /* actuatorChannelPrefix */ 'z',\
   /* motorPort, potentiometerPin */ M2, A1,\
   /* minPosition, maxPosition */ 20, 970,\
   /* minDuty, maxDuty */ -255, 255,\
-  /* pidKp, pidKd, pidKi */ 8, 0.2, 0.2,\
-  /* pidSampleTime */ 10,\
+  /* pidKp, pidKd, pidKi, pidSampleTime */ 8, 0.2, 0.2, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -60, 120,\
   /* swapMotorPolarity */ false,\
-  /* convergenceDelay */ 100,\
-  /* stallTimeout, stallSmootherSnapMultiplier, stallSmootherMax */ 200, 0.01, 1023,\
-  /* stallSmootherEnableSleep, stallSmootherActivityThreshold */ true, 4.0
+  /* convergenceTimeout, stallTimeout, timerTimeout */ 100, 200, 10000,\
+  /* smootherSnapMultiplier, smootherMax */ 0.01, 1023,\
+  /* smootherEnableSleep, smootherActivityThreshold */ true, 4.0
 
 #define kYPositionerParams\
   /* actuatorChannelPrefix */ 'y',\
   /* motorPort, angleSensorId */ M3, 0,\
   /* minPosition, maxPosition */ 0, 700,\
   /* minDuty, maxDuty */ -200, 200,\
-  /* pidKp, pidKd, pidKi */ 10, 0, 0,\
-  /* pidSampleTime */ 10,\
+  /* pidKp, pidKd, pidKi, pidSampleTime */ 10, 0, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -70, 70,\
   /* swapMotorPolarity */ false,\
-  /* convergenceDelay */ 150,\
-  /* stallTimeout, stallSmootherSnapMultiplier, stallSmootherMax */ 200, 0.01, 800,\
-  /* stallSmootherEnableSleep, stallSmootherActivityThreshold */ true, 2.0
+  /* convergenceTimeout, stallTimeout, timerTimeout */ 150, 200, 20000,\
+  /* smootherSnapMultiplier, smootherMax */ 0.01, 800,\
+  /* smootherEnableSleep, smootherActivityThreshold */ true, 2.0
 
 #define kYPositionerCalibrationParams\
   /* calibrationSpeed */ 200
