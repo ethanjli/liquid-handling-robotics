@@ -1,5 +1,5 @@
 #######################################
-# Syntax Coloring
+# Syntax Coloring Map for Liquid Handling Robotics
 #######################################
 
 #######################################
@@ -48,6 +48,7 @@ notifyFeedbackControllerSetpoint	KEYWORD2		RESERVED_WORD
 #######################################
 # Preprocessor Constants
 #######################################
+
 # Preprocessor defines used in LiquidHandlingRobotics.h
 LHR_Messaging_ASCIIIO	LITERAL1		RESERVED_WORD2
 LHR_Messaging_FirmataIO	LITERAL1		RESERVED_WORD2

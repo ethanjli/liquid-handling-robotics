@@ -3,7 +3,8 @@
 
 #include <elapsedMillis.h>
 
-#include <Smoothing.h>
+#define LPC_Signal_Smoothing
+#include <LinearPositionControl.h>
 
 namespace LiquidHandlingRobotics { namespace Protocol {
 
@@ -147,7 +148,7 @@ class LinearActuatorAxis {
     );
 
     using Position = typename LinearActuator::Position;
-    using Smoother = LinearPositionControl::Smoother<Position, int>;
+    using Smoother = LinearPositionControl::Signal::Smoother<Position, int>;
     using State = States::LinearActuatorMode;
 
     LinearActuator actuator;
