@@ -1,6 +1,8 @@
 #define DISABLE_LOGGING
 #include <ArduinoLog.h>
 
+#include <AbsoluteLinearPositionControl.h>
+
 #include <ASCIISerialIO.h>
 #include <CoreProtocol.h>
 #include <BoardProtocol.h>

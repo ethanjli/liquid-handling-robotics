@@ -1,23 +1,28 @@
 #ifndef Modules_h
 #define Modules_h
 
-#include <AbsoluteLinearPositionControl.h>
-#include <CumulativeLinearPositionControl.h>
+// These headers must be manually included!
+//#include <AbsoluteLinearPositionControl.h>
+//#include <CumulativeLinearPositionControl.h>
 #include "LinearActuatorModule.h"
 
 namespace LiquidHandlingRobotics {
 
+#ifdef AbsoluteLinearPositionControl_h
 template<class Messager>
 using AbsoluteLinearActuator = LinearActuatorModule<
   LinearPositionControl::AbsoluteLinearActuator,
   Messager
 >;
+#endif
 
+#ifdef CumulativeLinearPositionControl_h
 template<class Messager>
 using CumulativeLinearActuator = LinearActuatorModule<
   LinearPositionControl::CumulativeLinearActuator,
   Messager
 >;
+#endif
 
 }
 

@@ -187,19 +187,19 @@ LinearActuatorModule<LinearActuator, Messager>::LinearActuatorModule(
   convergenceTimeout(convergenceTimeout), stallTimeout(stallTimeout),
   timerTimeout(timerTimeout),
   messager(messager), parser(messager.parser), sender(messager.sender),
-  axisChannel(axisChannel)//,
-  /* positionNotifier( */
-  /*     messager, actuator.position.current, */
-  /*     axisChannel, Channels::LinearActuatorProtocol::kPosition */
-  /* ), */
+  axisChannel(axisChannel),
+  positionNotifier(
+      messager, actuator.position.current,
+      axisChannel, Channels::LinearActuatorProtocol::kPosition
+  ),
   /* smoothedPositionNotifier( */
   /*     messager, smoother.output.current, */
   /*     axisChannel, Channels::LinearActuatorProtocol::kSmoothedPosition */
   /* ), */
-  /* motorDutyNotifier( */
-  /*     messager, actuator.motor.speed, */
-  /*     axisChannel, Channels::LinearActuatorProtocol::kMotor */
-  /* ) */
+  motorDutyNotifier(
+      messager, actuator.motor.speed,
+      axisChannel, Channels::LinearActuatorProtocol::kMotor
+  )
 {}
 
 template <class LinearActuator, class Messager>
@@ -226,13 +226,13 @@ void LinearActuatorModule<LinearActuator, Messager>::update() {
       parser.channel[0] == axisChannel) {
     onReceivedMessage(1);
   }
-  /* wdt_reset(); */
-  /* positionNotifier.update(); */
+  wdt_reset();
+  positionNotifier.update();
   /* wdt_reset(); */
   /* smoothedPositionNotifier.update(); */
-  /* wdt_reset(); */
-  /* motorDutyNotifier.update(); */
-  /* wdt_reset(); */
+  wdt_reset();
+  motorDutyNotifier.update();
+  wdt_reset();
 
   switch (state.current) {
     case State::directMotorDutyControl:
@@ -246,6 +246,11 @@ void LinearActuatorModule<LinearActuator, Messager>::update() {
   }
 
   wdt_reset();
+}
+
+template <class LinearActuator, class Messager>
+void LinearActuatorModule<LinearActuator, Messager>::onConnect() {
+  notifyState();
 }
 
 template <class LinearActuator, class Messager>
@@ -320,17 +325,35 @@ void LinearActuatorModule<LinearActuator, Messager>::endControl(State nextState)
 
 template<class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::notifyPosition() {
-  /* positionNotifier.notify(); */
+  using namespace Channels::LinearActuatorProtocol;
+
+  sender.sendChannelStart();
+  sender.sendChannelChar(axisChannel);
+  sender.sendChannelChar(kPosition);
+  sender.sendChannelEnd();
+  sender.sendPayload(static_cast<int>(actuator.position.current));
 }
 
 template<class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::notifySmoothedPosition() {
-  /* smoothedPositionNotifier.notify(); */
+  using namespace Channels::LinearActuatorProtocol;
+
+  sender.sendChannelStart();
+  sender.sendChannelChar(axisChannel);
+  sender.sendChannelChar(kSmoothedPosition);
+  sender.sendChannelEnd();
+  sender.sendPayload(static_cast<int>(smoother.output.current));
 }
 
 template<class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::notifyMotor() {
-  /* motorDutyNotifier.notify(); */
+  using namespace Channels::LinearActuatorProtocol;
+
+  sender.sendChannelStart();
+  sender.sendChannelChar(axisChannel);
+  sender.sendChannelChar(kMotor);
+  sender.sendChannelEnd();
+  sender.sendPayload(actuator.motor.speed);
 }
 
 template<class LinearActuator, class Messager>
