@@ -191,6 +191,7 @@ class LinearActuatorModule {
     typename Messager::Sender &sender;
 
     bool setupCompleted = false;
+    bool allowNotifications = false;
 
     const char axisChannel = '\0';
 

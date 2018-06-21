@@ -9,18 +9,21 @@
 #include <Modules.h>
 
 using namespace LiquidHandlingRobotics;
+using Core = CoreProtocol<SerialMessager>;
+//using Board = BoardProtocol<SerialMessager>;
+using AbsoluteAxis = AbsoluteLinearActuator<SerialMessager>;
 
 // ASCII Serial communications
 SerialMessager messager;
 
 // Shared Components
-CoreProtocol<SerialMessager> coreProtocol(messager);
-//BoardProtocol<SerialMessager> boardProtocol(messager);
+Core coreProtocol(messager);
+//Board boardProtocol(messager);
 LinearPositionControl::Components::Motors motors;
 
 // Subsystems
-AbsoluteLinearActuator<SerialMessager> pipettor(messager, motors, kPipettorParams);
-AbsoluteLinearActuator<SerialMessager> verticalPositioner(messager, motors, kVerticalPositionerParams);
+AbsoluteAxis pipettor(messager, motors, kPipettorParams);
+AbsoluteAxis verticalPositioner(messager, motors, kVerticalPositionerParams);
 
 void setup() {
   coreProtocol.setup();
@@ -31,9 +34,13 @@ void setup() {
   //boardProtocol.setup();
   pipettor.setup();
   verticalPositioner.setup();
+
   messager.establishConnection();
+
   coreProtocol.onConnect();
   //boardProtocol.onConnect();
+  pipettor.onConnect();
+  verticalPositioner.onConnect();
 }
 
 void loop() {

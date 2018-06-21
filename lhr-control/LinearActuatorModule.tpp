@@ -250,7 +250,10 @@ void LinearActuatorModule<LinearActuator, Messager>::update() {
 
 template <class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::onConnect() {
+  allowNotifications = true;
   notifyState();
+  notifyPosition();
+  notifyMotor();
 }
 
 template <class LinearActuator, class Messager>
@@ -327,6 +330,8 @@ template<class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::notifyPosition() {
   using namespace Channels::LinearActuatorProtocol;
 
+  if (!allowNotifications) return;
+
   sender.sendChannelStart();
   sender.sendChannelChar(axisChannel);
   sender.sendChannelChar(kPosition);
@@ -337,6 +342,8 @@ void LinearActuatorModule<LinearActuator, Messager>::notifyPosition() {
 template<class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::notifySmoothedPosition() {
   using namespace Channels::LinearActuatorProtocol;
+
+  if (!allowNotifications) return;
 
   sender.sendChannelStart();
   sender.sendChannelChar(axisChannel);
@@ -349,6 +356,8 @@ template<class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::notifyMotor() {
   using namespace Channels::LinearActuatorProtocol;
 
+  if (!allowNotifications) return;
+
   sender.sendChannelStart();
   sender.sendChannelChar(axisChannel);
   sender.sendChannelChar(kMotor);
@@ -358,6 +367,8 @@ void LinearActuatorModule<LinearActuator, Messager>::notifyMotor() {
 
 template<class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::notifyState() {
+  if (!allowNotifications) return;
+
   sender.sendChannelStart();
   sender.sendChannelChar(axisChannel);
   sender.sendChannelEnd();
@@ -367,6 +378,8 @@ void LinearActuatorModule<LinearActuator, Messager>::notifyState() {
 template<class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::notifyFeedbackControllerSetpoint() {
   using namespace Channels::LinearActuatorProtocol;
+
+  if (!allowNotifications) return;
 
   sender.sendChannelStart();
   sender.sendChannelChar(axisChannel);

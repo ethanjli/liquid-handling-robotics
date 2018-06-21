@@ -10,22 +10,49 @@
 #include <Modules.h>
 
 using namespace LiquidHandlingRobotics;
+using Core = CoreProtocol<SerialMessager>;
+//using Board = BoardProtocol<SerialMessager>;
+using AbsoluteAxis = AbsoluteLinearActuator<SerialMessager>;
+using CumulativeAxis = CumulativeLinearActuator<SerialMessager>;
 
 // ASCII Serial communications
 SerialMessager messager;
 
 // Shared Components
-CoreProtocol<SerialMessager> coreProtocol(messager);
-//BoardProtocol<SerialMessager> boardProtocol(messager);
+Core coreProtocol(messager);
+//Board boardProtocol(messager);
 LinearPositionControl::Components::Motors motors;
 
 // Subsystems
-AbsoluteLinearActuator<SerialMessager> pipettor(messager, motors, kPipettorParams);
-AbsoluteLinearActuator<SerialMessager> verticalPositioner(messager, motors, kVerticalPositionerParams);
-CumulativeLinearActuator<SerialMessager> yPositioner(messager, motors, kYPositionerParams);
+AbsoluteAxis pipettor(messager, motors, kPipettorParams);
+AbsoluteAxis verticalPositioner(messager, motors, kVerticalPositionerParams);
+CumulativeAxis yPositioner(messager, motors, kYPositionerParams);
 LinearPositionControl::SmoothedCumulativePositionCalibrator yPositionerCalibrator(
   yPositioner.actuator, yPositioner.smoother, kYPositionerCalibrationParams
 );
+
+void updateCommon() {
+  messager.update();
+  coreProtocol.update();
+  //boardProtocol.update();
+  pipettor.update();
+  verticalPositioner.update();
+}
+
+void initializeAxes() {
+  // Make the z-axis move up so the syringe doesn't hit anything during y-axis initialization
+  verticalPositioner.startDirectMotorDutyControl(255);
+  while (!verticalPositioner.state.at(AbsoluteAxis::State::stallTimeoutStopped)) updateCommon();
+  verticalPositioner.startDirectMotorDutyControl(0);
+  verticalPositioner.onConnect();
+
+  // Calibrate the y-axis
+  while (!yPositionerCalibrator.calibrated()) {
+    updateCommon();
+    yPositionerCalibrator.update();
+  }
+  yPositioner.onConnect();
+}
 
 void setup() {
   coreProtocol.setup();
@@ -38,28 +65,16 @@ void setup() {
   verticalPositioner.setup();
   yPositioner.setup();
   yPositionerCalibrator.setup();
+
   messager.establishConnection();
+
   coreProtocol.onConnect();
   //boardProtocol.onConnect();
+  pipettor.onConnect();
+  initializeAxes();
 }
 
 void loop() {
-  messager.update();
-  coreProtocol.update();
-  //boardProtocol.update();
-  // Modules
-  pipettor.update();
-  verticalPositioner.update();
-  if (yPositionerCalibrator.calibrated()) {
-    yPositioner.update();
-  } else { // initialize positions of z-axis and y-axis
-    if (verticalPositioner.actuator.pid.setpoint.current == 0) {
-      // Make the z-axis move up so the syringe doesn't hit anything during y-axis initialization
-      verticalPositioner.actuator.pid.setSetpoint(verticalPositioner.actuator.pid.getMaxInput());
-      verticalPositioner.actuator.unfreeze();
-    } else if (verticalPositioner.converged() || verticalPositioner.stalled()) {
-      verticalPositioner.actuator.freeze();
-      yPositionerCalibrator.update();
-    }
-  }
+  updateCommon();
+  yPositioner.update();
 }
