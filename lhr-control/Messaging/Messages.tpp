@@ -1,9 +1,9 @@
-#ifndef Messages_tpp
-#define Messages_tpp
+#ifndef LHR_Messaging_Messages_tpp
+#define LHR_Messaging_Messages_tpp
 
 #include <avr/wdt.h>
 
-namespace LiquidHandlingRobotics {
+namespace LiquidHandlingRobotics { namespace Messaging {
 
 // MessageSender
 
@@ -307,7 +307,7 @@ void Messager<Transport>::sendResponse(int payload) {
   sender.sendMessage(parser.channel, payload);
 }
 
-}
+} }
 
 #endif
 

@@ -1,5 +1,5 @@
-#ifndef FirmataIO_h
-#define FirmataIO_h
+#ifndef LHR_Messaging_FirmataIO_h
+#define LHR_Messaging_FirmataIO_h
 
 #include <ConfigurableFirmata.h>
 #include <FirmataFeature.h>
@@ -14,7 +14,7 @@
 
 #include "Messages.h"
 
-namespace LiquidHandlingRobotics {
+namespace LiquidHandlingRobotics { namespace Messaging {
 
 namespace FirmataIO {
   const long kDataRate = 57600;
@@ -87,7 +87,7 @@ using FirmataMessageSender = MessageSender<FirmataTransport>;
 using FirmataMessageParser = MessageParser<FirmataTransport>;
 using FirmataMessager = Messager<FirmataTransport>;
 
-}
+} }
 
 #define makeFirmataTransportResetCallback(transport) void firmataTransportResetCallback() {transport.reset();}
 #define attachFirmataTransportResetCallback(transport) Firmata.attach(SYSTEM_RESET, firmataTransportResetCallback);

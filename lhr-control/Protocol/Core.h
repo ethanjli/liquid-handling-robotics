@@ -1,9 +1,9 @@
-#ifndef CoreProtocol_h
-#define CoreProtocol_h
+#ifndef LHR_Protocol_Core_h
+#define LHR_Protocol_Core_h
 
-#include "Messages.h"
+#include <avr/wdt.h>
 
-namespace LiquidHandlingRobotics {
+namespace LiquidHandlingRobotics { namespace Protocol {
 
 const uint16_t kVersion[] PROGMEM = {
   1, // Major, position 0
@@ -25,7 +25,7 @@ enum class WatchdogTimeout : uint8_t {
 };
 
 namespace Channels {
-  namespace CoreProtocol {
+  namespace Core {
     const char kReset = 'r';
     const char kVersion = 'v';
     const char kEcho = 'e';
@@ -35,9 +35,9 @@ namespace Channels {
 void hardReset();
 
 template<class Messager>
-class CoreProtocol {
+class Core {
   public:
-    CoreProtocol(Messager &messager);
+    Core(Messager &messager);
 
     void setup();
     void update();
@@ -59,9 +59,9 @@ class CoreProtocol {
     void handleEchoCommand();
 };
 
-}
+} }
 
-#include "CoreProtocol.tpp"
+#include "Core.tpp"
 
 #endif
 

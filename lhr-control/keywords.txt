@@ -1,35 +1,67 @@
 #######################################
-# Syntax Coloring Map For ExampleLibrary
+# Syntax Coloring
 #######################################
 
 #######################################
-# Datatypes (KEYWORD1)
+# Datatypes
 #######################################
 
-LiquidHandlingRobotics	KEYWORD1
-AbsoluteLinearActuator	KEYWORD1
-CumulativeLinearActuator	KEYWORD1
-MessageParser	KEYWORD1
+# Namespaces
+LiquidHandlingRobotics	KEYWORD1		DATA_TYPE
+Messaging	KEYWORD1		DATA_TYPE
+Protocol	KEYWORD1		DATA_TYPE
+
+# Types defined in Messaging
+ASCIIMessager	KEYWORD1		DATA_TYPE
+FirmataTransport	KEYWORD1		DATA_TYPE
+FirmataMessager	KEYWORD1		DATA_TYPE
+
+# Types defined in Protocol
+Core	KEYWORD1		DATA_TYPE
+Board	KEYWORD1		DATA_TYPE
+LinearActuatorAxis	KEYWORD1		DATA_TYPE
+State	KEYWORD1		DATA_TYPE
+
+# Types defined in LiquidHandlingRobotics.h
+Messager	KEYWORD1		DATA_TYPE
+AbsoluteLinearActuatorAxis	KEYWORD1		DATA_TYPE
+CumulativeLinearActuatorAxis	KEYWORD1		DATA_TYPE
 
 #######################################
-# Methods and Functions (KEYWORD2)
+# Methods and Functions
 #######################################
 
-waitForSerialHandshake	KEYWORD2
-handleResetCommand	KEYWORD2
-handleVersionCommand	KEYWORD2
-handleEchoCommand	KEYWORD2
-handleIOCommand	KEYWORD2
-sendAllVersionMessages	KEYWORD2
+# Shared interface methods
+onConnect	KEYWORD2		RESERVED_WORD
+establishConnction	KEYWORD2		RESERVED_WORD
+
+# Methods from Protocol/LinearActuatorAxis.h
+startPositionFeedbackControl	KEYWORD2		RESERVED_WORD
+startDirectMotorDutyControl	KEYWORD2		RESERVED_WORD
+endControl	KEYWORD2		RESERVED_WORD
+notifyState	KEYWORD2		RESERVED_WORD
+notifyPosition	KEYWORD2		RESERVED_WORD
+notifySmoothedPosition	KEYWORD2		RESERVED_WORD
+notifyMotor	KEYWORD2		RESERVED_WORD
+notifyFeedbackControllerSetpoint	KEYWORD2		RESERVED_WORD
 
 #######################################
-# Instances (KEYWORD2)
+# Preprocessor Constants
 #######################################
+# Preprocessor defines used in LiquidHandlingRobotics.h
+LHR_Messaging_ASCIIIO	LITERAL1		RESERVED_WORD2
+LHR_Messaging_FirmataIO	LITERAL1		RESERVED_WORD2
+LHR_Protocol_Core	LITERAL1		RESERVED_WORD2
+LHR_Protocol_Board	LITERAL1		RESERVED_WORD2
+LHR_Protocol_AbsoluteLinearActuatorAxis	LITERAL1		RESERVED_WORD2
+LHR_Protocol_CumulativeLinearActuatorAxis	LITERAL1		RESERVED_WORD2
+
+# Preprocessor constant expansions defined in Modules.h
+kPipettorParams	LITERAL1		RESERVED_WORD2
+kVerticalPositionerParams	LITERAL1		RESERVED_WORD2
+kYPositionerParams	LITERAL1		RESERVED_WORD2
+kYPositionerCalibrationParams	LITERAL1		RESERVED_WORD2
 
 #######################################
-# Constants (LITERAL1)
+# Constants
 ####################################### 
-
-kPipettorParams	LITERAL1
-kVerticalPositionerParams	LITERAL1
-kYPositionerParams	LITERAL1

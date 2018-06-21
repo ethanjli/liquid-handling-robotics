@@ -1,9 +1,9 @@
-#ifndef LinearActuatorModule_tpp
-#define LinearActuatorModule_tpp
+#ifndef LinearActuatorAxis_tpp
+#define LinearActuatorAxis_tpp
 
 #include <avr/wdt.h>
 
-namespace LiquidHandlingRobotics {
+namespace LiquidHandlingRobotics { namespace Protocol {
 
 // Notifier
 
@@ -19,7 +19,7 @@ Notifier<Messager, SignalType>::Notifier(
 
 template <class Messager, class SignalType>
 void Notifier<Messager, SignalType>::update() {
-  using namespace Channels::LinearActuatorProtocol;
+  using namespace Channels::LinearActuator;
 
   if ((parser.justReceived() && parser.channelParsedLength >= 3 &&
         parser.channel[0] == axisChannel &&
@@ -83,8 +83,8 @@ void Notifier<Messager, SignalType>::notify() {
 
 template<class Messager, class SignalType>
 void Notifier<Messager, SignalType>::notifyNumber() {
-  using namespace Channels::LinearActuatorProtocol;
-  using namespace Channels::LinearActuatorProtocol::Notify;
+  using namespace Channels::LinearActuator;
+  using namespace Channels::LinearActuator::Notify;
 
   sender.sendChannelStart();
   sender.sendChannelChar(axisChannel);
@@ -96,7 +96,7 @@ void Notifier<Messager, SignalType>::notifyNumber() {
 }
 template<class Messager, class SignalType>
 void Notifier<Messager, SignalType>::notifyState() {
-  using namespace Channels::LinearActuatorProtocol;
+  using namespace Channels::LinearActuator;
 
   sender.sendChannelStart();
   sender.sendChannelChar(axisChannel);
@@ -108,8 +108,8 @@ void Notifier<Messager, SignalType>::notifyState() {
 
 template <class Messager, class SignalType>
 void Notifier<Messager, SignalType>::onReceivedMessage() {
-  using namespace Channels::LinearActuatorProtocol;
-  using namespace Channels::LinearActuatorProtocol::Notify;
+  using namespace Channels::LinearActuator;
+  using namespace Channels::LinearActuator::Notify;
 
   uint8_t channelLength = messager.parser.channelParsedLength;
 
@@ -153,10 +153,10 @@ void Notifier<Messager, SignalType>::onReceivedMessage() {
   }
 }
 
-// LinearActuatorModule
+// LinearActuatorAxis
 
 template <class LinearActuator, class Messager>
-LinearActuatorModule<LinearActuator, Messager>::LinearActuatorModule(
+LinearActuatorAxis<LinearActuator, Messager>::LinearActuatorAxis(
     Messager &messager,
     LinearPositionControl::Components::Motors &motors,
     char axisChannel,
@@ -190,20 +190,20 @@ LinearActuatorModule<LinearActuator, Messager>::LinearActuatorModule(
   axisChannel(axisChannel),
   positionNotifier(
       messager, actuator.position.current,
-      axisChannel, Channels::LinearActuatorProtocol::kPosition
+      axisChannel, Channels::LinearActuator::kPosition
   ),
   /* smoothedPositionNotifier( */
   /*     messager, smoother.output.current, */
-  /*     axisChannel, Channels::LinearActuatorProtocol::kSmoothedPosition */
+  /*     axisChannel, Channels::LinearActuator::kSmoothedPosition */
   /* ), */
   motorDutyNotifier(
       messager, actuator.motor.speed,
-      axisChannel, Channels::LinearActuatorProtocol::kMotor
+      axisChannel, Channels::LinearActuator::kMotor
   )
 {}
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::setup() {
+void LinearActuatorAxis<LinearActuator, Messager>::setup() {
   if (setupCompleted) return;
 
   actuator.setup();
@@ -215,7 +215,7 @@ void LinearActuatorModule<LinearActuator, Messager>::setup() {
 }
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::update() {
+void LinearActuatorAxis<LinearActuator, Messager>::update() {
   wdt_reset();
   actuator.update();
   wdt_reset();
@@ -249,7 +249,7 @@ void LinearActuatorModule<LinearActuator, Messager>::update() {
 }
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onConnect() {
+void LinearActuatorAxis<LinearActuator, Messager>::onConnect() {
   allowNotifications = true;
   notifyState();
   notifyPosition();
@@ -257,7 +257,7 @@ void LinearActuatorModule<LinearActuator, Messager>::onConnect() {
 }
 
 template <class LinearActuator, class Messager>
-bool LinearActuatorModule<LinearActuator, Messager>::converged() const {
+bool LinearActuatorAxis<LinearActuator, Messager>::converged() const {
   return (
       convergenceTimeout > 0 &&
       state.settledAt(State::positionFeedbackControl, convergenceTimeout) &&
@@ -267,7 +267,7 @@ bool LinearActuatorModule<LinearActuator, Messager>::converged() const {
 }
 
 template <class LinearActuator, class Messager>
-bool LinearActuatorModule<LinearActuator, Messager>::stalled() const {
+bool LinearActuatorAxis<LinearActuator, Messager>::stalled() const {
   return (
       stallTimeout > 0 &&
       state.settled(stallTimeout) &&
@@ -283,12 +283,12 @@ bool LinearActuatorModule<LinearActuator, Messager>::stalled() const {
 }
 
 template <class LinearActuator, class Messager>
-bool LinearActuatorModule<LinearActuator, Messager>::timed() const {
+bool LinearActuatorAxis<LinearActuator, Messager>::timed() const {
   return timerTimeout > 0 && state.settled(timerTimeout);
 }
 
 template<class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::startPositionFeedbackControl(Position setpoint) {
+void LinearActuatorAxis<LinearActuator, Messager>::startPositionFeedbackControl(Position setpoint) {
   actuator.pid.setSetpoint(setpoint);
   state.update(State::positionFeedbackControl, true);
   actuator.unfreeze();
@@ -297,7 +297,7 @@ void LinearActuatorModule<LinearActuator, Messager>::startPositionFeedbackContro
 }
 
 template<class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::startDirectMotorDutyControl(int duty) {
+void LinearActuatorAxis<LinearActuator, Messager>::startDirectMotorDutyControl(int duty) {
   if (duty == 0) state.update(State::directMotorDutyIdle, true);
   else state.update(State::directMotorDutyControl, true);
   actuator.freeze(true);
@@ -307,7 +307,7 @@ void LinearActuatorModule<LinearActuator, Messager>::startDirectMotorDutyControl
 }
 
 template<class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::endControl(State nextState) {
+void LinearActuatorAxis<LinearActuator, Messager>::endControl(State nextState) {
   if (nextState == State::directMotorDutyIdle ||
       nextState == State::directMotorDutyControl ||
       nextState == State::positionFeedbackControl) return;
@@ -327,8 +327,8 @@ void LinearActuatorModule<LinearActuator, Messager>::endControl(State nextState)
 }
 
 template<class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::notifyPosition() {
-  using namespace Channels::LinearActuatorProtocol;
+void LinearActuatorAxis<LinearActuator, Messager>::notifyPosition() {
+  using namespace Channels::LinearActuator;
 
   if (!allowNotifications) return;
 
@@ -340,8 +340,8 @@ void LinearActuatorModule<LinearActuator, Messager>::notifyPosition() {
 }
 
 template<class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::notifySmoothedPosition() {
-  using namespace Channels::LinearActuatorProtocol;
+void LinearActuatorAxis<LinearActuator, Messager>::notifySmoothedPosition() {
+  using namespace Channels::LinearActuator;
 
   if (!allowNotifications) return;
 
@@ -353,8 +353,8 @@ void LinearActuatorModule<LinearActuator, Messager>::notifySmoothedPosition() {
 }
 
 template<class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::notifyMotor() {
-  using namespace Channels::LinearActuatorProtocol;
+void LinearActuatorAxis<LinearActuator, Messager>::notifyMotor() {
+  using namespace Channels::LinearActuator;
 
   if (!allowNotifications) return;
 
@@ -366,7 +366,7 @@ void LinearActuatorModule<LinearActuator, Messager>::notifyMotor() {
 }
 
 template<class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::notifyState() {
+void LinearActuatorAxis<LinearActuator, Messager>::notifyState() {
   if (!allowNotifications) return;
 
   sender.sendChannelStart();
@@ -376,8 +376,8 @@ void LinearActuatorModule<LinearActuator, Messager>::notifyState() {
 }
 
 template<class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::notifyFeedbackControllerSetpoint() {
-  using namespace Channels::LinearActuatorProtocol;
+void LinearActuatorAxis<LinearActuator, Messager>::notifyFeedbackControllerSetpoint() {
+  using namespace Channels::LinearActuator;
 
   if (!allowNotifications) return;
 
@@ -389,10 +389,10 @@ void LinearActuatorModule<LinearActuator, Messager>::notifyFeedbackControllerSet
 }
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onReceivedMessage(
+void LinearActuatorAxis<LinearActuator, Messager>::onReceivedMessage(
     unsigned int channelParsedLength
 ) {
-  using namespace Channels::LinearActuatorProtocol;
+  using namespace Channels::LinearActuator;
 
   // Expects parser.justReceived()
   // Expects channelParsedLength == 1
@@ -421,7 +421,7 @@ void LinearActuatorModule<LinearActuator, Messager>::onReceivedMessage(
 }
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onPositionMessage(
+void LinearActuatorAxis<LinearActuator, Messager>::onPositionMessage(
     unsigned int channelParsedLength
 ) {
   // Expects parser.justReceived()
@@ -439,7 +439,7 @@ void LinearActuatorModule<LinearActuator, Messager>::onPositionMessage(
 }
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onSmoothedPositionMessage(
+void LinearActuatorAxis<LinearActuator, Messager>::onSmoothedPositionMessage(
     unsigned int channelParsedLength
 ) {
   // Expects parser.justReceived()
@@ -459,10 +459,10 @@ void LinearActuatorModule<LinearActuator, Messager>::onSmoothedPositionMessage(
 }
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onMotorMessage(
+void LinearActuatorAxis<LinearActuator, Messager>::onMotorMessage(
     unsigned int channelParsedLength
 ) {
-  using namespace Channels::LinearActuatorProtocol::Motor;
+  using namespace Channels::LinearActuator::Motor;
 
   // Expects parser.justReceived()
   // Expects channelParsedLength == 2
@@ -502,10 +502,10 @@ void LinearActuatorModule<LinearActuator, Messager>::onMotorMessage(
 }
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onFeedbackControllerMessage(
+void LinearActuatorAxis<LinearActuator, Messager>::onFeedbackControllerMessage(
     unsigned int channelParsedLength
 ) {
-  using namespace Channels::LinearActuatorProtocol::FeedbackController;
+  using namespace Channels::LinearActuator::FeedbackController;
 
   // Expects parser.justReceived()
   // Expects channelParsedLength == 2
@@ -542,12 +542,12 @@ void LinearActuatorModule<LinearActuator, Messager>::onFeedbackControllerMessage
 }
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onFeedbackControllerLimitsMessage(
+void LinearActuatorAxis<LinearActuator, Messager>::onFeedbackControllerLimitsMessage(
     unsigned int channelParsedLength
 ) {
   // TODO: decompose into a separate class
-  using namespace Channels::LinearActuatorProtocol;
-  using namespace Channels::LinearActuatorProtocol::FeedbackController;
+  using namespace Channels::LinearActuator;
+  using namespace Channels::LinearActuator::FeedbackController;
 
   // Expects parser.justReceived()
   // Expects channelParsedLength == 3
@@ -635,11 +635,11 @@ inline float floatToFixedPoint(float floatNum) {
 }
 
 template <class LinearActuator, class Messager>
-void LinearActuatorModule<LinearActuator, Messager>::onFeedbackControllerPIDMessage(
+void LinearActuatorAxis<LinearActuator, Messager>::onFeedbackControllerPIDMessage(
     unsigned int channelParsedLength
 ) {
   // TODO: decompose into a separate class
-  using namespace Channels::LinearActuatorProtocol::FeedbackController::PID;
+  using namespace Channels::LinearActuator::FeedbackController::PID;
 
   // Expects parser.justReceived()
   // Expects channelParsedLength == 3
@@ -671,7 +671,7 @@ void LinearActuatorModule<LinearActuator, Messager>::onFeedbackControllerPIDMess
   return;
 }
 
-}
+} }
 
 #endif
 

@@ -1,33 +1,30 @@
 #define DISABLE_LOGGING
 #include <ArduinoLog.h>
 
-#include <AbsoluteLinearPositionControl.h>
-#include <CumulativeLinearPositionControl.h>
+#define LPC_Components_Motors
+#include <LinearPositionControl.h>
 
-#include <ASCIISerialIO.h>
-#include <CoreProtocol.h>
-//#include <BoardProtocol.h>
+#define LHR_Messaging_ASCIIIO
+#define LHR_Protocol_Core
+//#define LHR_Protocol_Board
+#define LHR_Protocol_AbsoluteLinearActuatorAxis
+#define LHR_Protocol_CumulativeLinearActuatorAxis
+#include <LiquidHandlingRobotics.h>
 #include <Modules.h>
 
 using namespace LiquidHandlingRobotics;
-using Core = CoreProtocol<SerialMessager>;
-//using Board = BoardProtocol<SerialMessager>;
-using AbsoluteAxis = AbsoluteLinearActuator<SerialMessager>;
-using CumulativeAxis = CumulativeLinearActuator<SerialMessager>;
-
-// ASCII Serial communications
-SerialMessager messager;
 
 // Shared Components
+LinearPositionControl::Components::Motors motors;
+Messager messager;
+
+// Protocol
 Core coreProtocol(messager);
 //Board boardProtocol(messager);
-LinearPositionControl::Components::Motors motors;
-
-// Subsystems
-AbsoluteAxis pipettor(messager, motors, kPipettorParams);
-AbsoluteAxis verticalPositioner(messager, motors, kVerticalPositionerParams);
-CumulativeAxis yPositioner(messager, motors, kYPositionerParams);
-LinearPositionControl::SmoothedCumulativePositionCalibrator yPositionerCalibrator(
+AbsoluteLinearActuatorAxis pipettor(messager, motors, kPipettorParams);
+AbsoluteLinearActuatorAxis verticalPositioner(messager, motors, kVerticalPositionerParams);
+CumulativeLinearActuatorAxis yPositioner(messager, motors, kYPositionerParams);
+LinearPositionControl::Control::SmoothedCumulativePositionCalibrator yPositionerCalibrator(
   yPositioner.actuator, yPositioner.smoother, kYPositionerCalibrationParams
 );
 
@@ -42,7 +39,7 @@ void updateCommon() {
 void initializeAxes() {
   // Make the z-axis move up so the syringe doesn't hit anything during y-axis initialization
   verticalPositioner.startDirectMotorDutyControl(255);
-  while (!verticalPositioner.state.at(AbsoluteAxis::State::stallTimeoutStopped)) updateCommon();
+  while (!verticalPositioner.state.at(AbsoluteLinearActuatorAxis::State::stallTimeoutStopped)) updateCommon();
   verticalPositioner.startDirectMotorDutyControl(0);
   verticalPositioner.onConnect();
 

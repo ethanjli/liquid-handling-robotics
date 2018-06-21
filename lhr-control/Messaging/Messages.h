@@ -1,11 +1,11 @@
-#ifndef Messages_h
-#define Messages_h
+#ifndef LHR_Messaging_Messages_h
+#define LHR_Messaging_Messages_h
 
 #include <ArduinoLog.h>
 
 #include <StateVariable.h>
 
-namespace LiquidHandlingRobotics {
+namespace LiquidHandlingRobotics { namespace Messaging {
 
 const char kChannelStartDelimiter = '<';
 const char kChannelEndDelimiter = '>';
@@ -181,7 +181,7 @@ class Messager {
     bool setupCompleted = false;
 };
 
-}
+} }
 
 #include "Messages.tpp"
 

@@ -1,33 +1,36 @@
 #define DISABLE_LOGGING
 #include <ArduinoLog.h>
 
-#include <ASCIISerialIO.h>
-#include <CoreProtocol.h>
-#include <BoardProtocol.h>
+#define LHR_Messaging_ASCIIIO
+#define LHR_Protocol_Core
+#define LHR_Protocol_Board
+#include <LiquidHandlingRobotics.h>
 
 using namespace LiquidHandlingRobotics;
 
 // ASCII Serial communications
-SerialMessager messager;
+Messager messager;
 
 // Shared Components
-CoreProtocol<SerialMessager> coreProtocol(messager);
-BoardProtocol<SerialMessager> boardProtocol(messager);
+Core core(messager);
+Board board(messager);
 
 void setup() {
-  coreProtocol.setup();
+  core.setup();
   messager.setup();
 #ifndef DISABLE_LOGGING
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 #endif
-  boardProtocol.setup();
+  board.setup();
+
   messager.establishConnection();
-  coreProtocol.onConnect();
-  boardProtocol.onConnect();
+
+  core.onConnect();
+  board.onConnect();
 }
 
 void loop() {
   messager.update();
-  coreProtocol.update();
-  boardProtocol.update();
+  core.update();
+  board.update();
 }

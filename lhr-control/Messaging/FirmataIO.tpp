@@ -1,5 +1,5 @@
-#ifndef FirmataIO_tpp
-#define FirmataIO_tpp
+#ifndef LHR_Messaging_FirmataIO_tpp
+#define LHR_Messaging_FirmataIO_tpp
 
 #include <avr/wdt.h>
 
@@ -7,7 +7,7 @@
 
 #include <AnalogWrite.h> // needed for successful compilation
 
-namespace LiquidHandlingRobotics {
+namespace LiquidHandlingRobotics { namespace Messaging {
 
 namespace FirmataIO {
 
@@ -185,7 +185,7 @@ void Messager<FirmataTransport>::establishConnection() {
   while (timer < FirmataIO::kPostHandshakeDelay) wdt_reset();
 }
 
-}
+} }
 
 #endif
 

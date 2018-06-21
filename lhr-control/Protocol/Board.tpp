@@ -1,20 +1,20 @@
-#ifndef BoardProtocol_tpp
-#define BoardProtocol_tpp
+#ifndef LHR_Protocol_Board_tpp
+#define LHR_Protocol_Board_tpp
 
 #include <avr/wdt.h>
 
-namespace LiquidHandlingRobotics {
+namespace LiquidHandlingRobotics { namespace Protocol {
 
-// BoardProtocol
+// Board
 
 template<class Messager>
-BoardProtocol<Messager>::BoardProtocol(Messager &messager) :
+Board<Messager>::Board(Messager &messager) :
   led(LED_BUILTIN), messager(messager),
   parser(messager.parser), sender(messager.sender)
 {}
 
 template<class Messager>
-void BoardProtocol<Messager>::setup() {
+void Board<Messager>::setup() {
   if (setupCompleted) return;
 
   led.setup();
@@ -23,7 +23,7 @@ void BoardProtocol<Messager>::setup() {
 }
 
 template<class Messager>
-void BoardProtocol<Messager>::update() {
+void Board<Messager>::update() {
   wdt_reset();
   handleIOCommand();
   wdt_reset();
@@ -48,13 +48,13 @@ void BoardProtocol<Messager>::update() {
 }
 
 template<class Messager>
-void BoardProtocol<Messager>::onConnect() {
+void Board<Messager>::onConnect() {
   sendBuiltinLEDState();
 }
 
 template<class Messager>
-void BoardProtocol<Messager>::handleIOCommand() {
-  using namespace Channels::BoardProtocol;
+void Board<Messager>::handleIOCommand() {
+  using namespace Channels::Board;
 
   uint8_t channelLength = parser.channelParsedLength;
 
@@ -87,8 +87,8 @@ void BoardProtocol<Messager>::handleIOCommand() {
 }
 
 template<class Messager>
-void BoardProtocol<Messager>::handleBuiltinLEDCommand() {
-  using namespace Channels::BoardProtocol;
+void Board<Messager>::handleBuiltinLEDCommand() {
+  using namespace Channels::Board;
 
   uint8_t channelLength = parser.channelParsedLength;
 
@@ -111,8 +111,8 @@ void BoardProtocol<Messager>::handleBuiltinLEDCommand() {
 }
 
 template<class Messager>
-void BoardProtocol<Messager>::handleBuiltinLEDBlinkCommand() {
-  using namespace Channels::BoardProtocol;
+void Board<Messager>::handleBuiltinLEDBlinkCommand() {
+  using namespace Channels::Board;
 
   // Expects parser.justReceived()
   uint8_t channelLength = parser.channelParsedLength;
@@ -159,8 +159,8 @@ void BoardProtocol<Messager>::handleBuiltinLEDBlinkCommand() {
 }
 
 template<class Messager>
-void BoardProtocol<Messager>::sendBuiltinLEDState() {
-  using namespace Channels::BoardProtocol;
+void Board<Messager>::sendBuiltinLEDState() {
+  using namespace Channels::Board;
 
   int ledState;
   switch (led.state.current) {
@@ -187,8 +187,8 @@ void BoardProtocol<Messager>::sendBuiltinLEDState() {
 }
 
 template<class Messager>
-void BoardProtocol<Messager>::sendBuiltinLEDBlinkState() {
-  using namespace Channels::BoardProtocol;
+void Board<Messager>::sendBuiltinLEDBlinkState() {
+  using namespace Channels::Board;
 
   bool blink = led.state.at(LED::State::blinkingHigh) || led.state.at(LED::State::blinkingLow);
 
@@ -200,8 +200,8 @@ void BoardProtocol<Messager>::sendBuiltinLEDBlinkState() {
 }
 
 template<class Messager>
-void BoardProtocol<Messager>::sendBuiltinLEDBlinkPeriods() {
-  using namespace Channels::BoardProtocol;
+void Board<Messager>::sendBuiltinLEDBlinkPeriods() {
+  using namespace Channels::Board;
 
   sender.sendChannelStart();
   sender.sendChannelChar(kBuiltinLED);
@@ -211,7 +211,7 @@ void BoardProtocol<Messager>::sendBuiltinLEDBlinkPeriods() {
   sender.sendPayload(led.periods);
 }
 
-}
+} }
 
 #endif
 

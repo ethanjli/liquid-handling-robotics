@@ -1,11 +1,13 @@
-#ifndef ASCIISerialIO_tpp
-#define ASCIISerialIO_tpp
+#ifndef LHR_Messaging_ASCIIIO_tpp
+#define LHR_Messaging_ASCIIIO_tpp
 
 #include <avr/wdt.h>
 
 #include <elapsedMillis.h>
 
-namespace LiquidHandlingRobotics {
+namespace LiquidHandlingRobotics { namespace Messaging {
+
+namespace ASCIIIO {
 
 void waitForHandshake(HardwareSerial &serial, unsigned long waitDelay) {
   elapsedMillis timer;
@@ -15,7 +17,7 @@ void waitForHandshake(HardwareSerial &serial, unsigned long waitDelay) {
 
   // Print handshake char until input is received
   while (serial.available() < 1) {
-    serial.println(ASCIISerial::kHandshakeChar);
+    serial.println(kHandshakeChar);
     timer = 0;
     while (timer < waitDelay) wdt_reset();
   }
@@ -33,7 +35,9 @@ void waitForHandshake(HardwareSerial &serial, unsigned long waitDelay) {
   while (timer < waitDelay) wdt_reset();
 }
 
-// MessageSender
+}
+
+// ASCIIMessageSender
 
 template<>
 MessageSender<HardwareSerial>::MessageSender() :
@@ -51,14 +55,14 @@ void MessageSender<HardwareSerial>::sendMessageEnd() {
   transport.write('\n');
 }
 
-// MessageParser
+// ASCIIMessageParser
 
 template<>
 MessageParser<HardwareSerial>::MessageParser() :
   transport(Serial)
 {}
 
-// Messager
+// ASCIIMessager
 
 template<>
 Messager<HardwareSerial>::Messager() :
@@ -67,9 +71,11 @@ Messager<HardwareSerial>::Messager() :
 
 template<>
 void Messager<HardwareSerial>::setup() {
+  using namespace Messaging::ASCIIIO;
+
   if (setupCompleted) return;
 
-  transport.begin(ASCIISerial::kDataRate);
+  transport.begin(kDataRate);
 
   parser.setup();
   sender.setup();
@@ -79,10 +85,12 @@ void Messager<HardwareSerial>::setup() {
 
 template<>
 void Messager<HardwareSerial>::establishConnection() {
+  using namespace Messaging::ASCIIIO;
+
   waitForHandshake(transport);
 }
 
-}
+} }
 
 #endif
 

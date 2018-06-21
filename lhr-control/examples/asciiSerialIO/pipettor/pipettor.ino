@@ -1,49 +1,46 @@
 #define DISABLE_LOGGING
 #include <ArduinoLog.h>
 
-#include <AbsoluteLinearPositionControl.h>
+#define LPC_Components_Motors
+#include <LinearPositionControl.h>
 
-#include <ASCIISerialIO.h>
-#include <CoreProtocol.h>
-#include <BoardProtocol.h>
+#define LHR_Messaging_ASCIIIO
+#define LHR_Protocol_Core
+#define LHR_Protocol_Board
+#define LHR_Protocol_AbsoluteLinearActuatorAxis
+#include <LiquidHandlingRobotics.h>
 #include <Modules.h>
 
 using namespace LiquidHandlingRobotics;
-using Core = CoreProtocol<SerialMessager>;
-using Board = BoardProtocol<SerialMessager>;
-using AbsoluteAxis = AbsoluteLinearActuator<SerialMessager>;
-
-// ASCII Serial communications
-SerialMessager messager;
 
 // Shared Components
-Core coreProtocol(messager);
-Board boardProtocol(messager);
 LinearPositionControl::Components::Motors motors;
+Messager messager;
 
-// Subsystems
-AbsoluteAxis pipettor(messager, motors, kPipettorParams);
+// Protocol
+Core core(messager);
+Board board(messager);
+AbsoluteLinearActuatorAxis pipettor(messager, motors, kPipettorParams);
 
 void setup() {
-  coreProtocol.setup();
+  core.setup();
   messager.setup();
 #ifndef DISABLE_LOGGING
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 #endif
-  boardProtocol.setup();
+  board.setup();
   pipettor.setup();
 
   messager.establishConnection();
 
-  coreProtocol.onConnect();
-  boardProtocol.onConnect();
+  core.onConnect();
+  board.onConnect();
   pipettor.onConnect();
 }
 
 void loop() {
   messager.update();
-  coreProtocol.update();
-  boardProtocol.update();
-  // Modules
+  core.update();
+  board.update();
   pipettor.update();
 }

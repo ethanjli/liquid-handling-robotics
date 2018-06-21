@@ -1,16 +1,14 @@
-#ifndef LinearActuatorModule_h
-#define LinearActuatorModule_h
+#ifndef LinearActuatorAxis_h
+#define LinearActuatorAxis_h
 
 #include <elapsedMillis.h>
 
 #include <Smoothing.h>
 
-#include "Messages.h"
-
-namespace LiquidHandlingRobotics {
+namespace LiquidHandlingRobotics { namespace Protocol {
 
 namespace Channels {
-  namespace LinearActuatorProtocol {
+  namespace LinearActuator {
     const char kPosition = 'p';
     namespace Position {
       // This includes Notify channels
@@ -130,9 +128,9 @@ namespace States {
 }
 
 template <class LinearActuator, class Messager>
-class LinearActuatorModule {
+class LinearActuatorAxis {
   public:
-    LinearActuatorModule(
+    LinearActuatorAxis(
         Messager &messager,
         LinearPositionControl::Components::Motors &motors,
         char axisChannel,
@@ -171,8 +169,6 @@ class LinearActuatorModule {
     bool stalled() const;
     bool timed() const;
 
-    void reportPosition(char reportingChannel);
-
     void startPositionFeedbackControl(Position setpoint);
     void startDirectMotorDutyControl(int duty);
     void endControl(State nextState);
@@ -207,9 +203,9 @@ class LinearActuatorModule {
     void onFeedbackControllerPIDMessage(unsigned int channelParsedLength);
 };
 
-}
+} }
 
-#include "LinearActuatorModule.tpp"
+#include "LinearActuatorAxis.tpp"
 
 #endif
 

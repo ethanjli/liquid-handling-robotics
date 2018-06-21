@@ -1,24 +1,22 @@
-#ifndef CoreProtocol_tpp
-#define CoreProtocol_tpp
+#ifndef LHR_Protocol_Core_tpp
+#define LHR_Protocol_Core_tpp
 
-#include <avr/wdt.h>
-
-namespace LiquidHandlingRobotics {
+namespace LiquidHandlingRobotics { namespace Protocol {
 
 void hardReset() {
   wdt_enable(static_cast<uint8_t>(WatchdogTimeout::to15ms));
   while (true); // Hang to force the AVR watchdog timer to reset the Arduino
 }
 
-// CoreProtocol
+// Core
 
 template<class Messager>
-CoreProtocol<Messager>::CoreProtocol(Messager &messager) :
+Core<Messager>::Core(Messager &messager) :
   messager(messager), parser(messager.parser), sender(messager.sender)
 {}
 
 template<class Messager>
-void CoreProtocol<Messager>::setup() {
+void Core<Messager>::setup() {
   if (setupCompleted) return;
 
   wdt_disable();
@@ -27,7 +25,7 @@ void CoreProtocol<Messager>::setup() {
 }
 
 template<class Messager>
-void CoreProtocol<Messager>::update() {
+void Core<Messager>::update() {
   wdt_reset();
   handleResetCommand();
   wdt_reset();
@@ -38,24 +36,24 @@ void CoreProtocol<Messager>::update() {
 }
 
 template<class Messager>
-void CoreProtocol<Messager>::onConnect(WatchdogTimeout timeout) {
+void Core<Messager>::onConnect(WatchdogTimeout timeout) {
   sendAllVersionMessages();
   wdt_enable(static_cast<uint8_t>(timeout));
 }
 
 template<class Messager>
-void CoreProtocol<Messager>::sendVersionMessage(char versionPosition) {
+void Core<Messager>::sendVersionMessage(char versionPosition) {
   int channelPosition = versionPosition - '0';
   if (channelPosition < 0 || channelPosition >= 3) return;
   sender.sendChannelStart();
-  sender.sendChannelChar(Channels::CoreProtocol::kVersion);
+  sender.sendChannelChar(Channels::Core::kVersion);
   sender.sendChannelChar(versionPosition);
   sender.sendChannelEnd();
   sender.sendPayload((int) pgm_read_word_near(kVersion + channelPosition));
 }
 
 template<class Messager>
-void CoreProtocol<Messager>::sendAllVersionMessages() {
+void Core<Messager>::sendAllVersionMessages() {
   sendVersionMessage('0');
   wdt_reset();
   sendVersionMessage('1');
@@ -65,8 +63,8 @@ void CoreProtocol<Messager>::sendAllVersionMessages() {
 }
 
 template<class Messager>
-void CoreProtocol<Messager>::handleResetCommand() {
-  using namespace Channels::CoreProtocol;
+void Core<Messager>::handleResetCommand() {
+  using namespace Channels::Core;
 
   if (!(parser.justReceived() && parser.channel[0] == kReset &&
         parser.channelParsedLength == 1)) return;
@@ -81,8 +79,8 @@ void CoreProtocol<Messager>::handleResetCommand() {
 }
 
 template<class Messager>
-void CoreProtocol<Messager>::handleVersionCommand() {
-  if (!(parser.justReceived() && parser.channel[0] == Channels::CoreProtocol::kVersion &&
+void Core<Messager>::handleVersionCommand() {
+  if (!(parser.justReceived() && parser.channel[0] == Channels::Core::kVersion &&
         parser.channelParsedLength <= 2)) return;
 
   if (parser.channelParsedLength == 1) sendAllVersionMessages(); // parsed as: v
@@ -90,8 +88,8 @@ void CoreProtocol<Messager>::handleVersionCommand() {
 }
 
 template<class Messager>
-void CoreProtocol<Messager>::handleEchoCommand() {
-  using namespace Channels::CoreProtocol;
+void Core<Messager>::handleEchoCommand() {
+  using namespace Channels::Core;
 
   if (!(parser.justReceived() && parser.channel[0] == kEcho &&
         parser.channelParsedLength == 1)) return;
@@ -101,7 +99,7 @@ void CoreProtocol<Messager>::handleEchoCommand() {
   messager.sendResponse(echoValue);
 }
 
-}
+} }
 
 #endif
 

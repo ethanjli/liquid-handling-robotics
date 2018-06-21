@@ -1,14 +1,13 @@
-#ifndef BoardProtocol_h
-#define BoardProtocol_h
+#ifndef LHR_Protocol_Board_h
+#define LHR_Protocol_Board_h
 
-#include <Components/LED.h>
+#define LPC_Components_LED
+#include <LinearPositionControl.h>
 
-#include "Messages.h"
-
-namespace LiquidHandlingRobotics {
+namespace LiquidHandlingRobotics { namespace Protocol {
 
 namespace Channels {
-  namespace BoardProtocol {
+  namespace Board {
     const char kIO = 'i';
     namespace IO {
       const char kAnalog = 'a';
@@ -34,11 +33,11 @@ const uint8_t kDigitalReadMinPin = 2;
 const uint8_t kDigitalReadMaxPin = 13;
 
 template<class Messager>
-class BoardProtocol {
+class Board {
   public:
     using LED = LinearPositionControl::Components::SimpleLED;
 
-    BoardProtocol(Messager &messager);
+    Board(Messager &messager);
 
     LED led;
 
@@ -65,9 +64,9 @@ class BoardProtocol {
     void sendBuiltinLEDBlinkPeriods();
 };
 
-}
+} }
 
-#include "BoardProtocol.tpp"
+#include "Board.tpp"
 
 #endif
 
