@@ -1,4 +1,5 @@
-#include "FirmataIO.h"
+#ifndef FirmataIO_tpp
+#define FirmataIO_tpp
 
 #include <avr/wdt.h>
 
@@ -185,4 +186,6 @@ void Messager<FirmataTransport>::establishConnection() {
 }
 
 }
+
+#endif
 

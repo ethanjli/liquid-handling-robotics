@@ -1,4 +1,5 @@
-#include "ASCIISerialIO.h"
+#ifndef ASCIISerialIO_tpp
+#define ASCIISerialIO_tpp
 
 #include <avr/wdt.h>
 
@@ -82,4 +83,6 @@ void Messager<HardwareSerial>::establishConnection() {
 }
 
 }
+
+#endif
 

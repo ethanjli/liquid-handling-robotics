@@ -18,5 +18,7 @@ using SerialMessager = Messager<HardwareSerial>;
 
 }
 
+#include "ASCIISerialIO.tpp"
+
 #endif
 

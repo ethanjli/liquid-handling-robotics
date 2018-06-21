@@ -187,19 +187,19 @@ LinearActuatorModule<LinearActuator, Messager>::LinearActuatorModule(
   convergenceTimeout(convergenceTimeout), stallTimeout(stallTimeout),
   timerTimeout(timerTimeout),
   messager(messager), parser(messager.parser), sender(messager.sender),
-  axisChannel(axisChannel),
-  positionNotifier(
-      messager, actuator.position.current,
-      axisChannel, Channels::LinearActuatorProtocol::kPosition
-  ),
-  smoothedPositionNotifier(
-      messager, smoother.output.current,
-      axisChannel, Channels::LinearActuatorProtocol::kSmoothedPosition
-  ),
-  motorDutyNotifier(
-      messager, actuator.motor.speed,
-      axisChannel, Channels::LinearActuatorProtocol::kMotor
-  )
+  axisChannel(axisChannel)//,
+  /* positionNotifier( */
+  /*     messager, actuator.position.current, */
+  /*     axisChannel, Channels::LinearActuatorProtocol::kPosition */
+  /* ), */
+  /* smoothedPositionNotifier( */
+  /*     messager, smoother.output.current, */
+  /*     axisChannel, Channels::LinearActuatorProtocol::kSmoothedPosition */
+  /* ), */
+  /* motorDutyNotifier( */
+  /*     messager, actuator.motor.speed, */
+  /*     axisChannel, Channels::LinearActuatorProtocol::kMotor */
+  /* ) */
 {}
 
 template <class LinearActuator, class Messager>
@@ -226,13 +226,13 @@ void LinearActuatorModule<LinearActuator, Messager>::update() {
       parser.channel[0] == axisChannel) {
     onReceivedMessage(1);
   }
-  wdt_reset();
-  positionNotifier.update();
-  wdt_reset();
-  smoothedPositionNotifier.update();
-  wdt_reset();
-  motorDutyNotifier.update();
-  wdt_reset();
+  /* wdt_reset(); */
+  /* positionNotifier.update(); */
+  /* wdt_reset(); */
+  /* smoothedPositionNotifier.update(); */
+  /* wdt_reset(); */
+  /* motorDutyNotifier.update(); */
+  /* wdt_reset(); */
 
   switch (state.current) {
     case State::directMotorDutyControl:
@@ -320,17 +320,17 @@ void LinearActuatorModule<LinearActuator, Messager>::endControl(State nextState)
 
 template<class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::notifyPosition() {
-  positionNotifier.notify();
+  /* positionNotifier.notify(); */
 }
 
 template<class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::notifySmoothedPosition() {
-  smoothedPositionNotifier.notify();
+  /* smoothedPositionNotifier.notify(); */
 }
 
 template<class LinearActuator, class Messager>
 void LinearActuatorModule<LinearActuator, Messager>::notifyMotor() {
-  motorDutyNotifier.notify();
+  /* motorDutyNotifier.notify(); */
 }
 
 template<class LinearActuator, class Messager>

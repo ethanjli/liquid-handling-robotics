@@ -192,9 +192,9 @@ class LinearActuatorModule {
 
     const char axisChannel = '\0';
 
-    Notifier<Messager, Position> positionNotifier;
-    Notifier<Messager, int> smoothedPositionNotifier;
-    Notifier<Messager, int> motorDutyNotifier;
+    /* Notifier<Messager, Position> positionNotifier; */
+    /* Notifier<Messager, int> smoothedPositionNotifier; */
+    /* Notifier<Messager, int> motorDutyNotifier; */
 
     void onReceivedMessage(unsigned int channelParsedLength);
     void onPositionMessage(unsigned int channelParsedLength);
