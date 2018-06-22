@@ -135,8 +135,8 @@
   core.onConnect();\
   board.onConnect();
 #define LHR_updateBasics(core, board)\
-  core.onConnect();\
-  board.onConnect();
+  core.update();\
+  board.update();
 
 // Define convenience macros for instantiating, setting up, connecting, and updating standard axes
 //

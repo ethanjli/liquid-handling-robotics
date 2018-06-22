@@ -2,7 +2,6 @@
 
 #define LHR_Messaging_FirmataIO
 #define LHR_Protocol_Core
-#define LHR_Protocol_Board
 #include <LiquidHandlingRobotics.h>
 #include <StandardLiquidHandlingRobot.h>
 

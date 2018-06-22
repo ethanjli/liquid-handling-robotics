@@ -1,6 +1,6 @@
-# pzyDetailed
+# coreProtocolDetailed
 
-This Arduino sketch implements position control of the pipettor axis. It behaves the same way as the pRobot sketch, except it avoids using high-level macros provided by `StandardLiquidHandlingRobot.h` which simplify sketch code; this sketch shows all the details of the classes provided by the library in their full glory. The Arduino must be controlled over a Serial Firmata connection (such as from Snap4Arduino).
+This Arduino sketch implements only the basic communication protocol (namely the [Core](https://liquid-handling-robotics.readthedocs.io/en/latest/messages/core.html) and [Board](https://liquid-handling-robotics.readthedocs.io/en/latest/messages/board.html) protocol subsets). It behaves the same way as the coreProtocol sketch, except it avoids using high-level macros provided by `StandardLiquidHandlingRobot.h` which simplify sketch code; this sketch shows all the details of the classes provided by the library in their full glory. The Arduino must be controlled over a Serial Firmata connection (such as from Snap4Arduino).
 
 ## Hardware
 
@@ -15,11 +15,8 @@ This sketch is configured to drive the pipettor axis motor on port M1 of the Ada
 
 To compile this sketch, the following libraries must be installed from the Arduino IDE's Library Manager:
 
-* [Adafruit Motor Shield V2 Library](https://github.com/adafruit/Adafruit_Motor_Shield_V2_Library)
 * [elapsedMillis](https://github.com/pfeerick/elapsedMillis/wiki)
 * [ArduinoLog](https://github.com/thijse/Arduino-Log/)
-* [Arduino PID Library](http://playground.arduino.cc/Code/PIDLibrary)
-* [ResponsiveAnalogRead](https://github.com/dxinteractive/ResponsiveAnalogRead)
 * [Linear Position Control](https://github.com/ethanjli/linear-position-control)
 * [Liquid Handling Robotics](https://github.com/ethanjli/liquid-handling-robotics)
 * [Configurable Firmata](https://github.com/firmata/ConfigurableFirmata)
