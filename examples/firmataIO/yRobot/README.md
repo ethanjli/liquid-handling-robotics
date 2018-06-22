@@ -1,6 +1,6 @@
 # yRobot
 
-This Arduino sketch implements position control of the y axis. The Arduino can be controlled over a Serial connection (such as from the Arduino's Serial Monitor) with human-readable command and response messages.
+This Arduino sketch implements position control of the y axis. The Arduino must be controlled over a Serial Firmata connection (such as from Snap4Arduino).
 
 ## Hardware
 
@@ -22,6 +22,7 @@ To compile this sketch, the following libraries must be installed from the Ardui
 * [ResponsiveAnalogRead](https://github.com/dxinteractive/ResponsiveAnalogRead)
 * [Linear Position Control](https://github.com/ethanjli/linear-position-control)
 * [Liquid Handling Robotics](https://github.com/ethanjli/liquid-handling-robotics)
+* [Configurable Firmata](https://github.com/firmata/ConfigurableFirmata)
 
 ## Control
 

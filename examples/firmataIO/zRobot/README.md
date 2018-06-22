@@ -1,6 +1,6 @@
-# yRobot
+# zRobot
 
-This Arduino sketch implements position control of the y axis. The Arduino can be controlled over a Serial connection (such as from the Arduino's Serial Monitor) with human-readable command and response messages.
+This Arduino sketch implements position control of the z axis. The Arduino must be controlled over a Serial Firmata connection (such as from Snap4Arduino).
 
 ## Hardware
 
@@ -8,7 +8,7 @@ Laser-cut pieces should be cut on 1/8 inch acrylic. Note that kerf adjustments a
 
 ## Wiring
 
-This sketch is configured to drive the y axis motor on port M3 of the Adafruit Motor Shield. If the motor for some axis is trying to push past the end of the axis in either direction, you may need to switch the wires for that motor. A future version of this library will provide test sketches to help you determine whether you need to switch wires for these motors.
+This sketch is configured to drive the pipettor axis motor on port M1. Instructions for the wiring of the z axis are available [here](http://liquid-handling-robotics.readthedocs.io/en/latest/assembly/verticalpositioner/electrical/index.html). If the motor for some axis is trying to push past the end of the axis in either direction, you may need to switch the wires for that motor. A future version of this library will provide test sketches to help you determine whether you need to switch wires for these motors.
 
 ## Library Dependencies
 
@@ -18,10 +18,10 @@ To compile this sketch, the following libraries must be installed from the Ardui
 * [elapsedMillis](https://github.com/pfeerick/elapsedMillis/wiki)
 * [ArduinoLog](https://github.com/thijse/Arduino-Log/)
 * [Arduino PID Library](http://playground.arduino.cc/Code/PIDLibrary)
-* [3D-Magnetic-Sensor-2GO](https://github.com/Infineon/TLV493D-A1B6-3DMagnetic-Sensor)
 * [ResponsiveAnalogRead](https://github.com/dxinteractive/ResponsiveAnalogRead)
 * [Linear Position Control](https://github.com/ethanjli/linear-position-control)
 * [Liquid Handling Robotics](https://github.com/ethanjli/liquid-handling-robotics)
+* [Configurable Firmata](https://github.com/firmata/ConfigurableFirmata)
 
 ## Control
 
