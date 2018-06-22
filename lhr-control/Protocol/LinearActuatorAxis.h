@@ -3,6 +3,7 @@
 
 #include <elapsedMillis.h>
 
+#define LPC_Components_Motors
 #define LPC_Signal_Smoothing
 #include <LinearPositionControl.h>
 

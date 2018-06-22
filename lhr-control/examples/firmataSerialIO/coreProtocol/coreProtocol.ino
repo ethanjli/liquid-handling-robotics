@@ -1,30 +1,26 @@
 #define DISABLE_LOGGING
 
-#include <FirmataIO.h>
-#include <CoreProtocol.h>
+#define LHR_Messaging_FirmataIO
+#define LHR_Protocol_Core
+#define LHR_Protocol_Board
+#include <LiquidHandlingRobotics.h>
+#include <StandardLiquidHandlingRobot.h>
 
 using namespace LiquidHandlingRobotics;
 
-// Firmata communications
-FirmataTransport transport;
-FirmataMessager messager(transport);
-makeFirmataTransportResetCallback(transport);
-
-// Shared components
-CoreProtocol<FirmataMessager> coreProtocol(messager);
+LHR_instantiateMessaging(transport, messager);
+LHR_instantiateBasics(core, board);
 
 void setup()
 {
-  coreProtocol.setup();
-  transport.setup();
-  attachFirmataTransportResetCallback(transport);
-  messager.setup();
-  messager.establishConnection();
-  coreProtocol.onConnect();
+  LHR_setupMessaging(transport, messager, core);
+  LHR_setupBasics(core, board);
+
+  LHR_connectMessaging(transport, messager);
+  LHR_connectBasics(core, board);
 }
 
 void loop() {
-  transport.update();
-  messager.update();
-  coreProtocol.update();
+  LHR_updateMessaging(transport, messager);
+  LHR_updateBasics(core, board);
 }

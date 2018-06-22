@@ -89,8 +89,8 @@ using FirmataMessager = Messager<FirmataTransport>;
 
 } }
 
-#define makeFirmataTransportResetCallback(transport) void firmataTransportResetCallback() {transport.reset();}
-#define attachFirmataTransportResetCallback(transport) Firmata.attach(SYSTEM_RESET, firmataTransportResetCallback);
+#define LHR_makeFirmataTransportResetCallback(transport) void firmataTransportResetCallback() {transport.reset();}
+#define LHR_attachFirmataTransportResetCallback(transport) Firmata.attach(SYSTEM_RESET, firmataTransportResetCallback);
 
 #include "FirmataIO.tpp"
 

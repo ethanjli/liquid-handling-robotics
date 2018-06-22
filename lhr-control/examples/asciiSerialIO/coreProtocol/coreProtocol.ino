@@ -5,32 +5,25 @@
 #define LHR_Protocol_Core
 #define LHR_Protocol_Board
 #include <LiquidHandlingRobotics.h>
+#include <StandardLiquidHandlingRobot.h>
 
 using namespace LiquidHandlingRobotics;
 
-// ASCII Serial communications
-Messager messager;
-
-// Shared Components
-Core core(messager);
-Board board(messager);
+LHR_instantiateMessaging(transport, messager);
+LHR_instantiateBasics(core, board);
 
 void setup() {
-  core.setup();
-  messager.setup();
+  LHR_setupMessaging(transport, messager, core);
 #ifndef DISABLE_LOGGING
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 #endif
-  board.setup();
+  LHR_setupBasics(core, board);
 
-  messager.establishConnection();
-
-  core.onConnect();
-  board.onConnect();
+  LHR_connectMessaging(transport, messager);
+  LHR_connectBasics(core, board);
 }
 
 void loop() {
-  messager.update();
-  core.update();
-  board.update();
+  LHR_updateMessaging(transport, messager);
+  LHR_updateBasics(core, board);
 }

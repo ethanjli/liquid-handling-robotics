@@ -669,7 +669,6 @@ template <class LinearActuator, class Messager>
 void LinearActuatorAxis<LinearActuator, Messager>::onFeedbackControllerPIDMessage(
     unsigned int channelParsedLength
 ) {
-  // TODO: decompose into a separate class
   using namespace Channels::LinearActuator::FeedbackController::PID;
 
   // Expects parser.justReceived()
