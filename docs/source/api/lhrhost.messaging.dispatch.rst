@@ -1,9 +1,9 @@
-lhrhost.serialio.dispatch module
-================================
+lhrhost.messaging.dispatch module
+=================================
 
-.. currentmodule:: lhrhost.serialio.dispatch
+.. currentmodule:: lhrhost.messaging.dispatch
 
-.. automodule:: lhrhost.serialio.dispatch
+.. automodule:: lhrhost.messaging.dispatch
     :show-inheritance:
 
     Summary

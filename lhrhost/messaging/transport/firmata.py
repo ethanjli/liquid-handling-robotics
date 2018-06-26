@@ -1,87 +1,150 @@
-#!/usr/bin/python
-"""Turns on an LED on for one second, then off for one second, repeatedly."""
+"""Firmata-based transport layer implementation."""
+
+# Standard imports
 import asyncio
+from typing import Any, Dict, Iterable, List, Optional
 
-from pymata_aio.constants import Constants
-from pymata_aio.pymata3 import PyMata3
+# Local package imports
+import lhrhost.messaging.transport.transport as transport
+from lhrhost.messaging.transport.transport import (
+    HANDSHAKE_RX_CHAR,
+    PeripheralResetException,
+    SerializedMessageReceiver
+)
 
-BOARD_LED = 13
+# External imports
+from pymata_aio.pymata_core import PymataCore
+
+# Type-checking names
+_Kwargs = Dict[str, Any]
+_SerializedMessageReceivers = Iterable[SerializedMessageReceiver]
+
+# Protocol parameters
 MESSAGE_SYSEX_COMMAND = 0x0F
 
-class Transport(object):
-    """Firmata-based transport layer."""
-    def __init__(self):
-        self.board = PyMata3()
-        self.establishedConnection = False
 
-        self._register_sysex_listener(MESSAGE_SYSEX_COMMAND, self._on_sysex_message)
+# Transport-layer implementation
 
-    def establish_connection(self, handshake_interval=1.0):
-        """Start and finish a connection handshake with the board."""
-        while not self.establishedConnection:
-            self._send_handshake()
-            self.board.sleep(handshake_interval)
+def encode_message(message_string: str) -> List[int]:
+    """Build a message to send in a sysex command."""
+    return [ord(char) for char in message_string]
 
-    def send_message(self, message_string):
-        """Send a message string to the board."""
-        self._send_sysex(MESSAGE_SYSEX_COMMAND, self.encode_message(message_string))
 
-    def encode_message(self, message_string):
-        """Build a message to send in a sysex command."""
-        return [ord(char) for char in message_string]
+def decode_message(sysex_data: List[int]) -> str:
+    """Decode a message from sysex command data."""
+    return ''.join(chr(byte) for byte in sysex_data[1:-1])
 
-    def _send_handshake(self):
-        """Start a serial connection."""
-        print('Sending handshake...')
-        self._send_sysex(MESSAGE_SYSEX_COMMAND, [])
 
-    def _send_sysex(self, sysex_command, data):
-        """Send a sysex command to the board."""
-        task = asyncio.ensure_future(self.board.core._send_sysex(sysex_command, data))
-        self.board.loop.run_until_complete(task)
+def message_empty(sysex_data: List[int]) -> bool:
+    """Return whether the sysex data is an empty message packet."""
+    return len(sysex_data) == 2
 
-    async def _on_sysex_message(self, sysex_data):
-        """Handle a message sysex."""
-        if len(sysex_data) == 2:
-            print('Established connection!')
-            self.establishedConnection = True
-            return
-        print('Received message: "{}"'.format(''.join([chr(byte) for byte in sysex_data[1:-1]])))
 
-    def _register_sysex_listener(self, sysex_command, sysex_listener):
+class Transport(transport.Transport):
+    """Firmata-based transport layer with an established connection."""
+
+    def __init__(self, board: PymataCore, **kwargs):
+        """Initialize member variables."""
+        super().__init__(**kwargs)
+        self.board = board
+
+    def register_message_listener(self, sysex_listener) -> None:
         """Register a listener for a sysex command."""
-        self.board.core.command_dictionary[sysex_command] = sysex_listener
+        self.board.command_dictionary[MESSAGE_SYSEX_COMMAND] = sysex_listener
+
+    async def on_sysex_message(self, sysex_data: List[int]) -> None:
+        """Handle a message sysex."""
+        decoded = decode_message(sysex_data)
+        if message_empty(sysex_data) or decoded == HANDSHAKE_RX_CHAR:
+            raise PeripheralResetException
+        self.on_serialized_message(decoded)
+
+    # Implement transport.Transport
+
+    def start_receiving_serialized_messages(self) -> None:
+        """Start endlessly receiving and handling message data from the connection.
+
+        Receiving of data is asynchronous, and the associated event loop must be run.
+        """
+        self.register_message_listener(self.on_sysex_message)
+
+    def close(self) -> None:
+        """Close the transport-layer connection to the device.
+
+        Blocks until the connection is closed.
+        """
+        self.board.shutdown()
+
+    async def send_serialized_message(self, serialized_message: str) -> None:
+        """Send the serialized message to the peripheral.
+
+        Blocks until the line is fully written.
+        A serialized message is typically provided by the presentation layer.
+        """
+        await self.board._send_sysex(MESSAGE_SYSEX_COMMAND, encode_message(serialized_message))
 
 
-def main_manual(transport):
-    """Blink with direct Firmata control."""
-    transport.board.set_pin_mode(BOARD_LED, Constants.OUTPUT)
-    while True:
-        print('LED On')
-        transport.board.digital_write(BOARD_LED, 1)
-        transport.board.sleep(1.0)
-        print('LED Off')
-        transport.board.digital_write(BOARD_LED, 0)
-        transport.board.sleep(1.0)
+class TransportConnectionManager(transport.TransportConnectionManager):
+    """Firmata-based transport connection manager."""
 
+    def __init__(
+        self, handshake_attempt_interval: float=0.2,
+        board_kwargs: Optional[_Kwargs]=None,
+        transport_kwargs: Optional[_Kwargs]=None
+    ):
+        """Initialize member variables."""
+        super().__init__(transport_kwargs=transport_kwargs)
+        # Firmata board
+        self._board_kwargs: Optional[dict] = (
+            board_kwargs if board_kwargs is not None else {}
+        )
+        self._board: Optional[PymataCore] = None
+        # Mutual handshake parameters
+        self._handshake_attempt_interval: float = handshake_attempt_interval
+        # State
+        self._handshake_started: bool = False
+        self._connected: bool = False
 
-def main_indirect(transport):
-    """Blink with indirect Firmata control."""
-    transport.establish_connection()
-    message_template = '<l>({})'
-    while True:
-        print('LED On')
-        transport.send_message(message_template.format(1))
-        transport.board.sleep(1.0)
-        print('LED Off')
-        transport.send_message(message_template.format(0))
-        transport.board.sleep(1.0)
+    # Implement transport.TransportConnectionManager
 
+    async def open(self) -> Transport:
+        """Establish and return a transport-layer connection to the device.
 
-if __name__ == '__main__':
-    transport = Transport()
-    try:
-        # main_manual(transport)
-        main_indirect(transport)
-    except KeyboardInterrupt:
-        print('Quitting!')
+        Establishes a connection session with a mutual handshake specified by
+        the transport-layer protocol. Once the connection is established,
+        messages can be sent over the transport layer.
+
+        Blocks until the connection is established.
+        """
+        # Connect board
+        self._board = PymataCore(**self._board_kwargs)
+        await self._board.start_aio()
+        self._handshake_started = False
+        self._connected = False
+        # Establish mutual handshake
+        self.transport = Transport(self._board, **self.transport_kwargs)
+        self.transport.register_message_listener(self._on_sysex_message)
+        while self.transport is not None and not self._connected:
+            if self._handshake_started:
+                await self.transport.send_serialized_message('')
+            await asyncio.sleep(self._handshake_attempt_interval)
+        # Set up event handling
+        self.transport.start_receiving_serialized_messages()
+        return self.transport
+
+    async def _on_sysex_message(self, sysex_data) -> None:
+        """Handle a message sysex before transport-layer connection is established."""
+        if not self._handshake_started and decode_message(sysex_data) == HANDSHAKE_RX_CHAR:
+            print('Handshake started!')
+            self._handshake_started = True
+        elif self._handshake_started and message_empty(sysex_data):
+            print('Connected!')
+            self._connected = True
+        elif self._connected and self.transport is not None:
+            await self.transport.on_sysex_message(sysex_data)
+
+    async def close(self) -> None:
+        """Close the associated transport-layer connection, if it is open."""
+        await super().close()
+        self._handshake_started = False
+        self._connected = False

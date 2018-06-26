@@ -175,14 +175,26 @@ template<>
 void Messager<FirmataTransport>::establishConnection() {
   elapsedMillis timer;
 
-  // Run Firmata as usual, but ignore any special messages received
-  while (transport.state.at(FirmataTransport::State::connecting)) transport.update();
+  // Wait a bit
+  timer = 0;
+  while (
+      transport.state.at(FirmataTransport::State::connecting) &&
+      timer < FirmataIO::kPreHandshakeDelay
+  ) transport.update();
+  // Run Firmata as usual and send handshake message until acknowledged
+  while (transport.state.at(FirmataTransport::State::connecting)) {
+    timer = 0;
+    sender.sendMessageStart();
+    transport.write(FirmataIO::kHandshakeChar);
+    sender.sendMessageEnd();
+    while (timer < FirmataIO::kHandshakeInitiateInterval) transport.update();
+  }
   // Send a response
   sender.sendMessageStart();
   sender.sendMessageEnd();
   // Wait a bit longer
   timer = 0;
-  while (timer < FirmataIO::kPostHandshakeDelay) wdt_reset();
+  while (timer < FirmataIO::kPostHandshakeDelay) transport.update();
 }
 
 } }

@@ -9,7 +9,7 @@ lhrhost package
        :caption: Subpackages:
        :maxdepth: 2
 
-       lhrhost.serialio
+       lhrhost.messaging
        lhrhost.util
 
 

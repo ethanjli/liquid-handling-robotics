@@ -1,9 +1,9 @@
-lhrhost.serialio.transport module
-=================================
+lhrhost.messaging.transport.transport module
+============================================
 
-.. currentmodule:: lhrhost.serialio.transport
+.. currentmodule:: lhrhost.messaging.transport.transport
 
-.. automodule:: lhrhost.serialio.transport
+.. automodule:: lhrhost.messaging.transport.transport
     :show-inheritance:
 
     Summary

@@ -1,1 +1,1 @@
-"""Support for communication over serial connections."""
+"""Host implementation for message-based communication protocol."""
