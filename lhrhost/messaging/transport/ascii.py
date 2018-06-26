@@ -12,13 +12,7 @@ from asyncio import StreamReader, StreamWriter
 from typing import Any, Dict, Iterable, Optional
 
 # Local package imports
-import lhrhost.messaging.transport.transport as transport
-from lhrhost.messaging.transport.transport import (
-    HANDSHAKE_RX_CHAR,
-    PeripheralDisconnectedException,
-    PeripheralResetException,
-    SerializedMessageReceiver
-)
+import lhrhost.messaging.transport as transport
 
 # External imports
 from serial import SerialException
@@ -27,7 +21,7 @@ import serial_asyncio
 
 # Type-checking names
 _Kwargs = Dict[str, Any]
-_SerializedMessageReceivers = Iterable[SerializedMessageReceiver]
+_SerializedMessageReceivers = Iterable[transport.SerializedMessageReceiver]
 
 # Protocol parameters
 MESSAGE_LINE_PREFIX = ''
@@ -64,15 +58,15 @@ class Transport(transport.Transport):
 
     async def _receive_packets(self) -> None:
         """Endlessly receive serialized messages from the connection and handle them."""
-        handshake_message = str.encode(HANDSHAKE_RX_CHAR)
+        handshake_message = str.encode(transport.HANDSHAKE_RX_CHAR)
         message_line_suffix = str.encode(MESSAGE_LINE_SUFFIX)
         while True:
             try:
                 line = await self.ser_reader.readuntil(message_line_suffix)
             except SerialException:
-                raise PeripheralDisconnectedException
+                raise transport.PeripheralDisconnectedException
             if line.strip() == handshake_message:
-                raise PeripheralResetException
+                raise transport.PeripheralResetException
             self.on_serialized_message(line.strip().decode())
 
     async def close(self) -> None:
@@ -152,6 +146,10 @@ class TransportConnectionManager(transport.TransportConnectionManager):
         Blocks until the connection is established.
         """
         # Connect the board and establish mutual handshake
+        await self._connect_datalink()
+        self.transport = Transport(
+            self._ser_reader, self._ser_writer, self.loop, **self.transport_kwargs
+        )
         await self._establish_handshake()
         # Set up event handling
         self.transport = Transport(
@@ -160,9 +158,9 @@ class TransportConnectionManager(transport.TransportConnectionManager):
         self.transport.start_receiving_serialized_messages()
         return self.transport
 
-    async def _establish_handshake(self) -> None:
-        """Establish the transport-layer connection."""
-        print('Please connect the device now...')
+    async def _connect_datalink(self) -> None:
+        """Establish the datalink-layer connection."""
+        print('Please plug in the device now...')
         while True:
             try:
                 (
@@ -173,18 +171,19 @@ class TransportConnectionManager(transport.TransportConnectionManager):
                 break
             except SerialException:
                 await asyncio.sleep(self.handshake_attempt_interval)
-        print('Found the device! Initiating handshake for transport-layer connection...')
-        self.transport = Transport(
-            self._ser_reader, self._ser_writer, self.loop, **self.transport_kwargs
-        )
+        print('Established datalink-layer connection!')
+
+    async def _establish_handshake(self) -> None:
+        """Establish the transport-layer connection."""
+        print('Initiating handshake for transport-layer connection...')
         # Wait for handshake char (peripheral initiates handshake)
         message_line_suffix = str.encode(MESSAGE_LINE_SUFFIX)
         while self.transport is not None:
             try:
                 line = await self._ser_reader.readuntil(message_line_suffix)
             except SerialException:
-                raise PeripheralDisconnectedException
-            if line.strip() == str.encode(HANDSHAKE_RX_CHAR):
+                raise transport.PeripheralDisconnectedException
+            if line.strip().decode() == transport.HANDSHAKE_RX_CHAR:
                 break
             await asyncio.sleep(self.handshake_attempt_interval)
         # Respond with empty message (host acknowledges handshake)
@@ -195,104 +194,3 @@ class TransportConnectionManager(transport.TransportConnectionManager):
             if not line.strip():
                 break
         print('Completed handshake!')
-
-
-class ASCIIMonitor():
-    """Monitors an :class:`ASCIIConnection` for new lines in RX.
-
-    Provides message loop to receive lines from the device and broadcast those
-    received lines to listeners.
-    Supports thread-based concurrency for receiving lines.
-    Listens for lines and writes them to the connection.
-
-    Args:
-        connection: a valid ASCII connection for an open serial port.
-        intercept_logging: whether to intercept logging messages and display
-            them instead of passing them to listeners.
-
-    Attributes:
-        listeners (:obj:`list` of :class:`ASCIILineReceiver`): the line RX
-            event listeners. Add and remove listeners to this attribute to
-            update what listens for new lines in RX.
-        intercept_logging (bool): whether to intercept logging messages and
-            display them instead of passing them to listeners.
-
-    """
-
-    def __init__(self, connection, intercept_logging: bool=True):
-        """Initialize member variables."""
-        self._connection = connection
-        self.intercept_logging = intercept_logging
-
-        # Event-driven RX
-        self.listeners = []
-        self._monitoring = False
-
-    # Monitoring
-
-    def start_reading_lines(self) -> None:
-        """Start the RX monitoring event loop and broadcast to listeners.
-
-        Blocks the thread of the caller until a new line is received and
-        :meth:`stop_reading_lines` is called or an exception (such as a
-        :exc:`KeyboardInterrupt` or an interrupt from a listener) is
-        encountered.
-        """
-        self._monitoring = True
-        while self._monitoring:
-            try:
-                line = self._connection.read_line()
-                if self.intercept_logging:
-                    if line.startswith('E: '):
-                        print('Error: {}'.format(line[3:]))
-                        continue
-                    elif line.startswith('W: '):
-                        print('Warning: {}'.format(line[3:]))
-                        continue
-                if line == HANDSHAKE_RX_CHAR:
-                    self.write_line('{}{}'.format(MESSAGE_LINE_PREFIX, MESSAGE_LINE_SUFFIX))
-                    print('Connection was reset! Re-initiating serial handshake...')
-                    for listener in self.listeners:
-                        listener.on_connection_reset()
-                else:
-                    for listener in self.listeners:
-                        listener.on_line(line)
-            except KeyboardInterrupt:
-                self._monitoring = False
-            except Exception:
-                self._monitoring = False
-                raise
-
-    def stop_reading_lines(self) -> None:
-        """Make `start_reading_lines` quit after the current line.
-
-        This needs to be called from a separate thread than the one running
-        :meth:`start_reading_lines`.
-        """
-        self._monitoring = False
-
-    @property
-    def reading_lines(self) -> bool:
-        """bool: Whether the RX monitoring event loop will continue."""
-        return self._monitoring
-
-    # Threading
-
-    def start_thread(self) -> None:
-        """Start monitoring RX in a new daemonic thread."""
-        self._thread.start()
-
-    def _stop_thread(self, timeout: int=200) -> None:
-        """Stop monitoring RX.
-
-        Currently non-functional because the thread will block on read_line.
-        As a workaround, the thread is daemonic.
-        """
-        self.stop_reading_lines()
-        self._thread.join(timeout=timeout / 1000)
-
-    # Implement ASCIILineReceiver
-
-    def on_line(self, line):
-        """Handle a received line."""
-        self._connection.write_line(line)

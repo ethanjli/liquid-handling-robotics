@@ -112,7 +112,7 @@ class Transport(SerializedMessageReceiver, metaclass=InterfaceClass):
 class TransportConnectionManager(object, metaclass=InterfaceClass):
     """Abstract class for a transport-layer connection establisher."""
 
-    def __init__(self, transport_kwargs: Optional[_Kwargs]= None):
+    def __init__(self, transport_kwargs: Optional[_Kwargs]=None):
         """Initialize member variables."""
         self.transport_kwargs: Optional[_Kwargs] = (
             transport_kwargs if transport_kwargs is not None else {}

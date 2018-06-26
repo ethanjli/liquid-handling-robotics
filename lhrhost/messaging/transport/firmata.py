@@ -5,19 +5,14 @@ import asyncio
 from typing import Any, Dict, Iterable, List, Optional
 
 # Local package imports
-import lhrhost.messaging.transport.transport as transport
-from lhrhost.messaging.transport.transport import (
-    HANDSHAKE_RX_CHAR,
-    PeripheralResetException,
-    SerializedMessageReceiver
-)
+import lhrhost.messaging.transport as transport
 
 # External imports
 from pymata_aio.pymata_core import PymataCore
 
 # Type-checking names
 _Kwargs = Dict[str, Any]
-_SerializedMessageReceivers = Iterable[SerializedMessageReceiver]
+_SerializedMessageReceivers = Iterable[transport.SerializedMessageReceiver]
 
 # Protocol parameters
 MESSAGE_SYSEX_COMMAND = 0x0F
@@ -134,7 +129,10 @@ class TransportConnectionManager(transport.TransportConnectionManager):
 
     async def _on_sysex_message(self, sysex_data) -> None:
         """Handle a message sysex before transport-layer connection is established."""
-        if not self._handshake_started and decode_message(sysex_data) == HANDSHAKE_RX_CHAR:
+        if (
+            (not self._handshake_started) and
+            (decode_message(sysex_data) == transport.HANDSHAKE_RX_CHAR)
+        ):
             print('Handshake started!')
             self._handshake_started = True
         elif self._handshake_started and message_empty(sysex_data):
