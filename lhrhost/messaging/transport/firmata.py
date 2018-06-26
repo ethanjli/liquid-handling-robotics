@@ -50,8 +50,8 @@ class Transport(transport.Transport):
     async def on_sysex_message(self, sysex_data: List[int]) -> None:
         """Handle a message sysex."""
         decoded = decode_message(sysex_data)
-        if message_empty(sysex_data) or decoded == HANDSHAKE_RX_CHAR:
-            raise PeripheralResetException
+        if message_empty(sysex_data) or decoded == transport.HANDSHAKE_RX_CHAR:
+            raise transport.PeripheralResetException
         self.on_serialized_message(decoded)
 
     # Implement transport.Transport
