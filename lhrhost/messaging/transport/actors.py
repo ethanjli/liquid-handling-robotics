@@ -7,7 +7,7 @@ from typing import Iterable, List, Optional
 
 # Local package imports
 from lhrhost.messaging.transport import SerializedMessageReceiver
-from lhrhost.util import cli
+from lhrhost.util import batch, cli
 from lhrhost.util.concurrency import Concurrent
 
 # External imports
@@ -242,7 +242,6 @@ class ConsoleManager(cli.ConsoleManager):
         self.arbiter = arbiter
         self._loop = asyncio.get_event_loop()
         # Console prompt
-        self._console_prompt_task = None
         self._console_header = console_header
         self.__get_command_targets = get_command_targets
 
@@ -272,3 +271,36 @@ class ConsoleManager(cli.ConsoleManager):
             raise KeyboardInterrupt
         for command_target in self.__get_command_targets():
             await self.forward_input_line(input_line, command_target)
+
+
+class BatchExecutionManager(batch.BatchExecutionManager):
+    """Class to send a series of commands as send_serialized_message actor commands.
+
+    This can be used to send a series of lines as message packets to the actor for
+    a transport-layer connection to a peripheral, for example.
+    """
+
+    def __init__(self, arbiter, get_command_targets, header='', **kwargs):
+        """Initialize member variables."""
+        super().__init__(**kwargs)
+        self.arbiter = arbiter
+        self._loop = asyncio.get_event_loop()
+        # Batch execution
+        self._header = header
+        self.__get_command_targets = get_command_targets
+
+    async def forward_input_line(self, input_line, command_target):
+        """Forward the serialized command message to a target."""
+        await ps.send(command_target, 'send_serialized_message', input_line)
+
+    # Implement BatchExecutionManager
+
+    def quit(self):
+        """Monitor the transport actor and restart it when it dies."""
+        logger.info('Quitting...')
+        self.arbiter.stop()
+
+    async def on_execution_ready(self):
+        """Take some action when execution becomes possible."""
+        if self._header:
+            print(self._header)
