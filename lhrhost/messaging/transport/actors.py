@@ -1,6 +1,11 @@
 """Actors for the transport layer."""
+
 # Standard imports
 import asyncio
+
+# Local package imports
+from lhrhost.util import cli
+from lhrhost.util.concurrency import Concurrent
 
 # External imports
 import pulsar.api as ps
@@ -17,7 +22,7 @@ async def send_serialized_message(request, serialized_message):
 
 # Actor Managers
 
-class TransportManager(object):
+class TransportManager(Concurrent):
     """Manages actor for a transport-layer asynchronous actor loop.
 
     Creates an actor which runs the transport layer in a separate process, and
@@ -30,15 +35,17 @@ class TransportManager(object):
     ):
         """Initialize member variables."""
         self.arbiter = arbiter
-        # Transport actor
         self._loop = asyncio.get_event_loop()
-        self._actor = None
+        # Transport actor
+        self.actor = None
         self._actor_task = None
         self._transport_loop = transport_loop
         self._transport_connection_manager_kwargs = transport_connection_manager_kwargs
         # Transport actor monitor
         self._monitor_task = None
         self._monitor_poll_interval = monitor_poll_interval
+
+    # Implement Concurrent
 
     def start(self):
         """Start the associated asynchronous tasks."""
@@ -56,12 +63,13 @@ class TransportManager(object):
 
     async def _start_transport_actor(self):
         """Start the actor."""
-        self._actor = await ps.spawn(
+        self.actor = await ps.spawn(
             name='transport', stopping=lambda actor: self._actor_task.cancel()
         )
+        self.actor.transport = None
         print('Started transport actor!')
         await ps.send(
-            self._actor, 'run', self._transport_loop,
+            self.actor, 'run', self._transport_loop,
             **self._transport_connection_manager_kwargs
         )
 
@@ -76,7 +84,7 @@ class TransportManager(object):
     async def _monitor_transport_actor(self):
         """Monitor the transport actor and restart it when it dies."""
         while True:
-            if self._actor is not None and not self._actor.is_alive():
+            if self.actor is not None and not self.actor.is_alive():
                 print('Restarting transport actor...')
                 self._start_actor_task()
             await asyncio.sleep(self._monitor_poll_interval)
@@ -85,3 +93,37 @@ class TransportManager(object):
         if self._monitor_task is not None:
             self._monitor_task.cancel()
         self._monitor_task = self._loop.create_task(self._monitor_transport_actor())
+
+
+class ConsoleManager(cli.ConsoleManager):
+    """Class to forward console input to the peripheral.
+
+    Creates an asynchronous coroutine which reads lines from stdin on a separate
+    thread and handles them by sending them as message packets to the peripheral.
+    """
+
+    def __init__(self, arbiter, executor, transport_manager):
+        """Initialize member variables."""
+        super().__init__(executor)
+        self.arbiter = arbiter
+        self._loop = asyncio.get_event_loop()
+        # Console prompt
+        self._console_prompt_task = None
+        self._transport_manager = transport_manager
+
+    # Implement ConsoleManager
+
+    def quit(self):
+        """Monitor the transport actor and restart it when it dies."""
+        print('Quitting...')
+        self.arbiter.stop()
+
+    async def handle_console_input(self, input_line):
+        """Take action based on the provided input.
+
+        Raise KeyboardInterrupt when the input specifies that the console needs to
+        stop running. Empty input is a signal to quit.
+        """
+        if not input_line:
+            raise KeyboardInterrupt
+        await ps.send(self._transport_manager.actor, 'send_serialized_message', input_line)
