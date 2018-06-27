@@ -1,20 +1,26 @@
 """Dispatch of messages between serial connections.
 
-This module implements multiplexing/demultiplexing of different message
-channels over a single serial connection and dispatch of received messages
-to event handlers on the host.
+This module implements multiplexing/demultiplexing of different application-layer
+message channels over the presentation layer, and dispatch of received messages
+from the presentation layer to application-layer receivers.
 """
 
 # Standard imports
 from collections import defaultdict
+from typing import Dict, List, Optional
 
 # Local package imports
-from lhrhost.messaging.presentation import DeserializedMessageReceiver, Message
+from lhrhost.messaging.presentation import Message, MessageReceiver
+
+
+# Type-checking names
+_MessageReceivers = List[MessageReceiver]
+_MessageReceiversTable = Dict[str, _MessageReceivers]
 
 
 # Message Dispatch
 
-class Dispatcher(DeserializedMessageReceiver):
+class Dispatcher(MessageReceiver):
     """Dispatcher to demux messages on different channels to their receivers.
 
     Broadcasts every received message to all receivers registered on the
@@ -22,78 +28,54 @@ class Dispatcher(DeserializedMessageReceiver):
 
     Attributes:
         receivers (:class:`collections.defaultdict` of :class:`str` to
-        :class:`list` of :class:`messaging.presentation.DeserializedMessageReceiver`):
-            receivers for messages for each stream, keyed by stream ids. A
-            receiver keyed with a stream id of None will receive all messages.
+        :class:`list` of :class:`messaging.presentation.MessageReceiver`):
+            receivers for messages for each channel, keyed by channel names. A
+            receiver keyed with a channel name of None will receive all messages.
+        prefix_receivers (:class:`collections.defaultdict` of :class:`str` to
+        :class:`list` of :class:`MessageReceiver`):
+            receivers for messages for each channel, keyed by channel name prefixes.
+            A receiver keyed with a some prefix will receive all messages on all
+            channels whose names start with that prefix.
+            A receiver keyed with a empty string prefix will receive all messages.
 
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        receivers: Optional[_MessageReceiversTable]=None,
+        prefix_receivers: Optional[_MessageReceiversTable]=None,
+    ):
         """Initialize member variables."""
-        self.receivers = defaultdict(list)
-
-    # Implement DeserializedMessageReceiver
-
-    def on_message(self, message: Message) -> None:
-        """Handle received message."""
-        for receiver in self.receivers[message.channel]:
-            receiver.on_message(message)
-        for receiver in self.receivers[None]:
-            receiver.on_message(message)
-
-
-class MessageEchoer(DeserializedMessageReceiver):
-    """Print all received messages."""
-
-    def __init__(self, ignored_channels: set=set()):
-        """Initialize member variables."""
-        self.ignored_channels = ignored_channels
-
-    # Implement DeserializedMessageReceiver
-
-    def on_message(self, message: Message) -> None:
-        """Handle received message."""
-        if message.channel not in self.ignored_channels:
-            print(message)
-
-
-class VersionReceiver(DeserializedMessageReceiver):
-    """Determines and prints protocol version."""
-
-    def __init__(self):
-        """Initialize member variables."""
-        self.major_version = None
-        self.minor_version = None
-        self.patch_version = None
+        self.__receivers = defaultdict(list)
+        if receivers is not None:
+            for (channel_name, channel_receivers) in receivers.items():
+                for receiver in channel_receivers:
+                    self.__receivers[channel_name].append(receiver)
+        self.__prefix_receivers = defaultdict(list)
+        if prefix_receivers is not None:
+            for (channel_name, channel_receivers) in prefix_receivers.items():
+                for receiver in channel_receivers:
+                    self.__prefix_receivers[channel_name].append(receiver)
 
     @property
-    def version_known(self) -> None:
-        """Determine whether the full protocol version is known."""
-        return (
-            self.major_version is not None and
-            self.minor_version is not None and
-            self.patch_version is not None
-        )
+    def message_receivers(self) -> _MessageReceiversTable:
+        """Return an iterable of objects to forward received messages to."""
+        return self.__receivers
 
-    def print_version(self) -> None:
-        """Print known version."""
-        print('Protocol version: {}.{}.{}'.format(
-            self.major_version, self.minor_version, self.patch_version
-        ))
+    @property
+    def prefix_message_receivers(self) -> _MessageReceiversTable:
+        """Return an iterable of objects to forward received messages to."""
+        return self.__prefix_receivers
 
-    # Implement DeserializedMessageReceiver
+    # Implement MessageReceiver
 
     def on_message(self, message: Message) -> None:
         """Handle received message."""
-        if message.channel == 'v0':
-            self.major_version = int(message.payload)
-            if self.version_known:
-                self.print_version()
-        elif message.channel == 'v1':
-            self.minor_version = int(message.payload)
-            if self.version_known:
-                self.print_version()
-        elif message.channel == 'v2':
-            self.patch_version = int(message.payload)
-            if self.version_known:
-                self.print_version()
+        for receiver in self.__receivers[message.channel]:
+            receiver.on_message(message)
+        for receiver in self.__receivers[None]:
+            receiver.on_message(message)
+        for (prefix, receivers) in self.__prefix_receivers.items():
+            if message.channel.startswith(prefix):
+                for receiver in receivers:
+                    receiver.on_message(message)
