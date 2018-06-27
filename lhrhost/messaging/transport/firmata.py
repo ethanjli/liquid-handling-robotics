@@ -146,3 +146,17 @@ class TransportConnectionManager(transport.TransportConnectionManager):
         await super().close()
         self._handshake_started = False
         self._connected = False
+
+
+# Actors
+
+async def transport_loop(actor, **kwargs):
+    """Run the transport layer as an asynchronous actor loop.
+
+    Dies whenever the connection is broken, due to the design of Pymata.
+    """
+    transport_manager = TransportConnectionManager(**kwargs)
+    async with transport_manager.connection as transport:
+        actor.transport = transport
+        while True:  # only stops when Pymata forces a sys.exit
+            await asyncio.sleep(1.0)

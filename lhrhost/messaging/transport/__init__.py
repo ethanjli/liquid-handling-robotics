@@ -5,6 +5,7 @@ from lhrhost.messaging.transport.transport import (
     PeripheralDisconnectedException,
     PeripheralResetException,
     SerializedMessageReceiver,
+    SerializedMessagePrinter,
     Transport,
     TransportConnectionManager
 )

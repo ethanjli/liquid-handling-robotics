@@ -156,6 +156,7 @@ class TransportConnectionManager(transport.TransportConnectionManager):
             self._ser_reader, self._ser_writer, **self.transport_kwargs
         )
         self.transport.start_receiving_serialized_messages()
+        print('Established transport-layer connection!')
         return self.transport
 
     async def _connect_datalink(self) -> None:
@@ -194,3 +195,25 @@ class TransportConnectionManager(transport.TransportConnectionManager):
             if not line.strip():
                 break
         print('Completed handshake!')
+
+
+# Actors
+
+async def transport_loop(actor, **kwargs):
+    """Run the transport layer as an asynchonous actor loop.
+
+    Attempts to restart the layer whenever the connection is broken.
+    """
+    transport_manager = TransportConnectionManager(**kwargs)
+    while True:
+        try:
+            async with transport_manager.connection as transport_connection:
+                actor.transport = transport_connection
+                await transport_connection.task_receive_packets  # only stops upon exception
+        except transport.PeripheralDisconnectedException:
+            print('Connection to device lost! Please reconnect the device...')
+        except transport.PeripheralResetException:
+            print('Connection was reset! Reconnecting...')
+        except KeyboardInterrupt:
+            print('Quitting...')
+            break
