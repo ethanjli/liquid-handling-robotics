@@ -21,6 +21,10 @@ LOGGING_CONFIG['loggers']['pulsar'] = {'level': 'ERROR'}
 logging.config.dictConfig(LOGGING_CONFIG)
 
 CONSOLE_WIDTH = 8
+CONSOLE_HEADER = (
+    'Commands' + ('\t' * (CONSOLE_WIDTH - 1)) + 'Responses' + '\n' +
+    ('-' * 12 * CONSOLE_WIDTH)
+)
 
 
 class Console:
@@ -29,22 +33,19 @@ class Console:
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.message_printer = SerializedMessagePrinter(
+        self.response_printer = SerializedMessagePrinter(
             prefix=('\t' * CONSOLE_WIDTH)
         )
         self.transport_manager = TransportManager(
             self.arbiter, transport_loop,
             transport_kwargs={
-                'serialized_message_receivers': [self.message_printer]
+                'serialized_message_receivers': [self.response_printer]
             }
         )
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.console_manager = ConsoleManager(
             self.arbiter, lambda: [self.transport_manager.actor],
-            console_header=(
-                'Commands' + ('\t' * (CONSOLE_WIDTH - 1)) + 'Responses' + '\n' +
-                ('-' * 12 * CONSOLE_WIDTH)
-            ),
+            console_header=CONSOLE_HEADER,
             executor=self.executor,
             ready_waiter=self.transport_manager.wait_transport_connected
         )
@@ -64,8 +65,16 @@ class Console:
         self.console_manager.stop()
 
 
-def main(args):
+def main(Console):
     """Run a serial console using the selected transport-layer implementation."""
+    parser = argparse.ArgumentParser(
+        description='Send and receive transport-layer data with a command-line console.'
+    )
+    parser.add_argument(
+        'transport', choices=['ascii', 'firmata'],
+        help='Transport-layer implementation.'
+    )
+    args = parser.parse_args()
     if args.transport == 'ascii':
         from lhrhost.messaging.transport.ascii import transport_loop
     elif args.transport == 'firmata':
@@ -79,11 +88,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='Send and receive transport-layer data with a command-line console.'
-    )
-    parser.add_argument(
-        'transport', choices=['ascii', 'firmata'],
-        help='Transport-layer implementation.'
-    )
-    main(parser.parse_args())
+    main(Console)

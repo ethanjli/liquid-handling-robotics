@@ -185,7 +185,8 @@ class ConsoleManager(cli.ConsoleManager):
         self._console_header = console_header
         self.__get_command_targets = get_command_targets
 
-    def _forward_input_line(self, input_line, command_target):
+    def forward_input_line(self, input_line, command_target):
+        """Forward the serialized command message to a target."""
         try:
             ps.send(command_target, 'send_serialized_message', input_line)
         except BrokenPipeError:
@@ -212,6 +213,6 @@ class ConsoleManager(cli.ConsoleManager):
         if not input_line:
             raise KeyboardInterrupt
         asyncio.wait([
-            self._forward_input_line(input_line, command_target)
+            self.forward_input_line(input_line, command_target)
             for command_target in self.__get_command_targets()
         ])

@@ -1,0 +1,5 @@
+async_generator~=1.9
+pyserial~=3.4
+pyserial-asyncio~=0.4
+pulsar~=2.0
+pymata-aio~=2.21

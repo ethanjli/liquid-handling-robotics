@@ -1,12 +1,17 @@
 """Turns on an LED on for one second, then off for one second, repeatedly."""
 # Standard imports
 import asyncio
+import logging
 
 # Local package imports
 from lhrhost.messaging.transport import SerializedMessagePrinter
 from lhrhost.messaging.transport.firmata import TransportConnectionManager
 
+# External imports
 from pymata_aio.constants import Constants
+
+# Logging
+logging.basicConfig(level=logging.INFO)
 
 BOARD_LED = 13
 
@@ -40,4 +45,4 @@ if __name__ == '__main__':
         loop = asyncio.get_event_loop()
         loop.run_until_complete(main())
     except KeyboardInterrupt:
-        print('Quitting!')
+        logging.info('Quitting!')

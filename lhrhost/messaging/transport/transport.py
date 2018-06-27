@@ -12,6 +12,7 @@ from async_generator import asynccontextmanager
 
 # Local package imports
 from lhrhost.util.interfaces import InterfaceClass
+from lhrhost.util.printing import Printer
 
 # Type-checking names
 _Kwargs = Dict[str, Any]
@@ -38,19 +39,14 @@ class SerializedMessageReceiver(object, metaclass=InterfaceClass):
 _SerializedMessageReceivers = Iterable[SerializedMessageReceiver]
 
 
-class SerializedMessagePrinter(SerializedMessageReceiver):
-    """Simple class which prints received serialized messages."""
+# Printing
 
-    def __init__(self, prefix='', suffix='\n'):
-        """Initialize member variables."""
-        self._prefix = prefix
-        self._suffix = suffix
+class SerializedMessagePrinter(SerializedMessageReceiver, Printer):
+    """Simple class which prints received serialized messages."""
 
     def on_serialized_message(self, serialized_message: str) -> None:
         """Receive and handle a serialized message."""
-        print(self._prefix, end='')
-        print(serialized_message, end='')
-        print(self._suffix, end='')
+        self.print(serialized_message)
 
 
 # Interfaces for transport-layer implementations

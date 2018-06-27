@@ -1,10 +1,14 @@
 """Turns on an LED on for one second, then off for one second, repeatedly."""
 # Standard imports
 import asyncio
+import logging
 
 # Local package imports
 from lhrhost.messaging.transport import SerializedMessagePrinter
 from lhrhost.messaging.transport.ascii import TransportConnectionManager
+
+# Logging
+logging.basicConfig(level=logging.INFO)
 
 
 async def blink(transport):
@@ -24,11 +28,11 @@ async def main():
                 transport.serialized_message_receivers.append(SerializedMessagePrinter())
                 await asyncio.gather(transport.task_receive_packets, blink(transport))
         except ConnectionAbortedError:
-                print('Connection was lost! Please re-connect the device...')
+            logging.error('Connection was lost! Please re-connect the device...')
         except ConnectionResetError:
-            print('Connection was reset, starting over.')
+            logging.error('Connection was reset! Reconnecting...')
         except KeyboardInterrupt:
-            print('Quitting!')
+            logging.info('Quitting!')
             break
 
 
@@ -37,4 +41,4 @@ if __name__ == '__main__':
         loop = asyncio.get_event_loop()
         loop.run_until_complete(main())
     except KeyboardInterrupt:
-        print('Quitting!')
+        logging.info('Quitting!')
