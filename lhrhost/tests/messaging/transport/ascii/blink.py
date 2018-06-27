@@ -3,14 +3,8 @@
 import asyncio
 
 # Local package imports
+from lhrhost.messaging.transport import SerializedMessagePrinter
 from lhrhost.messaging.transport.ascii import TransportConnectionManager
-from lhrhost.messaging.transport.transport import (
-    PeripheralDisconnectedException,
-    PeripheralResetException,
-    SerializedMessagePrinter
-)
-
-BOARD_LED = 13
 
 
 async def blink(transport):
@@ -29,9 +23,9 @@ async def main():
             async with transport_manager.connection as transport:
                 transport.serialized_message_receivers.append(SerializedMessagePrinter())
                 await asyncio.gather(transport.task_receive_packets, blink(transport))
-        except PeripheralDisconnectedException:
+        except ConnectionAbortedError:
                 print('Connection was lost! Please re-connect the device...')
-        except PeripheralResetException:
+        except ConnectionResetError:
             print('Connection was reset, starting over.')
         except KeyboardInterrupt:
             print('Quitting!')
@@ -39,5 +33,8 @@ async def main():
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    try:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(main())
+    except KeyboardInterrupt:
+        print('Quitting!')

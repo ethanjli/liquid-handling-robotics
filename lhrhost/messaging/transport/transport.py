@@ -153,22 +153,3 @@ class TransportConnectionManager(object, metaclass=InterfaceClass):
             await self.close()
         async with self.connection:
             pass
-
-
-class PeripheralDisconnectedException(Exception):
-    """Exception raised by a Transport when the peripheral is disconnected.
-
-    This occurs if, for example, the physical or data link layer connection is lost.
-    """
-
-    pass
-
-
-class PeripheralResetException(Exception):
-    """Exception raised by a Transport when the peripheral resets.
-
-    This occurs if, for example, the peripheral resets without the host detecting
-    loss of the physical or data link layer connection.
-    """
-
-    pass

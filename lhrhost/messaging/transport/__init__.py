@@ -2,8 +2,6 @@
 # Local package imports
 from lhrhost.messaging.transport.transport import (
     HANDSHAKE_RX_CHAR,
-    PeripheralDisconnectedException,
-    PeripheralResetException,
     SerializedMessageReceiver,
     SerializedMessagePrinter,
     Transport,

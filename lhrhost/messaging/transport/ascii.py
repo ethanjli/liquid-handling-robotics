@@ -64,9 +64,9 @@ class Transport(transport.Transport):
             try:
                 line = await self.ser_reader.readuntil(message_line_suffix)
             except SerialException:
-                raise transport.PeripheralDisconnectedException
+                raise ConnectionAbortedError
             if line.strip() == handshake_message:
-                raise transport.PeripheralResetException
+                raise ConnectionResetError
             self.on_serialized_message(line.strip().decode())
 
     async def close(self) -> None:
@@ -183,7 +183,7 @@ class TransportConnectionManager(transport.TransportConnectionManager):
             try:
                 line = await self._ser_reader.readuntil(message_line_suffix)
             except SerialException:
-                raise transport.PeripheralDisconnectedException
+                raise ConnectionAbortedError
             if line.strip().decode() == transport.HANDSHAKE_RX_CHAR:
                 break
             await asyncio.sleep(self.handshake_attempt_interval)
@@ -199,21 +199,28 @@ class TransportConnectionManager(transport.TransportConnectionManager):
 
 # Actors
 
-async def transport_loop(actor, **kwargs):
+async def transport_loop(actor, on_connection=None, on_disconnection=None, **kwargs):
     """Run the transport layer as an asynchonous actor loop.
 
     Attempts to restart the layer whenever the connection is broken.
     """
-    transport_manager = TransportConnectionManager(**kwargs)
+    transport_connection_manager = TransportConnectionManager(**kwargs)
     while True:
         try:
-            async with transport_manager.connection as transport_connection:
+            async with transport_connection_manager.connection as transport_connection:
                 actor.transport = transport_connection
+                if callable(on_connection):
+                    await on_connection(
+                        actor, transport_connection_manager, transport_connection
+                    )
                 await transport_connection.task_receive_packets  # only stops upon exception
-        except transport.PeripheralDisconnectedException:
+        except ConnectionAbortedError:
             print('Connection to device lost! Please reconnect the device...')
-        except transport.PeripheralResetException:
+        except ConnectionResetError:
             print('Connection was reset! Reconnecting...')
         except KeyboardInterrupt:
             print('Quitting...')
             break
+        finally:
+            if callable(on_disconnection):
+                await on_disconnection(actor, transport_connection_manager)

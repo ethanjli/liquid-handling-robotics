@@ -3,12 +3,8 @@
 import asyncio
 
 # Local package imports
+from lhrhost.messaging.transport import SerializedMessagePrinter
 from lhrhost.messaging.transport.firmata import TransportConnectionManager
-from lhrhost.messaging.transport.transport import (
-    PeripheralDisconnectedException,
-    PeripheralResetException,
-    SerializedMessagePrinter
-)
 
 from pymata_aio.constants import Constants
 
@@ -32,23 +28,16 @@ async def main():
     """Blink with direct Firmata control."""
     transport_manager = TransportConnectionManager()
     while True:
-        try:
-            async with transport_manager.connection as transport:
-                transport.serialized_message_receivers.append(SerializedMessagePrinter())
-                await blink(transport)
+        async with transport_manager.connection as transport:
+            transport.serialized_message_receivers.append(SerializedMessagePrinter())
+            await blink(transport)
         # Note: currently Pymata catches all exceptions (bad design) and quits
-        # the entire program (bad design), so these exceptions aren't handled
-        # here.
-        except PeripheralDisconnectedException:
-                print('Connection was lost! Please re-connect the device...')
-        except PeripheralResetException:
-            print('Connection was reset, starting over.')
-        except KeyboardInterrupt:
-            print('Quitting!')
-            break
-
+        # the entire program (bad design), so exceptions aren't handled here.
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    try:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(main())
+    except KeyboardInterrupt:
+        print('Quitting!')

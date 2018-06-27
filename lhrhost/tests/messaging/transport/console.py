@@ -26,7 +26,9 @@ class Console:
         )
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.console_manager = ConsoleManager(
-            self.arbiter, self.executor, lambda: [self.transport_manager.actor],
+            self.arbiter, lambda: [self.transport_manager.actor],
+            executor=self.executor,
+            ready_waiter=self.transport_manager.wait_transport_connected
         )
 
     def run(self):

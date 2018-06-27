@@ -16,11 +16,39 @@ import pulsar.api as ps
 @ps.command()
 async def send_serialized_message(request, serialized_message):
     """Send a serialized message to an actor with a `transport` member."""
-    await request.actor.transport.send_serialized_message(serialized_message)
+    try:
+        await request.actor.transport.send_serialized_message(serialized_message)
+    except AttributeError:
+        print((
+            'Error: serialized message "{}" not sent to "{}" actor, which is '
+            'not yet able to receive such messages'
+        ).format(serialized_message, request.actor.name))
     return serialized_message
 
 
+@ps.command()
+async def transport_connected(request):
+    """Notify an actor that the transport layer connection has been established."""
+    request.actor.transport_manager.on_transport_connected()
+
+
+@ps.command()
+async def transport_disconnected(request):
+    """Notify an actor that the transport layer connection has been lost."""
+    request.actor.transport_manager.on_transport_disconnected()
+
+
 # Actor Managers
+
+async def on_transport_connected(actor, transport_connection_manager, transport_connection):
+    """Update a transport layer actor to reflect that it has obtained a connection."""
+    await ps.send('arbiter', 'transport_connected')
+
+
+async def on_transport_disconnected(actor, transport_connection_manager):
+    """Update a transport layer actor to reflect that it lost its connection."""
+    await ps.send('arbiter', 'transport_disconnected')
+
 
 class TransportManager(Concurrent):
     """Manages actor for a transport-layer asynchronous actor loop.
@@ -35,6 +63,7 @@ class TransportManager(Concurrent):
     ):
         """Initialize member variables."""
         self.arbiter = arbiter
+        self.arbiter.transport_manager = self
         self._loop = asyncio.get_event_loop()
         # Transport actor
         self.actor = None
@@ -44,6 +73,10 @@ class TransportManager(Concurrent):
         # Transport actor monitor
         self._monitor_task = None
         self._monitor_poll_interval = monitor_poll_interval
+        # Synchronization
+        self._transport_connected = asyncio.Event()
+        self._transport_disconnected = asyncio.Event()
+        self._transport_disconnected.set()
 
     # Implement Concurrent
 
@@ -64,12 +97,12 @@ class TransportManager(Concurrent):
     async def _start_transport_actor(self):
         """Start the actor."""
         self.actor = await ps.spawn(
-            name='transport', stopping=lambda actor: self._actor_task.cancel()
+            name='transport_layer', stopping=lambda actor: self._actor_task.cancel()
         )
-        self.actor.transport = None
         print('Started transport actor!')
         await ps.send(
             self.actor, 'run', self._transport_loop,
+            on_transport_connected, on_transport_disconnected,
             **self._transport_connection_manager_kwargs
         )
 
@@ -94,6 +127,26 @@ class TransportManager(Concurrent):
             self._monitor_task.cancel()
         self._monitor_task = self._loop.create_task(self._monitor_transport_actor())
 
+    # Synchronization
+
+    def on_transport_connected(self):
+        """Set event flags to notify waiters of connection."""
+        self._transport_connected.set()
+        self._transport_disconnected.clear()
+
+    def on_transport_disconnected(self):
+        """Set event flags to notify waiters of disconnection."""
+        self._transport_connected.clear()
+        self._transport_disconnected.set()
+
+    async def wait_transport_connected(self):
+        """Block until connection."""
+        await self._transport_connected.wait()
+
+    async def wait_transport_disconnected(self):
+        """Block until disconnection."""
+        await self._transport_connected.wait()
+
 
 class ConsoleManager(cli.ConsoleManager):
     """Class to pass console input as send_serialized_message actor commands.
@@ -103,16 +156,25 @@ class ConsoleManager(cli.ConsoleManager):
 
     This can be used to send lines on stdin as message packets to the actor for
     a transport-layer connection to a peripheral, for example.
+
+    We don't put this in a separate actor - that fails because stdin
+    on a separate actor only receives EOF for some reason.
     """
 
-    def __init__(self, arbiter, executor, get_command_targets):
+    def __init__(self, arbiter, get_command_targets, **kwargs):
         """Initialize member variables."""
-        super().__init__(executor)
+        super().__init__(**kwargs)
         self.arbiter = arbiter
         self._loop = asyncio.get_event_loop()
         # Console prompt
         self._console_prompt_task = None
         self.__get_command_targets = get_command_targets
+
+    def _forward_input_line(self, input_line, command_target):
+        try:
+            ps.send(command_target, 'send_serialized_message', input_line)
+        except BrokenPipeError:
+            pass
 
     # Implement ConsoleManager
 
@@ -130,6 +192,6 @@ class ConsoleManager(cli.ConsoleManager):
         if not input_line:
             raise KeyboardInterrupt
         asyncio.wait([
-            ps.send(command_target, 'send_serialized_message', input_line)
+            self._forward_input_line(input_line, command_target)
             for command_target in self.__get_command_targets()
         ])

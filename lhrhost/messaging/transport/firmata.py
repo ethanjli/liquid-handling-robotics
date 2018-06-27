@@ -51,7 +51,7 @@ class Transport(transport.Transport):
         """Handle a message sysex."""
         decoded = decode_message(sysex_data)
         if message_empty(sysex_data) or decoded == transport.HANDSHAKE_RX_CHAR:
-            raise transport.PeripheralResetException
+            raise ConnectionResetError
         self.on_serialized_message(decoded)
 
     # Implement transport.Transport
@@ -150,13 +150,19 @@ class TransportConnectionManager(transport.TransportConnectionManager):
 
 # Actors
 
-async def transport_loop(actor, **kwargs):
+async def transport_loop(actor, on_connection=None, on_disconnection=None, **kwargs):
     """Run the transport layer as an asynchronous actor loop.
 
     Dies whenever the connection is broken, due to the design of Pymata.
     """
-    transport_manager = TransportConnectionManager(**kwargs)
-    async with transport_manager.connection as transport:
-        actor.transport = transport
+    transport_connection_manager = TransportConnectionManager(**kwargs)
+    async with transport_connection_manager.connection as transport_connection:
+        actor.transport = transport_connection
+        if callable(on_connection):
+            await on_connection(
+                actor, transport_connection_manager, transport_connection
+            )
         while True:  # only stops when Pymata forces a sys.exit
             await asyncio.sleep(1.0)
+    if callable(on_disconnection):
+        await on_disconnection(actor, transport_connection_manager)
