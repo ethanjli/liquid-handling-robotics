@@ -4,7 +4,7 @@ import logging
 
 # Local package imports
 from lhrhost.messaging.presentation import (
-    BasicTranslator, DeserializedMessagePrinter, Message
+    BasicTranslator, MessagePrinter, Message
 )
 from lhrhost.messaging.transport import SerializedMessagePrinter
 
@@ -44,7 +44,7 @@ def print_serialized(translator):
     ]
     for message in deserialized:
         print(message, end=' -> ')
-        translator.on_deserialized_message(message)
+        translator.on_message(message)
 
 
 def print_deserialized(translator):
@@ -63,10 +63,10 @@ def print_deserialized(translator):
 def main():
     """Run some tests of BasicTranslator."""
     serialized_printer = SerializedMessagePrinter(prefix='Serialized: ')
-    deserialized_printer = DeserializedMessagePrinter(prefix='Deserialized: ')
+    deserialized_printer = MessagePrinter(prefix='Deserialized: ')
     translator = BasicTranslator(
         serialized_message_receivers=[serialized_printer],
-        deserialized_message_receivers=[deserialized_printer],
+        message_receivers=[deserialized_printer],
     )
     basic_assertions(translator)
     print_serialized(translator)

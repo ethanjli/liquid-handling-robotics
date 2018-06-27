@@ -5,7 +5,7 @@ import logging
 
 # Local package imports
 from lhrhost.messaging.presentation import (
-    BasicTranslator, DeserializedMessagePrinter
+    BasicTranslator, MessagePrinter
 )
 from lhrhost.messaging.presentation.actors import ConsoleManager
 from lhrhost.messaging.transport import SerializedMessagePrinter
@@ -25,14 +25,14 @@ class Console(console.Console):
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.response_printer = DeserializedMessagePrinter(
+        self.response_printer = MessagePrinter(
             prefix=('\t' * console.CONSOLE_WIDTH)
         )
         self.command_printer = SerializedMessagePrinter(
             prefix='Sending command: '
         )
         self.translator = BasicTranslator(
-            deserialized_message_receivers=[self.response_printer],
+            message_receivers=[self.response_printer],
             serialized_message_receivers=[self.command_printer]
         )
         self.transport_manager = TransportManager(

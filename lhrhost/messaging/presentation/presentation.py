@@ -110,28 +110,28 @@ class Translator(object, metaclass=InterfaceClass):
 
 # Receipt of deserialized messages
 
-class DeserializedMessageReceiver(object, metaclass=InterfaceClass):
-    """Interface for a class which receives deserialized messages.
+class MessageReceiver(object, metaclass=InterfaceClass):
+    """Interface for a class which receives (deserialized) messages.
 
-    This may include deserialized messages from self or from other sources.
+    This may include (deserialized) messages from self or from other sources.
     """
 
     @abstractmethod
-    def on_deserialized_message(self, deserialized_message: Message) -> None:
-        """Receive and handle a deserialized message, i.e. a :class:`Message`."""
+    def on_message(self, message: Message) -> None:
+        """Receive and handle a (deserialized) message, i.e. a :class:`Message`."""
         pass
 
 
 # Type-checking names
 _SerializedMessageReceivers = Iterable[SerializedMessageReceiver]
-_DeserializedMessageReceivers = Iterable[DeserializedMessageReceiver]
+_MessageReceivers = Iterable[MessageReceiver]
 
 # Printing
 
-class DeserializedMessagePrinter(DeserializedMessageReceiver, Printer):
+class MessagePrinter(MessageReceiver, Printer):
     """Simple class which prints received serialized messages."""
 
-    def on_deserialized_message(self, serialized_message: str) -> None:
+    def on_message(self, serialized_message: str) -> None:
         """Receive and handle a serialized message."""
         self.print(serialized_message)
 
@@ -139,14 +139,14 @@ class DeserializedMessagePrinter(DeserializedMessageReceiver, Printer):
 # Human-Readable Presentation Protocol
 
 class BasicTranslator(
-        Translator, SerializedMessageReceiver, DeserializedMessageReceiver
+        Translator, SerializedMessageReceiver, MessageReceiver
 ):
     """A :class:`Translator` for human-readable message serializations.
 
     Auto-translates any line received from :meth:`on_serialized_message` and
-    broadcasts the the deserialized :class:`Message` to all listeners in
-    :attr:`deserialized_message_receivers`.
-    Auto-translates any :class:`Message` from :meth:`on_deserialized_message`
+    broadcasts the :class:`Message` message to all listeners in
+    :attr:`message_receivers`.
+    Auto-translates any :class:`Message` from :meth:`on_message`
     and broadcasts the serialized line to all listeners in
     :attr:`serialized_message_receivers`.
 
@@ -166,7 +166,7 @@ class BasicTranslator(
     def __init__(
         self,
         serialized_message_receivers: Optional[_SerializedMessageReceivers]=None,
-        deserialized_message_receivers: Optional[_DeserializedMessageReceivers]=None,
+        message_receivers: Optional[_MessageReceivers]=None,
         channel_max_len: int=8, channel_start: str='<', channel_end: str='>',
         payload_start: str='(', payload_end: str=')'
     ):
@@ -176,10 +176,10 @@ class BasicTranslator(
             self.__serialized_message_receivers = [
                 receiver for receiver in serialized_message_receivers
             ]
-        self.__deserialized_message_receivers: List[DeserializedMessageReceiver] = []
-        if deserialized_message_receivers:
-            self.__deserialized_message_receivers = [
-                receiver for receiver in deserialized_message_receivers
+        self.__message_receivers: List[MessageReceiver] = []
+        if message_receivers:
+            self.__message_receivers = [
+                receiver for receiver in message_receivers
             ]
 
         self._channel_max_len = channel_max_len
@@ -276,9 +276,9 @@ class BasicTranslator(
         return self.__serialized_message_receivers
 
     @property
-    def deserialized_message_receivers(self) -> _DeserializedMessageReceivers:
+    def message_receivers(self) -> _MessageReceivers:
         """Return an iterable of objects to forward received deserialized messages to."""
-        return self.__deserialized_message_receivers
+        return self.__message_receivers
 
     # Implement transport.SerializedMessageReceiver
 
@@ -286,14 +286,14 @@ class BasicTranslator(
         """Handle a serialized message by deserializing it and forwarding it."""
         try:
             message = self.deserialize(line)
-            for receiver in self.deserialized_message_receivers:
-                receiver.on_deserialized_message(message)
+            for receiver in self.message_receivers:
+                receiver.on_message(message)
         except InvalidSerializationError:
             logger.error('Received malformed serialized message: {}'.fomat(line))
 
-    # Implement DeserializedMessageReceiver
+    # Implement MessageReceiver
 
-    def on_deserialized_message(self, message: Message) -> None:
+    def on_message(self, message: Message) -> None:
         """Handle a deserialized message by serializing it and forwarding it."""
         line = self.serialize(message)
         for receiver in self.serialized_message_receivers:

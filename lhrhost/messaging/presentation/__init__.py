@@ -4,7 +4,7 @@ from lhrhost.messaging.presentation.presentation import (
     Message,
     InvalidSerializationError,
     Translator,
-    DeserializedMessageReceiver,
-    DeserializedMessagePrinter,
+    MessageReceiver,
+    MessagePrinter,
     BasicTranslator
 )
