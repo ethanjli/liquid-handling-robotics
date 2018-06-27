@@ -2,6 +2,7 @@
 # Standard imports
 import argparse
 import concurrent
+import logging
 
 # Local package imports
 from lhrhost.messaging.transport import SerializedMessagePrinter
@@ -9,6 +10,17 @@ from lhrhost.messaging.transport.actors import ConsoleManager, TransportManager
 
 # External imports
 from pulsar.api import arbiter
+from pulsar.utils.log import LOGGING_CONFIG
+
+# Logging
+LOGGING_CONFIG['formatters']['simple']['format'] = (
+    '[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'
+)
+LOGGING_CONFIG['handlers']['console']['formatter'] = 'simple'
+LOGGING_CONFIG['loggers']['pulsar'] = {'level': 'ERROR'}
+logging.config.dictConfig(LOGGING_CONFIG)
+
+CONSOLE_WIDTH = 8
 
 
 class Console:
@@ -17,7 +29,9 @@ class Console:
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.message_printer = SerializedMessagePrinter()
+        self.message_printer = SerializedMessagePrinter(
+            prefix=('\t' * CONSOLE_WIDTH)
+        )
         self.transport_manager = TransportManager(
             self.arbiter, transport_loop,
             transport_kwargs={
@@ -27,6 +41,10 @@ class Console:
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.console_manager = ConsoleManager(
             self.arbiter, lambda: [self.transport_manager.actor],
+            console_header=(
+                'Commands' + ('\t' * (CONSOLE_WIDTH - 1)) + 'Responses' + '\n' +
+                ('-' * 12 * CONSOLE_WIDTH)
+            ),
             executor=self.executor,
             ready_waiter=self.transport_manager.wait_transport_connected
         )

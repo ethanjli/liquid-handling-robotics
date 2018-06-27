@@ -2,6 +2,7 @@
 
 # Standard imports
 import asyncio
+import logging
 from typing import Any, Dict, Iterable, List, Optional
 
 # Local package imports
@@ -9,6 +10,10 @@ import lhrhost.messaging.transport as transport
 
 # External imports
 from pymata_aio.pymata_core import PymataCore
+
+# Logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 # Type-checking names
 _Kwargs = Dict[str, Any]
@@ -112,19 +117,23 @@ class TransportConnectionManager(transport.TransportConnectionManager):
         Blocks until the connection is established.
         """
         # Connect board
+        logger.info('Please plug in the device now...')
         self._board = PymataCore(**self._board_kwargs)
         await self._board.start_aio()
+        logger.debug('Established datalink-layer connection!')
         self._handshake_started = False
         self._connected = False
         # Establish mutual handshake
         self.transport = Transport(self._board, **self.transport_kwargs)
         self.transport.register_message_listener(self._on_sysex_message)
+        logger.debug('Initiating handshake for transport-layer connection...')
         while self.transport is not None and not self._connected:
             if self._handshake_started:
                 await self.transport.send_serialized_message('')
             await asyncio.sleep(self._handshake_attempt_interval)
         # Set up event handling
         self.transport.start_receiving_serialized_messages()
+        logger.info('Established transport-layer connection!')
         return self.transport
 
     async def _on_sysex_message(self, sysex_data) -> None:
@@ -133,10 +142,10 @@ class TransportConnectionManager(transport.TransportConnectionManager):
             (not self._handshake_started) and
             (decode_message(sysex_data) == transport.HANDSHAKE_RX_CHAR)
         ):
-            print('Handshake started!')
+            logger.debug('Handshake started!')
             self._handshake_started = True
         elif self._handshake_started and message_empty(sysex_data):
-            print('Connected!')
+            logger.debug('Completed handshake!')
             self._connected = True
         elif self._connected and self.transport is not None:
             await self.transport.on_sysex_message(sysex_data)

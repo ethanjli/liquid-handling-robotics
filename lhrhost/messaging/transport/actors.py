@@ -2,6 +2,7 @@
 
 # Standard imports
 import asyncio
+import logging
 
 # Local package imports
 from lhrhost.util import cli
@@ -9,6 +10,10 @@ from lhrhost.util.concurrency import Concurrent
 
 # External imports
 import pulsar.api as ps
+
+# Logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 # Commands
@@ -19,7 +24,7 @@ async def send_serialized_message(request, serialized_message):
     try:
         await request.actor.transport.send_serialized_message(serialized_message)
     except AttributeError:
-        print((
+        logger.warning((
             'Error: serialized message "{}" not sent to "{}" actor, which is '
             'not yet able to receive such messages'
         ).format(serialized_message, request.actor.name))
@@ -97,9 +102,9 @@ class TransportManager(Concurrent):
     async def _start_transport_actor(self):
         """Start the actor."""
         self.actor = await ps.spawn(
-            name='transport_layer', stopping=lambda actor: self._actor_task.cancel()
+            name='transport_layer', stopping=self._stop_actor_task
         )
-        print('Started transport actor!')
+        logger.debug('Started transport actor!')
         await ps.send(
             self.actor, 'run', self._transport_loop,
             on_transport_connected, on_transport_disconnected,
@@ -112,13 +117,17 @@ class TransportManager(Concurrent):
             self._actor_task.cancel()
         self._actor_task = self._loop.create_task(self._start_transport_actor())
 
+    def _stop_actor_task(self, actor):
+        self._actor_task.cancel()
+        self.on_transport_disconnected()
+
     # Transport actor monitor
 
     async def _monitor_transport_actor(self):
         """Monitor the transport actor and restart it when it dies."""
         while True:
             if self.actor is not None and not self.actor.is_alive():
-                print('Restarting transport actor...')
+                logger.warning('Restarting transport actor...')
                 self._start_actor_task()
             await asyncio.sleep(self._monitor_poll_interval)
 
@@ -131,11 +140,16 @@ class TransportManager(Concurrent):
 
     def on_transport_connected(self):
         """Set event flags to notify waiters of connection."""
+        if not self._transport_connected.is_set():
+            logger.info('Transport connected!')
+        else:
+            logger.warning('Transport was already connected!')
         self._transport_connected.set()
         self._transport_disconnected.clear()
 
     def on_transport_disconnected(self):
         """Set event flags to notify waiters of disconnection."""
+        logger.info('Transport disconnected!')
         self._transport_connected.clear()
         self._transport_disconnected.set()
 
@@ -161,13 +175,14 @@ class ConsoleManager(cli.ConsoleManager):
     on a separate actor only receives EOF for some reason.
     """
 
-    def __init__(self, arbiter, get_command_targets, **kwargs):
+    def __init__(self, arbiter, get_command_targets, console_header='', **kwargs):
         """Initialize member variables."""
         super().__init__(**kwargs)
         self.arbiter = arbiter
         self._loop = asyncio.get_event_loop()
         # Console prompt
         self._console_prompt_task = None
+        self._console_header = console_header
         self.__get_command_targets = get_command_targets
 
     def _forward_input_line(self, input_line, command_target):
@@ -180,8 +195,13 @@ class ConsoleManager(cli.ConsoleManager):
 
     def quit(self):
         """Monitor the transport actor and restart it when it dies."""
-        print('Quitting...')
+        logger.info('Quitting...')
         self.arbiter.stop()
+
+    def on_console_ready(self):
+        """Take some action when the console is ready."""
+        if self._console_header:
+            print(self._console_header)
 
     async def handle_console_input(self, input_line):
         """Take action based on the provided input.

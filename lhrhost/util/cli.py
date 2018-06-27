@@ -2,14 +2,20 @@
 
 # Standard imports
 import asyncio
+import logging
 try:
     import readline  # Import readline for better UX with input prompts
+    readline
 except ImportError:
     pass
 from abc import abstractmethod
 
 # Local package imports
 from lhrhost.util.concurrency import Concurrent
+
+# Logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 class ConsoleManager(Concurrent):
@@ -36,7 +42,6 @@ class ConsoleManager(Concurrent):
     def stop(self):
         """Stop the associated asynchronous tasks."""
         if self._console_prompt_task is not None:
-            print('Cancelling...')
             self._console_prompt_task.cancel()
 
     # Console prompt
@@ -74,12 +79,18 @@ class ConsoleManager(Concurrent):
         """Handle a quit input provided by the user via the console prompt."""
         pass
 
+    @abstractmethod
+    def on_console_ready(self):
+        """Take some action when the console is ready."""
+        pass
+
     async def _loop_console_prompt(self):
         """Monitor the transport actor and restart it when it dies."""
         if callable(self._ready_waiter):
             await self._ready_waiter()
             self.flush_console_input()
-        print('\nReady for command-line input!')
+        logger.info('Ready for command-line input!')
+        self.on_console_ready()
         while True:
             input_line = await self._loop.run_in_executor(
                 self.executor, self.get_console_input

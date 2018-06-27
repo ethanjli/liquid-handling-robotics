@@ -8,6 +8,7 @@ protocol selected for the device board.
 
 # Standard imports
 import asyncio
+import logging
 from asyncio import StreamReader, StreamWriter
 from typing import Any, Dict, Iterable, Optional
 
@@ -18,6 +19,10 @@ import lhrhost.messaging.transport as transport
 from serial import SerialException
 
 import serial_asyncio
+
+# Logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 # Type-checking names
 _Kwargs = Dict[str, Any]
@@ -156,12 +161,12 @@ class TransportConnectionManager(transport.TransportConnectionManager):
             self._ser_reader, self._ser_writer, **self.transport_kwargs
         )
         self.transport.start_receiving_serialized_messages()
-        print('Established transport-layer connection!')
+        logger.info('Established transport-layer connection!')
         return self.transport
 
     async def _connect_datalink(self) -> None:
         """Establish the datalink-layer connection."""
-        print('Please plug in the device now...')
+        logger.info('Please plug in the device now...')
         while True:
             try:
                 (
@@ -172,11 +177,11 @@ class TransportConnectionManager(transport.TransportConnectionManager):
                 break
             except SerialException:
                 await asyncio.sleep(self.handshake_attempt_interval)
-        print('Established datalink-layer connection!')
+        logger.debug('Established datalink-layer connection!')
 
     async def _establish_handshake(self) -> None:
         """Establish the transport-layer connection."""
-        print('Initiating handshake for transport-layer connection...')
+        logger.debug('Initiating handshake for transport-layer connection...')
         # Wait for handshake char (peripheral initiates handshake)
         message_line_suffix = str.encode(MESSAGE_LINE_SUFFIX)
         while self.transport is not None:
@@ -185,6 +190,7 @@ class TransportConnectionManager(transport.TransportConnectionManager):
             except SerialException:
                 raise ConnectionAbortedError
             if line.strip().decode() == transport.HANDSHAKE_RX_CHAR:
+                logger.debug('Handshake started!')
                 break
             await asyncio.sleep(self.handshake_attempt_interval)
         # Respond with empty message (host acknowledges handshake)
@@ -194,7 +200,7 @@ class TransportConnectionManager(transport.TransportConnectionManager):
             line = await self._ser_reader.readuntil(message_line_suffix)
             if not line.strip():
                 break
-        print('Completed handshake!')
+        logger.debug('Completed handshake!')
 
 
 # Actors
@@ -215,11 +221,11 @@ async def transport_loop(actor, on_connection=None, on_disconnection=None, **kwa
                     )
                 await transport_connection.task_receive_packets  # only stops upon exception
         except ConnectionAbortedError:
-            print('Connection to device lost! Please reconnect the device...')
+            logger.error('Connection to device lost! Please reconnect the device...')
         except ConnectionResetError:
-            print('Connection was reset! Reconnecting...')
+            logger.error('Connection was reset! Reconnecting...')
         except KeyboardInterrupt:
-            print('Quitting...')
+            logger.info('Quitting...')
             break
         finally:
             if callable(on_disconnection):

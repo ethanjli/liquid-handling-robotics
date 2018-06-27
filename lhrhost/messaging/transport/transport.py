@@ -41,9 +41,16 @@ _SerializedMessageReceivers = Iterable[SerializedMessageReceiver]
 class SerializedMessagePrinter(SerializedMessageReceiver):
     """Simple class which prints received serialized messages."""
 
+    def __init__(self, prefix='', suffix='\n'):
+        """Initialize member variables."""
+        self._prefix = prefix
+        self._suffix = suffix
+
     def on_serialized_message(self, serialized_message: str) -> None:
         """Receive and handle a serialized message."""
-        print(serialized_message)
+        print(self._prefix, end='')
+        print(serialized_message, end='')
+        print(self._suffix, end='')
 
 
 # Interfaces for transport-layer implementations
