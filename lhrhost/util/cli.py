@@ -2,6 +2,10 @@
 
 # Standard imports
 import asyncio
+try:
+    import readline  # Import readline for better UX with input prompts
+except ImportError:
+    pass
 from abc import abstractmethod
 
 # Local package imports

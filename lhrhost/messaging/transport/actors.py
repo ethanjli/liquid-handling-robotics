@@ -96,20 +96,23 @@ class TransportManager(Concurrent):
 
 
 class ConsoleManager(cli.ConsoleManager):
-    """Class to forward console input to the peripheral.
+    """Class to pass console input as send_serialized_message actor commands.
 
     Creates an asynchronous coroutine which reads lines from stdin on a separate
-    thread and handles them by sending them as message packets to the peripheral.
+    thread and handles them by sending them to actors.
+
+    This can be used to send lines on stdin as message packets to the actor for
+    a transport-layer connection to a peripheral, for example.
     """
 
-    def __init__(self, arbiter, executor, transport_manager):
+    def __init__(self, arbiter, executor, get_command_targets):
         """Initialize member variables."""
         super().__init__(executor)
         self.arbiter = arbiter
         self._loop = asyncio.get_event_loop()
         # Console prompt
         self._console_prompt_task = None
-        self._transport_manager = transport_manager
+        self.__get_command_targets = get_command_targets
 
     # Implement ConsoleManager
 
@@ -126,4 +129,7 @@ class ConsoleManager(cli.ConsoleManager):
         """
         if not input_line:
             raise KeyboardInterrupt
-        await ps.send(self._transport_manager.actor, 'send_serialized_message', input_line)
+        asyncio.wait([
+            ps.send(command_target, 'send_serialized_message', input_line)
+            for command_target in self.__get_command_targets()
+        ])
