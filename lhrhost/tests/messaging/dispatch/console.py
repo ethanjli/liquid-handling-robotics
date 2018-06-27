@@ -27,20 +27,21 @@ class Console(console.Console):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
         self.echo_response_printer = MessagePrinter(
-            prefix=('\t' * console.CONSOLE_WIDTH),
-            suffix=(' [Echo] \n')
+            prefix=('\t' * console.CONSOLE_WIDTH + '[Echo]\t')
+        )
+        self.reset_response_printer = MessagePrinter(
+            prefix=('\t' * console.CONSOLE_WIDTH + '[Reset]\t')
         )
         self.version_response_printer = MessagePrinter(
-            prefix=('\t' * console.CONSOLE_WIDTH),
-            suffix=(' [Version] \n')
+            prefix=('\t' * console.CONSOLE_WIDTH + '[Version]\t')
         )
         self.builtin_led_response_printer = MessagePrinter(
-            prefix=('\t' * console.CONSOLE_WIDTH),
-            suffix=(' [BuiltinLED] \n')
+            prefix=('\t' * console.CONSOLE_WIDTH + '[BuiltinLED]\t')
         )
         self.response_dispatcher = Dispatcher(
             receivers={
-                'e': [self.echo_response_printer]
+                'e': [self.echo_response_printer],
+                'r': [self.reset_response_printer]
             },
             prefix_receivers={
                 'v': [self.version_response_printer],
@@ -56,9 +57,7 @@ class Console(console.Console):
         )
         self.transport_manager = TransportManager(
             self.arbiter, transport_loop,
-            transport_kwargs={
-                'serialized_message_receivers': [self.translator]
-            }
+            response_receivers=[self.translator]
         )
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.console_manager = ConsoleManager(

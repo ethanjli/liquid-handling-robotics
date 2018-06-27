@@ -30,7 +30,7 @@ class SerializedMessageReceiver(object, metaclass=InterfaceClass):
     """
 
     @abstractmethod
-    def on_serialized_message(self, serialized_message: str) -> None:
+    async def on_serialized_message(self, serialized_message: str) -> None:
         """Receive and handle a serialized message."""
         pass
 
@@ -44,7 +44,7 @@ _SerializedMessageReceivers = Iterable[SerializedMessageReceiver]
 class SerializedMessagePrinter(SerializedMessageReceiver, Printer):
     """Simple class which prints received serialized messages."""
 
-    def on_serialized_message(self, serialized_message: str) -> None:
+    async def on_serialized_message(self, serialized_message: str) -> None:
         """Receive and handle a serialized message."""
         self.print(serialized_message)
 
@@ -102,14 +102,14 @@ class Transport(SerializedMessageReceiver, metaclass=InterfaceClass):
 
     # Implement SerializedMessageReceiver
 
-    def on_serialized_message(self, serialized_message: str) -> None:
+    async def on_serialized_message(self, serialized_message: str) -> None:
         """Receive and handle a serialized message.
 
         Simply forwards the received message to receivers in
         :meth:`serialized_message_receivers`.
         """
         for receiver in self.serialized_message_receivers:
-            receiver.on_serialized_message(serialized_message)
+            await receiver.on_serialized_message(serialized_message)
 
 
 class TransportConnectionManager(object, metaclass=InterfaceClass):

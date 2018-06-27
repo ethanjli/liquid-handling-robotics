@@ -2,7 +2,7 @@
 
 # Local package imports
 from lhrhost.messaging.dispatch import Dispatcher
-from lhrhost.messaging.presentation import MessagePrinter, Message
+from lhrhost.messaging.presentation import Message, MessagePrinter
 
 
 def print_dispatcher(dispatcher):

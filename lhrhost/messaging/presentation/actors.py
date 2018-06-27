@@ -34,7 +34,7 @@ class ConsoleManager(actors.ConsoleManager):
         super().__init__(arbiter, get_command_targets, **kwargs)
         self._translator = translator
 
-    def forward_input_line(self, input_line, command_target):
+    async def forward_input_line(self, input_line, command_target):
         """Forward the serialized command message to a target."""
         try:
             deserialized = self._translator.deserialize(input_line)
@@ -42,7 +42,7 @@ class ConsoleManager(actors.ConsoleManager):
             logger.error('Malformed message {}'.format(input_line))
             return
         try:
-            ps.send(
+            await ps.send(
                 command_target, 'send_serialized_message',
                 self._translator.serialize(deserialized)
             )

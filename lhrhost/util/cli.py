@@ -80,7 +80,7 @@ class ConsoleManager(Concurrent):
         pass
 
     @abstractmethod
-    def on_console_ready(self):
+    async def on_console_ready(self):
         """Take some action when the console is ready."""
         pass
 
@@ -90,7 +90,12 @@ class ConsoleManager(Concurrent):
             await self._ready_waiter()
             self.flush_console_input()
         logger.info('Ready for command-line input!')
-        self.on_console_ready()
+        try:
+            await self.on_console_ready()
+        except KeyboardInterrupt:
+            self.quit()
+            while True:
+                await asyncio.sleep(1.0)
         while True:
             input_line = await self._loop.run_in_executor(
                 self.executor, self.get_console_input

@@ -117,7 +117,7 @@ class MessageReceiver(object, metaclass=InterfaceClass):
     """
 
     @abstractmethod
-    def on_message(self, message: Message) -> None:
+    async def on_message(self, message: Message) -> None:
         """Receive and handle a (deserialized) message, i.e. a :class:`Message`."""
         pass
 
@@ -131,7 +131,7 @@ _MessageReceivers = Iterable[MessageReceiver]
 class MessagePrinter(MessageReceiver, Printer):
     """Simple class which prints received serialized messages."""
 
-    def on_message(self, serialized_message: str) -> None:
+    async def on_message(self, serialized_message: str) -> None:
         """Receive and handle a serialized message."""
         self.print(serialized_message)
 
@@ -282,19 +282,19 @@ class BasicTranslator(
 
     # Implement transport.SerializedMessageReceiver
 
-    def on_serialized_message(self, line: str) -> None:
+    async def on_serialized_message(self, line: str) -> None:
         """Handle a serialized message by deserializing it and forwarding it."""
         try:
             message = self.deserialize(line)
             for receiver in self.message_receivers:
-                receiver.on_message(message)
+                await receiver.on_message(message)
         except InvalidSerializationError:
             logger.error('Received malformed serialized message: {}'.fomat(line))
 
     # Implement MessageReceiver
 
-    def on_message(self, message: Message) -> None:
+    async def on_message(self, message: Message) -> None:
         """Handle a deserialized message by serializing it and forwarding it."""
         line = self.serialize(message)
         for receiver in self.serialized_message_receivers:
-            receiver.on_serialized_message(line)
+            await receiver.on_serialized_message(line)

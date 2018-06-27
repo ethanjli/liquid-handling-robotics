@@ -38,15 +38,12 @@ class Console:
         )
         self.transport_manager = TransportManager(
             self.arbiter, transport_loop,
-            transport_kwargs={
-                'serialized_message_receivers': [self.response_printer]
-            }
+            response_receivers=[self.response_printer]
         )
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.console_manager = ConsoleManager(
-            self.arbiter, lambda: [self.transport_manager.actor],
-            console_header=CONSOLE_HEADER,
-            executor=self.executor,
+            self.arbiter, self.transport_manager.get_actors,
+            console_header=CONSOLE_HEADER, executor=self.executor,
             ready_waiter=self.transport_manager.wait_transport_connected
         )
 

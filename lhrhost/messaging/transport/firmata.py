@@ -57,7 +57,7 @@ class Transport(transport.Transport):
         decoded = decode_message(sysex_data)
         if message_empty(sysex_data) or decoded == transport.HANDSHAKE_RX_CHAR:
             raise ConnectionResetError
-        self.on_serialized_message(decoded)
+        await self.on_serialized_message(decoded)
 
     # Implement transport.Transport
 
@@ -164,6 +164,7 @@ async def transport_loop(actor, on_connection=None, on_disconnection=None, **kwa
 
     Dies whenever the connection is broken, due to the design of Pymata.
     """
+    logger.debug('Started transport loop!')
     transport_connection_manager = TransportConnectionManager(**kwargs)
     async with transport_connection_manager.connection as transport_connection:
         actor.transport = transport_connection

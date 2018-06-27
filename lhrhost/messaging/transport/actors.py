@@ -3,8 +3,10 @@
 # Standard imports
 import asyncio
 import logging
+from typing import Iterable, List, Optional
 
 # Local package imports
+from lhrhost.messaging.transport import SerializedMessageReceiver
 from lhrhost.util import cli
 from lhrhost.util.concurrency import Concurrent
 
@@ -15,19 +17,32 @@ import pulsar.api as ps
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+# Type-checking names
+_SerializedMessageReceivers = Iterable[SerializedMessageReceiver]
+
 
 # Commands
 
 @ps.command()
 async def send_serialized_message(request, serialized_message):
     """Send a serialized message to an actor with a `transport` member."""
-    try:
-        await request.actor.transport.send_serialized_message(serialized_message)
-    except AttributeError:
-        logger.warning((
-            'Error: serialized message "{}" not sent to "{}" actor, which is '
-            'not yet able to receive such messages'
-        ).format(serialized_message, request.actor.name))
+    if request.actor.name == 'arbiter':
+        try:
+            await request.actor.transport_manager.on_serialized_message(serialized_message)
+        except AttributeError:
+            logger.error((
+                'Error: serialized message "{}" not sent to "{}" actor, which is '
+                'not able to receive such messages'
+            ).format(serialized_message, request.actor.name))
+            raise
+    else:
+        try:
+            await request.actor.transport.send_serialized_message(serialized_message)
+        except AttributeError:
+            logger.warning((
+                'Error: serialized message "{}" not sent to "{}" actor, which is '
+                'not yet able to receive such messages'
+            ).format(serialized_message, request.actor.name))
     return serialized_message
 
 
@@ -55,7 +70,26 @@ async def on_transport_disconnected(actor, transport_connection_manager):
     await ps.send('arbiter', 'transport_disconnected')
 
 
-class TransportManager(Concurrent):
+class CommandSender(SerializedMessageReceiver):
+    """Sends serialized messages to actors with the send_serialized_message actor command."""
+
+    def __init__(self, command_targets):
+        """Initialize member variables."""
+        self.__command_targets = command_targets
+
+    # Implement SerializedMessageReceiver
+
+    async def on_serialized_message(self, serialized_message: str) -> None:
+        """Send an actor command of the serialized message."""
+        if callable(self.__command_targets):
+            command_targets = self.__command_targets()
+        else:
+            command_targets = self.__command_targets
+        for command_target in command_targets:
+            await ps.send(command_target, 'send_serialized_message', serialized_message)
+
+
+class TransportManager(Concurrent, SerializedMessageReceiver):
     """Manages actor for a transport-layer asynchronous actor loop.
 
     Creates an actor which runs the transport layer in a separate process, and
@@ -63,8 +97,9 @@ class TransportManager(Concurrent):
     """
 
     def __init__(
-            self, arbiter, transport_loop, monitor_poll_interval=2.0,
-            **transport_connection_manager_kwargs
+        self, arbiter, transport_loop, monitor_poll_interval=2.0,
+        response_receivers: Optional[_SerializedMessageReceivers]=None,
+        **transport_connection_manager_kwargs
     ):
         """Initialize member variables."""
         self.arbiter = arbiter
@@ -75,6 +110,13 @@ class TransportManager(Concurrent):
         self._actor_task = None
         self._transport_loop = transport_loop
         self._transport_connection_manager_kwargs = transport_connection_manager_kwargs
+        if 'transport_kwargs' not in self._transport_connection_manager_kwargs:
+            self._transport_connection_manager_kwargs['transport_kwargs'] = {}
+        self._transport_connection_manager_kwargs[
+            'transport_kwargs'
+        ][
+            'serialized_message_receivers'
+        ] = [CommandSender(['arbiter'])]
         # Transport actor monitor
         self._monitor_task = None
         self._monitor_poll_interval = monitor_poll_interval
@@ -82,6 +124,17 @@ class TransportManager(Concurrent):
         self._transport_connected = asyncio.Event()
         self._transport_disconnected = asyncio.Event()
         self._transport_disconnected.set()
+        # Message-passing
+        self.response_receivers: List[SerializedMessageReceiver] = []
+        if response_receivers:
+            self.response_receivers = [
+                receiver for receiver in response_receivers
+            ]
+        self.command_sender = CommandSender(self.get_actors)
+
+    def get_actors(self):
+        """Return a list of the associated actors."""
+        return [self.actor]
 
     # Implement Concurrent
 
@@ -97,6 +150,13 @@ class TransportManager(Concurrent):
         if self._monitor_task is not None:
             self._monitor_task.cancel()
 
+    # Implement SerializedMessageReceiver
+
+    async def on_serialized_message(self, serialized_message: str) -> None:
+        """Receive and a serialized message and forward it to receivers."""
+        for receiver in self.response_receivers:
+            await receiver.on_serialized_message(serialized_message)
+
     # Transport actor
 
     async def _start_transport_actor(self):
@@ -107,7 +167,8 @@ class TransportManager(Concurrent):
         logger.debug('Started transport actor!')
         await ps.send(
             self.actor, 'run', self._transport_loop,
-            on_transport_connected, on_transport_disconnected,
+            on_connection=on_transport_connected,
+            on_disconnection=on_transport_disconnected,
             **self._transport_connection_manager_kwargs
         )
 
@@ -185,12 +246,9 @@ class ConsoleManager(cli.ConsoleManager):
         self._console_header = console_header
         self.__get_command_targets = get_command_targets
 
-    def forward_input_line(self, input_line, command_target):
+    async def forward_input_line(self, input_line, command_target):
         """Forward the serialized command message to a target."""
-        try:
-            ps.send(command_target, 'send_serialized_message', input_line)
-        except BrokenPipeError:
-            pass
+        await ps.send(command_target, 'send_serialized_message', input_line)
 
     # Implement ConsoleManager
 
@@ -199,7 +257,7 @@ class ConsoleManager(cli.ConsoleManager):
         logger.info('Quitting...')
         self.arbiter.stop()
 
-    def on_console_ready(self):
+    async def on_console_ready(self):
         """Take some action when the console is ready."""
         if self._console_header:
             print(self._console_header)
@@ -212,7 +270,5 @@ class ConsoleManager(cli.ConsoleManager):
         """
         if not input_line:
             raise KeyboardInterrupt
-        asyncio.wait([
-            self.forward_input_line(input_line, command_target)
-            for command_target in self.__get_command_targets()
-        ])
+        for command_target in self.__get_command_targets():
+            await self.forward_input_line(input_line, command_target)

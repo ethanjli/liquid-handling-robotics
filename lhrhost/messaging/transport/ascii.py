@@ -72,7 +72,7 @@ class Transport(transport.Transport):
                 raise ConnectionAbortedError
             if line.strip() == handshake_message:
                 raise ConnectionResetError
-            self.on_serialized_message(line.strip().decode())
+            await self.on_serialized_message(line.strip().decode())
 
     async def close(self) -> None:
         """Close the transport-layer connection to the device.
@@ -210,6 +210,7 @@ async def transport_loop(actor, on_connection=None, on_disconnection=None, **kwa
 
     Attempts to restart the layer whenever the connection is broken.
     """
+    logger.debug('Started transport loop!')
     transport_connection_manager = TransportConnectionManager(**kwargs)
     while True:
         try:
