@@ -25,17 +25,17 @@ class Batch(Batch):
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.builtin_led_printer = BuiltinLEDPrinter(prefix=batch.RESPONSE_PREFIX)
+        self.protocol_printer = BuiltinLEDPrinter(prefix=batch.RESPONSE_PREFIX)
         self.command_printer = MessagePrinter(prefix='  Sending: ')
-        self.builtin_led_protocol = BuiltinLEDProtocol(
-            builtin_led_receivers=[self.builtin_led_printer],
+        self.protocol = BuiltinLEDProtocol(
+            builtin_led_receivers=[self.protocol_printer],
             command_receivers=[self.command_printer]
         )
         self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
         self.translator = BasicTranslator(
-            message_receivers=[self.response_printer, self.builtin_led_protocol]
+            message_receivers=[self.response_printer, self.protocol]
         )
-        self.builtin_led_protocol.message_receivers.append(self.translator)
+        self.protocol.command_receivers.append(self.translator)
         self.response_receiver = ResponseReceiver(
             response_receivers=[self.translator]
         )
@@ -57,32 +57,32 @@ class Batch(Batch):
         await asyncio.sleep(1.0)
 
         print('RPC-style with empty payloads:')
-        await self.builtin_led_protocol.request_builtin_led()
-        await self.builtin_led_protocol.request_builtin_led_blink()
-        await self.builtin_led_protocol.request_builtin_led_blink_high_interval()
-        await self.builtin_led_protocol.request_builtin_led_blink_low_interval()
-        await self.builtin_led_protocol.request_builtin_led_blink_periods()
-        await self.builtin_led_protocol.request_builtin_led_blink_notify()
+        await self.protocol.request_builtin_led()
+        await self.protocol.request_builtin_led_blink()
+        await self.protocol.request_builtin_led_blink_high_interval()
+        await self.protocol.request_builtin_led_blink_low_interval()
+        await self.protocol.request_builtin_led_blink_periods()
+        await self.protocol.request_builtin_led_blink_notify()
 
         print('RPC with complete wait for finite-periods blink:')
-        await self.builtin_led_protocol.request_builtin_led_blink_notify(1)
-        await self.builtin_led_protocol.request_builtin_led_blink_low_interval(500)
-        await self.builtin_led_protocol.request_builtin_led_blink_high_interval(500)
-        await self.builtin_led_protocol.request_complete_builtin_led_blink(5)
+        await self.protocol.request_builtin_led_blink_notify(1)
+        await self.protocol.request_builtin_led_blink_low_interval(500)
+        await self.protocol.request_builtin_led_blink_high_interval(500)
+        await self.protocol.request_complete_builtin_led_blink(5)
         await asyncio.sleep(1.0)
 
         print('RPC-style manual blink:')
         for i in range(10):
-            await self.builtin_led_protocol.request_builtin_led(1)
+            await self.protocol.request_builtin_led(1)
             await asyncio.sleep(0.25)
-            await self.builtin_led_protocol.request_builtin_led(0)
+            await self.protocol.request_builtin_led(0)
             await asyncio.sleep(0.25)
 
         print('RPC-style without waiting for blink completion:')
-        await self.builtin_led_protocol.request_builtin_led_blink_notify(0)
-        await self.builtin_led_protocol.request_builtin_led_blink_low_interval(100)
-        await self.builtin_led_protocol.request_builtin_led_blink_high_interval(100)
-        await self.builtin_led_protocol.request_builtin_led_blink(1)
+        await self.protocol.request_builtin_led_blink_notify(0)
+        await self.protocol.request_builtin_led_blink_low_interval(100)
+        await self.protocol.request_builtin_led_blink_high_interval(100)
+        await self.protocol.request_builtin_led_blink(1)
         await asyncio.sleep(5.0)
 
         print(batch.OUTPUT_FOOTER)

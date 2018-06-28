@@ -25,19 +25,19 @@ class Batch(Batch):
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.version_printer = VersionPrinter(prefix=(
+        self.protocol_printer = VersionPrinter(prefix=(
             batch.RESPONSE_PREFIX + 'Protocol: '
         ))
         self.command_printer = MessagePrinter(prefix='  Sending: ')
-        self.version_protocol = VersionProtocol(
-            version_receivers=[self.version_printer],
+        self.protocol = VersionProtocol(
+            version_receivers=[self.protocol_printer],
             command_receivers=[self.command_printer]
         )
         self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
         self.translator = BasicTranslator(
-            message_receivers=[self.response_printer, self.version_protocol]
+            message_receivers=[self.response_printer, self.protocol]
         )
-        self.version_protocol.message_receivers.append(self.translator)
+        self.protocol.command_receivers.append(self.translator)
         self.response_receiver = ResponseReceiver(
             response_receivers=[self.translator]
         )
@@ -58,17 +58,17 @@ class Batch(Batch):
         print('Running test routine...')
         await asyncio.sleep(1.0)
 
-        self.version_protocol.version.reset()
+        self.protocol.version.reset()
         print('  Version full')
-        await self.version_protocol.request_full()
-        self.version_protocol.version.reset()
+        await self.protocol.request_full()
+        self.protocol.version.reset()
         print('  Version major')
-        await self.version_protocol.request_major()
+        await self.protocol.request_major()
         print('  Version minor')
-        await self.version_protocol.request_minor()
+        await self.protocol.request_minor()
         print('  Version patch')
-        await self.version_protocol.request_patch()
-        self.version_protocol.version.reset()
+        await self.protocol.request_patch()
+        self.protocol.version.reset()
 
         await asyncio.sleep(1.0)
         print(batch.OUTPUT_FOOTER)

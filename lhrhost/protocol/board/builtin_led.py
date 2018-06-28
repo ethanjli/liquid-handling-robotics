@@ -25,32 +25,32 @@ class BuiltinLEDReceiver(object, metaclass=InterfaceClass):
     """
 
     @abstractmethod
-    def on_builtin_led(self, state: int) -> None:
+    async def on_builtin_led(self, state: int) -> None:
         """Receive and handle a BuiltinLED response."""
         pass
 
     @abstractmethod
-    def on_builtin_led_blink(self, state: int) -> None:
+    async def on_builtin_led_blink(self, state: int) -> None:
         """Receive and handle a BuiltinLED/Blink response."""
         pass
 
     @abstractmethod
-    def on_builtin_led_blink_high_interval(self, interval: int) -> None:
+    async def on_builtin_led_blink_high_interval(self, interval: int) -> None:
         """Receive and handle a BuiltinLED/Blink/HighInterval response."""
         pass
 
     @abstractmethod
-    def on_builtin_led_blink_low_interval(self, interval: int) -> None:
+    async def on_builtin_led_blink_low_interval(self, interval: int) -> None:
         """Receive and handle a BuiltinLED/Blink/LowInterval response."""
         pass
 
     @abstractmethod
-    def on_builtin_led_blink_periods(self, state: int) -> None:
+    async def on_builtin_led_blink_periods(self, state: int) -> None:
         """Receive and handle a BuiltinLED/Blink/Periods response."""
         pass
 
     @abstractmethod
-    def on_builtin_led_blink_notify(self, periods: int) -> None:
+    async def on_builtin_led_blink_notify(self, periods: int) -> None:
         """Receive and handle a BuiltinLED/Blink/Notify response."""
         pass
 
@@ -64,31 +64,31 @@ _BuiltinLEDReceivers = Iterable[BuiltinLEDReceiver]
 class BuiltinLEDPrinter(BuiltinLEDReceiver, Printer):
     """Simple class which prints received serialized messages."""
 
-    def on_builtin_led(self, state: int) -> None:
+    async def on_builtin_led(self, state: int) -> None:
         """Receive and handle a BuiltinLED response."""
         self.print('Built-in LED: {}'.format(
             'HIGH' if state else 'LOW'
         ))
 
-    def on_builtin_led_blink(self, state: int) -> None:
+    async def on_builtin_led_blink(self, state: int) -> None:
         """Receive and handle a BuiltinLED/Blink response."""
         self.print('Built-in LED blink: {}'.format(
             'blinking' if state else 'constant'
         ))
 
-    def on_builtin_led_blink_high_interval(self, interval: int) -> None:
+    async def on_builtin_led_blink_high_interval(self, interval: int) -> None:
         """Receive and handle a BuiltinLED/Blink/HighInterval response."""
         self.print('Built-in LED blink high interval: {}'.format(interval))
 
-    def on_builtin_led_blink_low_interval(self, interval: int) -> None:
+    async def on_builtin_led_blink_low_interval(self, interval: int) -> None:
         """Receive and handle a BuiltinLED/Blink/LowInterval response."""
         self.print('Built-in LED blink low interval: {}'.format(interval))
 
-    def on_builtin_led_blink_periods(self, periods: int) -> None:
+    async def on_builtin_led_blink_periods(self, periods: int) -> None:
         """Receive and handle a BuiltinLED/Blink/Periods response."""
         self.print('Built-in LED blink periods: {}'.format(periods))
 
-    def on_builtin_led_blink_notify(self, state: int) -> None:
+    async def on_builtin_led_blink_notify(self, state: int) -> None:
         """Receive and handle a BuiltinLED/Blink/Notify response."""
         self.print('Built-in LED blink notifications: {}'.format(
             'notifying' if state else 'not notifying'
@@ -107,30 +107,30 @@ class BuiltinLEDProtocol(MessageReceiver, CommandIssuer):
         if builtin_led_receivers:
             self.__builtin_led_receivers = [receiver for receiver in builtin_led_receivers]
 
-    def notify_builtin_led_receivers(self, state: int) -> None:
+    async def notify_builtin_led_receivers(self, state: int) -> None:
         """Notify all receivers of received BuiltinLED response."""
         for receiver in self.__builtin_led_receivers:
-            receiver.on_builtin_led(state)
+            await receiver.on_builtin_led(state)
 
-    def notify_builtin_led_receivers_blink(self, state: int) -> None:
+    async def notify_builtin_led_receivers_blink(self, state: int) -> None:
         """Notify all receivers of received BuiltinLED/Blink response."""
         for receiver in self.__builtin_led_receivers:
-            receiver.on_builtin_led_blink(state)
+            await receiver.on_builtin_led_blink(state)
 
-    def notify_builtin_led_receivers_blink_high_interval(self, interval: int) -> None:
+    async def notify_builtin_led_receivers_blink_high_interval(self, interval: int) -> None:
         """Notify all receivers of received BuiltinLED/Blink/HighInterval response."""
         for receiver in self.__builtin_led_receivers:
-            receiver.on_builtin_led_blink_high_interval(interval)
+            await receiver.on_builtin_led_blink_high_interval(interval)
 
-    def notify_builtin_led_receivers_blink_low_interval(self, interval: int) -> None:
+    async def notify_builtin_led_receivers_blink_low_interval(self, interval: int) -> None:
         """Notify all receivers of received BuiltinLED/Blink/LowInterval response."""
         for receiver in self.__builtin_led_receivers:
-            receiver.on_builtin_led_blink_low_interval(interval)
+            await receiver.on_builtin_led_blink_low_interval(interval)
 
-    def notify_builtin_led_receivers_blink_notify(self, state: int) -> None:
+    async def notify_builtin_led_receivers_blink_notify(self, state: int) -> None:
         """Notify all receivers of received BuiltinLED/Blink/Notify response."""
         for receiver in self.__builtin_led_receivers:
-            receiver.on_builtin_led_blink_notify(state)
+            await receiver.on_builtin_led_blink_notify(state)
 
     # Commands
 
@@ -183,7 +183,7 @@ class BuiltinLEDProtocol(MessageReceiver, CommandIssuer):
         message = Message('lbn', state)
         await self.issue_command(Command(message))
 
-    # Implement DeserializedMessageReceiver
+    # Implement MessageReceiver
 
     async def on_message(self, message: Message) -> None:
         """Handle received message.
@@ -194,13 +194,13 @@ class BuiltinLEDProtocol(MessageReceiver, CommandIssuer):
             return
         # TODO: validate the channel name
         if message.channel == 'l':
-            self.notify_builtin_led_receivers(message.payload)
+            await self.notify_builtin_led_receivers(message.payload)
         elif message.channel == 'lb':
-            self.notify_builtin_led_receivers_blink(message.payload)
+            await self.notify_builtin_led_receivers_blink(message.payload)
         elif message.channel == 'lbh':
-            self.notify_builtin_led_receivers_blink_high_interval(message.payload)
+            await self.notify_builtin_led_receivers_blink_high_interval(message.payload)
         elif message.channel == 'lbl':
-            self.notify_builtin_led_receivers_blink_low_interval(message.payload)
+            await self.notify_builtin_led_receivers_blink_low_interval(message.payload)
         elif message.channel == 'lbn':
-            self.notify_builtin_led_receivers_blink_notify(message.payload)
+            await self.notify_builtin_led_receivers_blink_notify(message.payload)
         self.on_response(message.channel)

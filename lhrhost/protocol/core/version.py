@@ -67,7 +67,7 @@ class VersionReceiver(object, metaclass=InterfaceClass):
     """Interface for a class which receives Version/* responses."""
 
     @abstractmethod
-    def on_version(self, version: Version) -> None:
+    async def on_version(self, version: Version) -> None:
         """Receive and handle Version/* response."""
         pass
 
@@ -81,7 +81,7 @@ _VersionReceivers = Iterable[VersionReceiver]
 class VersionPrinter(VersionReceiver, Printer):
     """Simple class which prints received Version/* responses."""
 
-    def on_version(self, version: Version) -> None:
+    async def on_version(self, version: Version) -> None:
         """Receive and handle a serialized message."""
         self.print('Version {}'.format(version))
 
@@ -98,10 +98,10 @@ class VersionProtocol(MessageReceiver, CommandIssuer):
         if version_receivers:
             self.__version_receivers = [receiver for receiver in version_receivers]
 
-    def notify_version_receivers(self) -> None:
+    async def notify_version_receivers(self) -> None:
         """Notify all receivers of received Version response."""
         for receiver in self.__version_receivers:
-            receiver.on_version(self.version)
+            await receiver.on_version(self.version)
 
     # Commands
 
@@ -126,7 +126,7 @@ class VersionProtocol(MessageReceiver, CommandIssuer):
         message = Message('v2')
         await self.issue_command(Command(message))
 
-    # Implement DeserializedMessageReceiver
+    # Implement MessageReceiver
 
     async def on_message(self, message: Message) -> None:
         """Handle received message.
@@ -140,14 +140,14 @@ class VersionProtocol(MessageReceiver, CommandIssuer):
         if message.channel == 'v0':
             self.version.major = int(message.payload)
             if self.version.known and self.version != self.__previous_version:
-                self.notify_version_receivers()
+                await self.notify_version_receivers()
         elif message.channel == 'v1':
             self.version.minor = int(message.payload)
             if self.version.known and self.version != self.__previous_version:
-                self.notify_version_receivers()
+                await self.notify_version_receivers()
         elif message.channel == 'v2':
             self.version.patch = int(message.payload)
             if self.version.known and self.version != self.__previous_version:
-                self.notify_version_receivers()
+                await self.notify_version_receivers()
         self.on_response(message.channel)
         self.__previous_version = Version(*self.version)

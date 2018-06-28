@@ -25,17 +25,17 @@ class Batch(Batch):
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.io_pins_printer = IOPinsPrinter(prefix=batch.RESPONSE_PREFIX)
+        self.protocol_printer = IOPinsPrinter(prefix=batch.RESPONSE_PREFIX)
         self.command_printer = MessagePrinter(prefix='  Sending: ')
-        self.io_pins_protocol = IOPinsProtocol(
-            io_pins_receivers=[self.io_pins_printer],
+        self.protocol = IOPinsProtocol(
+            io_pins_receivers=[self.protocol_printer],
             command_receivers=[self.command_printer]
         )
         self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
         self.translator = BasicTranslator(
-            message_receivers=[self.response_printer, self.io_pins_protocol]
+            message_receivers=[self.response_printer, self.protocol]
         )
-        self.io_pins_protocol.message_receivers.append(self.translator)
+        self.protocol.command_receivers.append(self.translator)
         self.response_receiver = ResponseReceiver(
             response_receivers=[self.translator]
         )
@@ -57,9 +57,9 @@ class Batch(Batch):
         await asyncio.sleep(1.0)
 
         for i in range(4):
-            await self.io_pins_protocol.request_io_pin_analog(i)
+            await self.protocol.request_io_pin_analog(i)
         for i in range(2, 14):
-            await self.io_pins_protocol.request_io_pin_digital(i)
+            await self.protocol.request_io_pin_digital(i)
         await asyncio.sleep(1.0)
 
         print(batch.OUTPUT_FOOTER)

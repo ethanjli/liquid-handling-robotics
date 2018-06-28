@@ -22,7 +22,7 @@ class EchoReceiver(object, metaclass=InterfaceClass):
     """Interface for a class which receives Echo events."""
 
     @abstractmethod
-    def on_echo(self, payload: int) -> None:
+    async def on_echo(self, payload: int) -> None:
         """Receive and handle a Echo response."""
         pass
 
@@ -36,7 +36,7 @@ _EchoReceivers = Iterable[EchoReceiver]
 class EchoPrinter(EchoReceiver, Printer):
     """Simple class which prints received Echo responses."""
 
-    def on_echo(self, payload: int) -> None:
+    async def on_echo(self, payload: int) -> None:
         """Receive and handle a Echo response."""
         self.print('Echo: {}'.format(payload))
 
@@ -53,10 +53,10 @@ class EchoProtocol(MessageReceiver, CommandIssuer):
         if echo_receivers:
             self.__echo_receivers = [receiver for receiver in echo_receivers]
 
-    def notify_echo_receivers(self, payload: int) -> None:
+    async def notify_echo_receivers(self, payload: int) -> None:
         """Notify all receivers of a received Echo response."""
         for receiver in self.__echo_receivers:
-            receiver.on_echo(payload)
+            await receiver.on_echo(payload)
 
     # Commands
 
@@ -65,7 +65,7 @@ class EchoProtocol(MessageReceiver, CommandIssuer):
         message = Message('e', payload)
         await self.issue_command(Command(message))
 
-    # Implement DeserializedMessageReceiver
+    # Implement MessageReceiver
 
     async def on_message(self, message: Message) -> None:
         """Handle received message.
@@ -75,5 +75,5 @@ class EchoProtocol(MessageReceiver, CommandIssuer):
         if message.payload is None:
             return
         if message.channel == 'e':
-            self.notify_echo_receivers(message.payload)
+            await self.notify_echo_receivers(message.payload)
         self.on_response(message.channel)

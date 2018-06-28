@@ -22,7 +22,7 @@ class ResetReceiver(object, metaclass=InterfaceClass):
     """Interface for a class which receives Reset events."""
 
     @abstractmethod
-    def on_reset(self) -> None:
+    async def on_reset(self) -> None:
         """Receive and handle a Reset response."""
         pass
 
@@ -36,7 +36,7 @@ _ResetReceivers = Iterable[ResetReceiver]
 class ResetPrinter(ResetReceiver, Printer):
     """Simple class which prints received Reset responses."""
 
-    def on_reset(self) -> None:
+    async def on_reset(self) -> None:
         """Receive and handle a reset response."""
         self.print('Resetting')
 
@@ -55,10 +55,10 @@ class ResetProtocol(MessageReceiver, CommandIssuer):
         if reset_receivers:
             self.__reset_receivers = [receiver for receiver in reset_receivers]
 
-    def notify_reset_receivers(self) -> None:
+    async def notify_reset_receivers(self) -> None:
         """Notify all receivers of received Reset response."""
         for receiver in self.__reset_receivers:
-            receiver.on_reset()
+            await receiver.on_reset()
 
     # Commands
 
@@ -80,7 +80,7 @@ class ResetProtocol(MessageReceiver, CommandIssuer):
         await self.connection_synchronizer.connected.wait()
         logger.debug('Connection fully reset!')
 
-    # Implement DeserializedMessageReceiver
+    # Implement MessageReceiver
 
     async def on_message(self, message: Message) -> None:
         """Handle received message.
@@ -90,5 +90,5 @@ class ResetProtocol(MessageReceiver, CommandIssuer):
         if message.payload is None:
             return
         if message.channel == 'r' and message.payload == 1:
-            self.notify_reset_receivers()
+            await self.notify_reset_receivers()
         self.on_response(message.channel)

@@ -2,4 +2,4 @@
 
 This implements the set of commands and responses the host will handle.
 """
-from lhrhost.protocol.protocol import Command, CommandIssuer, MessageNotifier
+from lhrhost.protocol.protocol import Command, CommandIssuer

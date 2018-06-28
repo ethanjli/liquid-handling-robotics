@@ -40,17 +40,17 @@ class Batch(Batch):
             ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
         )
 
-        self.reset_printer = ResetPrinter(prefix=(batch.RESPONSE_PREFIX))
+        self.protocol_printer = ResetPrinter(prefix=(batch.RESPONSE_PREFIX))
         self.command_printer = MessagePrinter(prefix='  Sending: ')
-        self.reset_protocol = ResetProtocol(
+        self.protocol = ResetProtocol(
             self.transport_manager.connection_synchronizer,
-            reset_receivers=[self.reset_printer],
+            reset_receivers=[self.protocol_printer],
             command_receivers=[self.command_printer, self.translator]
         )
         self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
 
         self.translator.message_receivers.append(self.response_printer)
-        self.translator.message_receivers.append(self.reset_protocol)
+        self.translator.message_receivers.append(self.protocol)
         self.translator.serialized_message_receivers.append(
             self.transport_manager.command_sender
         )
@@ -61,12 +61,12 @@ class Batch(Batch):
         await asyncio.sleep(1.0)
 
         print('RPC-style with completion wait:')
-        await self.reset_protocol.request_complete_reset()
+        await self.protocol.request_complete_reset()
         await asyncio.sleep(2.0)
         print(batch.RESPONSE_PREFIX + 'Reset completed!')
 
         print('RPC-style with acknowledgement response wait:')
-        await self.reset_protocol.request_reset()
+        await self.protocol.request_reset()
         print(batch.RESPONSE_PREFIX + 'Reset command acknowledged!')
         await self.transport_manager.connection_synchronizer.disconnected.wait()
         print(batch.RESPONSE_PREFIX + 'Connection lost!')

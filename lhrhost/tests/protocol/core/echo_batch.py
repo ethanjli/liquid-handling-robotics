@@ -25,19 +25,19 @@ class Batch(Batch):
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.echo_printer = EchoPrinter(prefix=(
+        self.protocol_printer = EchoPrinter(prefix=(
             batch.RESPONSE_PREFIX + 'Echo: '
         ))
         self.command_printer = MessagePrinter(prefix='  Sending: ')
-        self.echo_protocol = EchoProtocol(
-            echo_receivers=[self.echo_printer],
+        self.protocol = EchoProtocol(
+            echo_receivers=[self.protocol_printer],
             command_receivers=[self.command_printer]
         )
         self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
         self.translator = BasicTranslator(
-            message_receivers=[self.response_printer, self.echo_protocol]
+            message_receivers=[self.response_printer, self.protocol]
         )
-        self.echo_protocol.message_receivers.append(self.translator)
+        self.protocol.command_receivers.append(self.translator)
         self.response_receiver = ResponseReceiver(
             response_receivers=[self.translator]
         )
@@ -59,7 +59,7 @@ class Batch(Batch):
         await asyncio.sleep(1.0)
 
         for i in range(10):
-            await self.echo_protocol.request_echo(i)
+            await self.protocol.request_echo(i)
         await asyncio.sleep(1.0)
 
         print(batch.OUTPUT_FOOTER)
