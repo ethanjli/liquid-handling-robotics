@@ -35,6 +35,18 @@ class SerializedMessageReceiver(object, metaclass=InterfaceClass):
         pass
 
 
+class SerializedMessageSender(object, metaclass=InterfaceClass):
+    """Interface for a class which sends serialized messages.
+
+    This may include serialized messages to self or to other sources.
+    """
+
+    @abstractmethod
+    async def send_serialized_message(self, serialized_message: str) -> None:
+        """Send a serialized message."""
+        pass
+
+
 # Type-checking names
 _SerializedMessageReceivers = Iterable[SerializedMessageReceiver]
 

@@ -6,7 +6,9 @@ import logging
 
 # Local package imports
 from lhrhost.messaging.transport import SerializedMessagePrinter
-from lhrhost.messaging.transport.actors import ConsoleManager, TransportManager
+from lhrhost.messaging.transport.actors import (
+    ConsoleManager, ResponseReceiver, TransportManager
+)
 from lhrhost.util import cli
 
 # External imports
@@ -31,15 +33,17 @@ class Console:
         self.response_printer = SerializedMessagePrinter(
             prefix=('\t' * cli.CONSOLE_WIDTH)
         )
-        self.transport_manager = TransportManager(
-            self.arbiter, transport_loop,
+        self.response_receiver = ResponseReceiver(
             response_receivers=[self.response_printer]
+        )
+        self.transport_manager = TransportManager(
+            self.arbiter, transport_loop, response_receiver=self.response_receiver
         )
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.console_manager = ConsoleManager(
-            self.arbiter, self.transport_manager.get_actors,
+            self.arbiter, self.transport_manager.command_sender,
             console_header=cli.CONSOLE_HEADER, executor=self.executor,
-            ready_waiter=self.transport_manager.wait_transport_connected
+            ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
         )
 
     def run(self):

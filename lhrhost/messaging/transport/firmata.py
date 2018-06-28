@@ -167,7 +167,7 @@ async def transport_loop(actor, on_connection=None, on_disconnection=None, **kwa
     logger.debug('Started transport loop!')
     transport_connection_manager = TransportConnectionManager(**kwargs)
     async with transport_connection_manager.connection as transport_connection:
-        actor.transport = transport_connection
+        actor.serialized_message_sender = transport_connection
         if callable(on_connection):
             await on_connection(
                 actor, transport_connection_manager, transport_connection

@@ -27,7 +27,6 @@ OUTPUT_HEADER = (
 RESPONSE_PREFIX = '\t' * OUTPUT_WIDTH
 
 
-# TODO: make this be a separate actor?
 class BatchExecutionManager(Concurrent):
     """Abstract class to manage batch execution asynchronously.
 

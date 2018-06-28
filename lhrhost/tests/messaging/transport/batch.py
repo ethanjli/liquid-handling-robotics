@@ -5,7 +5,9 @@ import logging
 
 # Local package imports
 from lhrhost.messaging.transport import SerializedMessagePrinter
-from lhrhost.messaging.transport.actors import BatchExecutionManager, TransportManager
+from lhrhost.messaging.transport.actors import (
+    BatchExecutionManager, ResponseReceiver, TransportManager
+)
 from lhrhost.tests.messaging.transport import console
 from lhrhost.util import batch
 
@@ -41,14 +43,16 @@ class Batch:
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
         self.response_printer = SerializedMessagePrinter(prefix=batch.RESPONSE_PREFIX)
         self.command_printer = SerializedMessagePrinter(prefix='  Sending: ')
-        self.transport_manager = TransportManager(
-            self.arbiter, transport_loop,
+        self.response_receiver = ResponseReceiver(
             response_receivers=[self.response_printer]
         )
+        self.transport_manager = TransportManager(
+            self.arbiter, transport_loop, response_receiver=self.response_receiver
+        )
         self.batch_execution_manager = BatchExecutionManager(
-            self.arbiter, self.transport_manager.get_actors, self.test_routine,
+            self.arbiter, self.transport_manager.command_sender, self.test_routine,
             header=batch.OUTPUT_HEADER,
-            ready_waiter=self.transport_manager.wait_transport_connected
+            ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
         )
 
     async def test_routine(self):
@@ -58,7 +62,8 @@ class Batch:
         for i in range(10):
             message = '<e>({})'.format(i)
             await self.command_printer.on_serialized_message(message)
-            await self.transport_manager.command_sender.on_serialized_message(message)
+            await self.transport_manager.command_sender.\
+                on_serialized_message(message)
             await asyncio.sleep(0.5)
 
     def run(self):

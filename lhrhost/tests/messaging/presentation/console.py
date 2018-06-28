@@ -8,7 +8,7 @@ from lhrhost.messaging.presentation import (
     BasicTranslator, MessagePrinter
 )
 from lhrhost.messaging.presentation.actors import ConsoleManager
-from lhrhost.messaging.transport.actors import TransportManager
+from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
 from lhrhost.tests.messaging.transport import console
 from lhrhost.util import cli
 
@@ -31,15 +31,17 @@ class Console(console.Console):
         self.translator = BasicTranslator(
             message_receivers=[self.response_printer]
         )
-        self.transport_manager = TransportManager(
-            self.arbiter, transport_loop,
+        self.response_receiver = ResponseReceiver(
             response_receivers=[self.translator]
+        )
+        self.transport_manager = TransportManager(
+            self.arbiter, transport_loop, response_receiver=self.response_receiver
         )
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.console_manager = ConsoleManager(
-            self.arbiter, self.transport_manager.get_actors, self.translator,
+            self.arbiter, self.transport_manager.command_sender, self.translator,
             console_header=cli.CONSOLE_HEADER, executor=self.executor,
-            ready_waiter=self.transport_manager.wait_transport_connected
+            ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
         )
 
 

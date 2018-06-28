@@ -29,22 +29,24 @@ class ConsoleManager(actors.ConsoleManager):
     on a separate actor only receives EOF for some reason.
     """
 
-    def __init__(self, arbiter, get_command_targets, translator, **kwargs):
+    def __init__(self, arbiter, command_sender, translator, **kwargs):
         """Initialize member variables."""
-        super().__init__(arbiter, get_command_targets, **kwargs)
+        super().__init__(arbiter, command_sender, **kwargs)
         self._translator = translator
 
-    async def forward_input_line(self, input_line, command_target):
-        """Forward the serialized command message to a target."""
+    async def handle_console_input(self, input_line):
+        """Take action based on the provided input.
+
+        Raise KeyboardInterrupt when the input specifies that the console needs to
+        stop running. Empty input is a signal to quit.
+        """
+        if not input_line:
+            raise KeyboardInterrupt
         try:
             deserialized = self._translator.deserialize(input_line)
         except InvalidSerializationError:
             logger.error('Malformed message {}'.format(input_line))
             return
-        try:
-            await ps.send(
-                command_target, 'send_serialized_message',
-                self._translator.serialize(deserialized)
-            )
-        except BrokenPipeError:
-            pass
+        await self.command_sender.on_serialized_message(
+            self._translator.serialize(deserialized)
+        )

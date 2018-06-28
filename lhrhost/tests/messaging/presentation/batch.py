@@ -5,32 +5,20 @@ import logging
 
 # Local package imports
 from lhrhost.messaging.presentation import BasicTranslator, Message, MessagePrinter
-from lhrhost.messaging.transport.actors import BatchExecutionManager, TransportManager
-from lhrhost.tests.messaging.transport import echo
+from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
+from lhrhost.tests.messaging.transport.batch import (
+    Batch, BatchExecutionManager, LOGGING_CONFIG, main
+)
 from lhrhost.util import batch
 
 # External imports
 from pulsar.api import arbiter
 
 # Logging
-logging.config.dictConfig(echo.LOGGING_CONFIG)
+logging.config.dictConfig(LOGGING_CONFIG)
 
 
-class BatchExecutionManager(BatchExecutionManager):
-    """Class to run a test routine."""
-
-    def __init__(self, arbiter, get_command_targets, test_routine, **kwargs):
-        """Initialize member variables."""
-        super().__init__(arbiter, get_command_targets, **kwargs)
-        self._test_routine = test_routine
-
-    async def on_execution_ready(self):
-        """Run the test routine when execution becomes possible."""
-        await super().on_execution_ready()
-        await self._test_routine()
-
-
-class Batch(echo.Batch):
+class Batch(Batch):
     """Actor-based batch execution."""
 
     def __init__(self, transport_loop):
@@ -41,15 +29,19 @@ class Batch(echo.Batch):
         self.translator = BasicTranslator(
             message_receivers=[self.response_printer]
         )
-        self.transport_manager = TransportManager(
-            self.arbiter, transport_loop,
+        self.response_receiver = ResponseReceiver(
             response_receivers=[self.translator]
         )
-        self.translator.serialized_message_receivers.append(self.transport_manager.command_sender)
+        self.transport_manager = TransportManager(
+            self.arbiter, transport_loop, response_receiver=self.response_receiver
+        )
+        self.translator.serialized_message_receivers.append(
+            self.transport_manager.command_sender
+        )
         self.batch_execution_manager = BatchExecutionManager(
-            self.arbiter, self.transport_manager.get_actors, self.test_routine,
+            self.arbiter, self.transport_manager.command_sender, self.test_routine,
             header=batch.OUTPUT_HEADER,
-            ready_waiter=self.transport_manager.wait_transport_connected
+            ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
         )
 
     async def test_routine(self):
@@ -64,4 +56,4 @@ class Batch(echo.Batch):
 
 
 if __name__ == '__main__':
-    echo.main(Batch)
+    main(Batch)
