@@ -24,9 +24,9 @@ class Child(ChannelHandlerTreeNode):
     def node_name(self):
         return 'c'
 
-    def on_received_message(self, channel, channel_name_remainder, message):
-        print('{} received: {}|{}|{}'.format(
-            self.channel_path, channel, channel_name_remainder, message
+    async def on_received_message(self, channel_name_remainder, message):
+        print('{} received: {}|{}'.format(
+            self.channel_path, channel_name_remainder, message
         ))
 
     @property
@@ -36,14 +36,14 @@ class Child(ChannelHandlerTreeNode):
             '2': self.on_received_2_message
         }
 
-    def on_received_1_message(self, channel, channel_name_remainder, message):
-        print('{}/1 received: {}|{}|{}'.format(
-            self.channel_path, channel, channel_name_remainder, message
+    async def on_received_1_message(self, channel_name_remainder, message):
+        print('{}/1 received: {}|{}'.format(
+            self.channel_path, channel_name_remainder, message
         ))
 
-    def on_received_2_message(self, channel, channel_name_remainder, message):
-        print('{}/2 received: {}|{}|{}'.format(
-            self.channel_path, channel, channel_name_remainder, message
+    async def on_received_2_message(self, channel_name_remainder, message):
+        print('{}/2 received: {}|{}'.format(
+            self.channel_path, channel_name_remainder, message
         ))
 
 
@@ -59,9 +59,9 @@ class Root(ChannelHandlerTreeNode):
     def node_name(self):
         return 'r'
 
-    def on_received_message(self, channel, channel_name_remainder, message):
-        print('{} received: {}|{}|{}'.format(
-            self.channel_path, channel, channel_name_remainder, message
+    async def on_received_message(self, channel_name_remainder, message):
+        print('{} received: {}|{}'.format(
+            self.channel_path, channel_name_remainder, message
         ))
 
     @property
@@ -77,14 +77,14 @@ class Root(ChannelHandlerTreeNode):
             self.child.node_name: self.child
         }
 
-    def on_received_1234_message(self, channel, channel_name_remainder, message):
-        print('{}/1234 received: {}|{}|{}'.format(
-            self.channel_path, channel, channel_name_remainder, message
+    async def on_received_1234_message(self, channel_name_remainder, message):
+        print('{}/1234 received: {}|{}'.format(
+            self.channel_path, channel_name_remainder, message
         ))
 
-    def on_received_t_message(self, channel, channel_name_remainder, message):
-        print('{}/Test received: {}|{}|{}'.format(
-            self.channel_path, channel, channel_name_remainder, message
+    async def on_received_t_message(self, channel_name_remainder, message):
+        print('{}/Test received: {}|{}'.format(
+            self.channel_path, channel_name_remainder, message
         ))
 
 
@@ -120,8 +120,5 @@ async def main():
 
 
 if __name__ == '__main__':
-    try:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(main())
-    except KeyboardInterrupt:
-        logging.info('Quitting!')
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())

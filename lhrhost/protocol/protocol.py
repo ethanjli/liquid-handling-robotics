@@ -119,6 +119,8 @@ class CommandIssuer():
 # Hierarchical channels
 
 class ChannelTreeNode(metaclass=InterfaceClass):
+    """Mixin for anything coresponding to a node in a hierarchical channel tree."""
+
     @property
     def parent(self):
         """Return the parent ChannelTreeNode, if any."""
@@ -140,7 +142,7 @@ class ChannelTreeNode(metaclass=InterfaceClass):
         """Return the full channel path of the node as a string."""
         if self.parent is None:
             return self.node_channel
-        return self.parent.channel_path + '/' + self.node_channel
+        return '{}/{}'.format(self.parent.channel_path, self.node_channel)
 
     @property
     @abstractmethod
@@ -153,13 +155,13 @@ class ChannelTreeNode(metaclass=InterfaceClass):
         """Return the channel name of the node as a string."""
         if self.parent is None:
             return self.node_name
-        return self.parent.name_path + self.node_name
+        return '{}{}'.format(self.parent.name_path, self.node_name)
 
 
 class ChannelHandlerTreeNode(ChannelTreeNode, MessageReceiver, metaclass=InterfaceClass):
     """Mixin for a command handler in a hierarchical handler tree."""
 
-    def on_received_message(self, channel_name, channel_name_remainder, message):
+    async def on_received_message(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the node."""
         pass
 
@@ -176,21 +178,16 @@ class ChannelHandlerTreeNode(ChannelTreeNode, MessageReceiver, metaclass=Interfa
         if not channel_name.startswith(self.name_path):
             return
         channel_name_remainder = channel_name[len(self.name_path):]
-        self.on_received_message(channel_name, channel_name_remainder, message)
+        await self.on_received_message(channel_name_remainder, message)
 
-        unhandled = True
         try:
             for (channel_name_remainder_prefix, handler) in self.child_handlers.items():
                 if channel_name_remainder.startswith(channel_name_remainder_prefix):
-                    handler(channel_name, channel_name_remainder, message)
-            unhandled = False
+                    await handler(channel_name_remainder, message)
         except KeyError:
             pass
         try:
             for child in self.children.values():
                 await child.on_message(message)
-            unhandled = False
         except KeyError:
             pass
-        if unhandled:
-            logger.warn('Unhandled message {}!'.format(message))

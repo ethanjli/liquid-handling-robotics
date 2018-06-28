@@ -6,8 +6,8 @@ from abc import abstractmethod
 from typing import Iterable, List, Optional
 
 # Local package imports
-from lhrhost.messaging.presentation import Message, MessageReceiver
-from lhrhost.protocol import Command, CommandIssuer
+from lhrhost.messaging.presentation import Message
+from lhrhost.protocol import ChannelHandlerTreeNode, Command, CommandIssuer
 from lhrhost.util.interfaces import InterfaceClass
 from lhrhost.util.printing import Printer
 
@@ -41,7 +41,7 @@ class ResetPrinter(ResetReceiver, Printer):
         self.print('Resetting')
 
 
-class ResetProtocol(MessageReceiver, CommandIssuer):
+class ResetProtocol(ChannelHandlerTreeNode, CommandIssuer):
     """Sends and receives hard resets."""
 
     def __init__(
@@ -65,14 +65,14 @@ class ResetProtocol(MessageReceiver, CommandIssuer):
     async def request_reset(self):
         """Send a Reset command to message receivers."""
         logger.info('Resetting connection...')
-        message = Message('r', 1)
+        message = Message(self.name_path, 1)
         await self.issue_command(Command(message))
         logger.debug('Reset command acknowledged!')
 
     async def request_complete_reset(self):
         """Send a Reset command to message receivers."""
         logger.info('Resetting connection...')
-        message = Message('r', 1)
+        message = Message(self.name_path, 1)
         await self.issue_command(Command(
             message, additional_events=[self.connection_synchronizer.disconnected]
         ))
@@ -80,15 +80,24 @@ class ResetProtocol(MessageReceiver, CommandIssuer):
         await self.connection_synchronizer.connected.wait()
         logger.debug('Connection fully reset!')
 
-    # Implement MessageReceiver
+    # Implement ChannelTreeNode
 
-    async def on_message(self, message: Message) -> None:
-        """Handle received message.
+    @property
+    def node_channel(self) -> str:
+        """Return the channel of the node as a string."""
+        return 'Reset'
 
-        Only handles known Reset messages.
-        """
+    @property
+    def node_name(self) -> str:
+        """Return the channel name of the node as a string."""
+        return 'r'
+
+    # Implement ChannelHandlerTreeNode
+
+    async def on_received_message(self, channel_name_remainder, message):
+        """Handle a message recognized as being handled by the node."""
         if message.payload is None:
             return
-        if message.channel == 'r' and message.payload == 1:
+        if message.channel == self.name_path and message.payload == 1:
             await self.notify_reset_receivers()
         self.on_response(message.channel)

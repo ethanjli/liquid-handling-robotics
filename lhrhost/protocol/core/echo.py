@@ -6,8 +6,8 @@ from abc import abstractmethod
 from typing import Iterable, List, Optional
 
 # Local package imports
-from lhrhost.messaging.presentation import Message, MessageReceiver
-from lhrhost.protocol import Command, CommandIssuer
+from lhrhost.messaging.presentation import Message
+from lhrhost.protocol import ChannelHandlerTreeNode, Command, CommandIssuer
 from lhrhost.util.interfaces import InterfaceClass
 from lhrhost.util.printing import Printer
 
@@ -41,7 +41,7 @@ class EchoPrinter(EchoReceiver, Printer):
         self.print('Echo: {}'.format(payload))
 
 
-class EchoProtocol(MessageReceiver, CommandIssuer):
+class EchoProtocol(ChannelHandlerTreeNode, CommandIssuer):
     """Sends and receives echoes."""
 
     def __init__(
@@ -62,18 +62,30 @@ class EchoProtocol(MessageReceiver, CommandIssuer):
 
     async def request_echo(self, payload: Optional[int]=None):
         """Send a Echo command to message receivers."""
-        message = Message('e', payload)
+        message = Message(self.name_path, payload)
         await self.issue_command(Command(message))
 
-    # Implement MessageReceiver
+    # Implement ChannelTreeNode
 
-    async def on_message(self, message: Message) -> None:
+    @property
+    def node_channel(self) -> str:
+        """Return the channel of the node as a string."""
+        return 'Echo'
+
+    @property
+    def node_name(self) -> str:
+        """Return the channel name of the node as a string."""
+        return 'e'
+
+    # Implement ChannelHandlerTreeNode
+
+    async def on_received_message(self, channel_name_remainder, message) -> None:
         """Handle received message.
 
         Only handles known Echo messages.
         """
         if message.payload is None:
             return
-        if message.channel == 'e':
+        if message.channel == self.name_path:
             await self.notify_echo_receivers(message.payload)
         self.on_response(message.channel)
