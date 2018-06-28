@@ -64,14 +64,11 @@ class Version(object):
 # Receipt of Versions
 
 class VersionReceiver(object, metaclass=InterfaceClass):
-    """Interface for a class which receives :class:`Version`s.
-
-    This may include versions from self or from other sources.
-    """
+    """Interface for a class which receives Version/* responses."""
 
     @abstractmethod
     def on_version(self, version: Version) -> None:
-        """Receive and handle a discovered version."""
+        """Receive and handle Version/* response."""
         pass
 
 
@@ -82,7 +79,7 @@ _VersionReceivers = Iterable[VersionReceiver]
 # Printing
 
 class VersionPrinter(VersionReceiver, Printer):
-    """Simple class which prints received serialized messages."""
+    """Simple class which prints received Version/* responses."""
 
     def on_version(self, version: Version) -> None:
         """Receive and handle a serialized message."""
@@ -90,7 +87,7 @@ class VersionPrinter(VersionReceiver, Printer):
 
 
 class VersionProtocol(MessageReceiver, CommandIssuer):
-    """Determines and prints protocol version."""
+    """Tracks protocol version."""
 
     def __init__(self, version_receivers: Optional[_VersionReceivers]=None, **kwargs):
         """Initialize member variables."""
@@ -102,42 +99,42 @@ class VersionProtocol(MessageReceiver, CommandIssuer):
             self.__version_receivers = [receiver for receiver in version_receivers]
 
     def notify_version_receivers(self) -> None:
-        """Pass the stored version to all registered version receivers."""
+        """Notify all receivers of received Version response."""
         for receiver in self.__version_receivers:
             receiver.on_version(self.version)
 
     # Commands
 
     async def request_full(self):
-        """Send a full version request command to message receivers."""
+        """Send a Version command to message receivers."""
         await self.notify_message_receivers(Message('v'))
 
     async def request_major(self):
-        """Send a major version component request command to message receivers."""
+        """Send a Version/Major request command to message receivers."""
         await self.notify_message_receivers(Message('v0'))
 
     async def request_minor(self):
-        """Send a minor version component request command to message receivers."""
+        """Send a Version/Minor request command to message receivers."""
         await self.notify_message_receivers(Message('v1'))
 
     async def request_patch(self):
-        """Send a patch version component request command to message receivers."""
+        """Send a Verson/Patch request command to message receivers."""
         await self.notify_message_receivers(Message('v2'))
 
     async def request_wait_full(self):
-        """Send a full version request command to message receivers."""
+        """Send a Version command to message receivers."""
         await self.issue_command(Command(Message('v'), ['v0', 'v1', 'v2']))
 
     async def request_wait_major(self):
-        """Send a major version component request command to message receivers."""
+        """Send a Version/Major request command to message receivers."""
         await self.issue_command(Command(Message('v0'), ['v0']))
 
     async def request_wait_minor(self):
-        """Send a minor version component request command to message receivers."""
+        """Send a Version/Minor request command to message receivers."""
         await self.issue_command(Command(Message('v1'), ['v1']))
 
     async def request_wait_patch(self):
-        """Send a patch version component request command to message receivers."""
+        """Send a Verson/Patch request command to message receivers."""
         await self.issue_command(Command(Message('v2'), ['v2']))
 
     # Implement DeserializedMessageReceiver
@@ -145,7 +142,7 @@ class VersionProtocol(MessageReceiver, CommandIssuer):
     async def on_message(self, message: Message) -> None:
         """Handle received message.
 
-        Only handles known version messages. If all components of the version
+        Only handles known Version/* messages. If all components of the version
         have been received and the version is differently than what was previously
         stored, forwards the full version to version receivers.
         """

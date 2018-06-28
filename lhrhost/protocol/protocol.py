@@ -7,6 +7,9 @@ from typing import Dict, Iterable, List, Optional
 # Local package imports
 from lhrhost.messaging.presentation import Message, MessageReceiver
 
+# External imports
+from multidict import MultiDict
+
 # Type-checking names
 _MessageReceivers = Iterable[MessageReceiver]
 
@@ -23,21 +26,23 @@ class Command(object):
         """Initialize member variables."""
         self.message: Message = message
         self.wait_task: Optional[asyncio.Future] = None
-        self._responses_received: Dict[str, asyncio.Event] = {}
+        self._responses_received = MultiDict()
         if response_channels:
-            self._responses_received = {
-                channel: asyncio.Event() for channel in response_channels
-            }
+            self._responses_received = MultiDict(
+                (channel, asyncio.Event()) for channel in response_channels
+            )
         self._additional_events: Optional[Iterable[asyncio.Event]] = []
         if additional_events:
             self._additional_events = [event for event in additional_events]
 
     def on_response(self, channel):
         """Handle a potential response if it matches the right channel."""
-        try:
-            self._responses_received[channel].set()
-        except KeyError:
-            pass
+        if channel not in self._responses_received:
+            return
+        for event in self._responses_received.getall(channel):
+            if not event.is_set():
+                event.set()
+                break
 
     def start_wait_task(self, **kwargs):
         """Start the task to wait for responses to the command."""

@@ -19,14 +19,11 @@ logger.addHandler(logging.NullHandler())
 # Receipt of Echoes
 
 class EchoReceiver(object, metaclass=InterfaceClass):
-    """Interface for a class which receives echo events.
-
-    This may include versions from self or from other sources.
-    """
+    """Interface for a class which receives Echo events."""
 
     @abstractmethod
     def on_echo(self, payload: int) -> None:
-        """Receive and handle a echo."""
+        """Receive and handle a Echo response."""
         pass
 
 
@@ -37,15 +34,15 @@ _EchoReceivers = Iterable[EchoReceiver]
 # Printing
 
 class EchoPrinter(EchoReceiver, Printer):
-    """Simple class which prints received serialized messages."""
+    """Simple class which prints received Echo responses."""
 
     def on_echo(self, payload: int) -> None:
-        """Receive and handle an echo response."""
+        """Receive and handle a Echo response."""
         self.print('Echo: {}'.format(payload))
 
 
 class EchoProtocol(MessageReceiver, CommandIssuer):
-    """Determines and prints protocol version."""
+    """Sends and receives echoes."""
 
     def __init__(
         self, echo_receivers: Optional[_EchoReceivers]=None, **kwargs
@@ -57,18 +54,18 @@ class EchoProtocol(MessageReceiver, CommandIssuer):
             self.__echo_receivers = [receiver for receiver in echo_receivers]
 
     def notify_echo_receivers(self, payload: int) -> None:
-        """Notify all receivers of received echo."""
+        """Notify all receivers of a received Echo response."""
         for receiver in self.__echo_receivers:
             receiver.on_echo(payload)
 
     # Commands
 
-    async def request_echo(self, payload: int):
-        """Send an echo request command to message receivers."""
+    async def request_echo(self, payload: Optional[int]=None):
+        """Send a Echo command to message receivers."""
         await self.notify_message_receivers(Message('e', payload))
 
-    async def request_wait_echo(self, payload: int):
-        """Send an echo request command to message receivers."""
+    async def request_wait_echo(self, payload: Optional[int]=None):
+        """Send a Echo command to message receivers."""
         await self.issue_command(Command(Message('e', payload), ['e']))
 
     # Implement DeserializedMessageReceiver
@@ -76,7 +73,7 @@ class EchoProtocol(MessageReceiver, CommandIssuer):
     async def on_message(self, message: Message) -> None:
         """Handle received message.
 
-        Only handles known echo messages.
+        Only handles known Echo messages.
         """
         if message.payload is None:
             return

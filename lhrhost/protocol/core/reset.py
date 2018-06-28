@@ -19,14 +19,11 @@ logger.addHandler(logging.NullHandler())
 # Receipt of Resets
 
 class ResetReceiver(object, metaclass=InterfaceClass):
-    """Interface for a class which receives reset events.
-
-    This may include versions from self or from other sources.
-    """
+    """Interface for a class which receives Reset events."""
 
     @abstractmethod
     def on_reset(self) -> None:
-        """Receive and handle a reset."""
+        """Receive and handle a Reset response."""
         pass
 
 
@@ -37,7 +34,7 @@ _ResetReceivers = Iterable[ResetReceiver]
 # Printing
 
 class ResetPrinter(ResetReceiver, Printer):
-    """Simple class which prints received serialized messages."""
+    """Simple class which prints received Reset responses."""
 
     def on_reset(self) -> None:
         """Receive and handle a reset response."""
@@ -45,7 +42,7 @@ class ResetPrinter(ResetReceiver, Printer):
 
 
 class ResetProtocol(MessageReceiver, CommandIssuer):
-    """Determines and prints protocol version."""
+    """Sends and receives hard resets."""
 
     def __init__(
         self, connection_synchronizer,
@@ -59,25 +56,25 @@ class ResetProtocol(MessageReceiver, CommandIssuer):
             self.__reset_receivers = [receiver for receiver in reset_receivers]
 
     def notify_reset_receivers(self) -> None:
-        """Notify all receivers of impending reset."""
+        """Notify all receivers of received Reset response."""
         for receiver in self.__reset_receivers:
             receiver.on_reset()
 
     # Commands
 
     async def request_reset(self):
-        """Send a reset request command to message receivers."""
+        """Send a Reset command to message receivers."""
         logger.info('Resetting connection...')
         await self.notify_message_receivers(Message('r', 1))
 
     async def request_wait_reset(self):
-        """Send a reset request command to message receivers."""
+        """Send a Reset command to message receivers."""
         logger.info('Resetting connection...')
         await self.issue_command(Command(Message('r', 1), ['r']))
         logger.debug('Reset command acknowledged!')
 
     async def request_complete_reset(self):
-        """Send a reset request command to message receivers."""
+        """Send a Reset command to message receivers."""
         logger.info('Resetting connection...')
         await self.issue_command(Command(
             Message('r', 1), ['r'], [self.connection_synchronizer.disconnected]
@@ -91,7 +88,7 @@ class ResetProtocol(MessageReceiver, CommandIssuer):
     async def on_message(self, message: Message) -> None:
         """Handle received message.
 
-        Only handles known reset messages.
+        Only handles known Reset messages.
         """
         if message.payload is None:
             return

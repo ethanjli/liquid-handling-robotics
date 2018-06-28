@@ -19,19 +19,16 @@ logger.addHandler(logging.NullHandler())
 # Receipt of IOPins
 
 class IOPinsReceiver(object, metaclass=InterfaceClass):
-    """Interface for a class which receives io_pin events.
-
-    This may include versions from self or from other sources.
-    """
+    """Interface for a class which receives IOPins/* events."""
 
     @abstractmethod
     def on_io_pin_digital(self, pin: int, payload: int) -> None:
-        """Receive and handle a digital io_pin."""
+        """Receive and handle a IOPins/Digital/* response."""
         pass
 
     @abstractmethod
     def on_io_pin_analog(self, pin: int, payload: int) -> None:
-        """Receive and handle a digital io_pin."""
+        """Receive and handle an IOPins/Analog/* response."""
         pass
 
 
@@ -42,21 +39,21 @@ _IOPinsReceivers = Iterable[IOPinsReceiver]
 # Printing
 
 class IOPinsPrinter(IOPinsReceiver, Printer):
-    """Simple class which prints received serialized messages."""
+    """Simple class which prints received IOPins/* responses."""
 
     def on_io_pin_digital(self, pin: int, payload: int) -> None:
-        """Receive and handle a digital pin reading."""
+        """Receive and handle a IOPins/Digital/* response."""
         self.print('Pin {}: {}'.format(
             pin, 'HIGH' if payload else 'LOW'
         ))
 
     def on_io_pin_analog(self, pin: int, payload: int) -> None:
-        """Receive and handle an analog pin reading."""
+        """Receive and handle an IOPins/Analog/* response."""
         self.print('Pin A{}: {}'.format(pin, payload))
 
 
 class IOPinsProtocol(MessageReceiver, CommandIssuer):
-    """Determines and prints protocol version."""
+    """Reads digital and analog IO pins."""
 
     def __init__(
         self, io_pins_receivers: Optional[_IOPinsReceivers]=None, **kwargs
@@ -68,45 +65,45 @@ class IOPinsProtocol(MessageReceiver, CommandIssuer):
             self.__io_pins_receivers = [receiver for receiver in io_pins_receivers]
 
     def notify_io_pins_receivers_digital(self, pin: int, payload: int) -> None:
-        """Notify all receivers of received digital pin reading."""
+        """Notify all receivers of received IOPins/Digital/* response."""
         for receiver in self.__io_pins_receivers:
             receiver.on_io_pin_digital(pin, payload)
 
     def notify_io_pins_receivers_analog(self, pin: int, payload: int) -> None:
-        """Notify all receivers of received analog pin reading."""
+        """Notify all receivers of received IOPins/Analog/* response."""
         for receiver in self.__io_pins_receivers:
             receiver.on_io_pin_analog(pin, payload)
 
     # Commands
 
     async def request_io_pin_digital(self, pin: int):
-        """Send an digital pin read request command to message receivers."""
+        """Send a IOPins/Digital/* command to message receivers."""
         # TODO: validate the pin
         await self.notify_message_receivers(Message('id{}'.format(pin)))
 
-    async def request_io_pin_analog(self, pin: int):
-        """Send an analog pin read request command to message receivers."""
-        # TODO: validate the pin
-        await self.notify_message_receivers(Message('ia{}'.format(pin)))
-
     async def request_wait_io_pin_digital(self, pin: int):
-        """Send an digital pin read request command to message receivers."""
+        """Send an IOPins/Digital/* command to message receivers."""
         # TODO: validate the pin
         channel = 'id{}'.format(pin)
         await self.issue_command(Command(Message(channel), [channel]))
 
     async def request_wait_io_pin_analog(self, pin: int):
-        """Send a analog pin read request command to message receivers."""
+        """Send a IOPins/Analog/* command to message receivers."""
         # TODO: validate the pin
         channel = 'ia{}'.format(pin)
         await self.issue_command(Command(Message(channel), [channel]))
+
+    async def request_io_pin_analog(self, pin: int):
+        """Send an IOPins/Analog/* command to message receivers."""
+        # TODO: validate the pin
+        await self.notify_message_receivers(Message('ia{}'.format(pin)))
 
     # Implement DeserializedMessageReceiver
 
     async def on_message(self, message: Message) -> None:
         """Handle received message.
 
-        Only handles known io_pin messages.
+        Only handles known IOPins/* messages.
         """
         if message.payload is None:
             return
