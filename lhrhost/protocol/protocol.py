@@ -205,6 +205,16 @@ class ChannelHandlerTreeNode(ChannelTreeNode, MessageReceiver, metaclass=Interfa
 
 class ChannelHandlerTreeChildNode(ChannelHandlerTreeNode):
     """Mixin for a non-root command handler in a hierarchical handler tree."""
+    # TODO: rename notify_linear_actuator_receivers/etc. to notify_response_receivers/etc.
+    # TODO: make this subclass CommandIssuer, provide on_any_message
+    # TODO: set parent to default to None, and make child nodes define their own names/channels when appropriate; make everything be a ChildNode (and rename to a better name, e.g. ProtocolHandlerNode)
+    # TODO: instead of linear_actuator_receivers/etc. and notify_linear_actuator_receivers/etc., just have response_receivers and notify_response_receivers/etc.
+    # TODO: protocol class names should be shorter; don't repeat module names in class names
+    # TODO: split up linear_actuator.py into multiple modules
+    # TODO: for channels which handle their child nodes use __getattr__ overloading; define a virtual_children dict for child handlers and functions, maybe using a decorator on the corresponding notify_response_receivers methods?
+    # TODO: the child handler methods should check for empty payload
+    # TODO: make every channel be its own node, instead of using channel handlers?
+    # TODO:implement feedbackcontroller nodes
 
     def __init__(self, parent, node_channel, node_name, **kwargs):
         """Initialize member variables."""

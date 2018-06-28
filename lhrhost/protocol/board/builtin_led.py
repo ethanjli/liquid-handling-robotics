@@ -183,25 +183,25 @@ class BuiltinLEDBlinkProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
     def child_handlers(self):
         """Return a dict of handlers, keyed by channel paths below current path."""
         return {
-            'h': self.on_received_high_interval_message,
-            'l': self.on_received_low_interval_message,
-            'p': self.on_received_periods_message,
-            'n': self.on_received_notify_message,
+            'h': self.on_received_message_high_interval,
+            'l': self.on_received_message_low_interval,
+            'p': self.on_received_message_periods,
+            'n': self.on_received_message_notify,
         }
 
-    async def on_received_high_interval_message(self, channel_name_remainder, message):
+    async def on_received_message_high_interval(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the child handler."""
         await self.notify_builtin_led_receivers_high_interval(message.payload)
 
-    async def on_received_low_interval_message(self, channel_name_remainder, message):
+    async def on_received_message_low_interval(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the child handler."""
         await self.notify_builtin_led_receivers_low_interval(message.payload)
 
-    async def on_received_periods_message(self, channel_name_remainder, message):
+    async def on_received_message_periods(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the child handler."""
         await self.notify_builtin_led_receivers_periods(message.payload)
 
-    async def on_received_notify_message(self, channel_name_remainder, message):
+    async def on_received_message_notify(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the child handler."""
         await self.notify_builtin_led_receivers_notify(message.payload)
 
