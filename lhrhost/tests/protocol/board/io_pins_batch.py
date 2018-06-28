@@ -57,9 +57,9 @@ class Batch(Batch):
         await asyncio.sleep(1.0)
 
         for i in range(4):
-            await self.protocol.request_io_pin_analog(i)
+            await self.protocol.analog.request(i)
         for i in range(2, 14):
-            await self.protocol.request_io_pin_digital(i)
+            await self.protocol.digital.request(i)
         await asyncio.sleep(1.0)
 
         print(batch.OUTPUT_FOOTER)

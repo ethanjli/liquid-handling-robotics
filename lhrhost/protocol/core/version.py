@@ -117,7 +117,7 @@ class VersionComponentProtocol(ChannelHandlerTreeNode, CommandIssuer):
         self.command_receivers = parent.command_receivers
         self._parent = parent
         self._node_channel = node_channel
-        self._node_name = int(node_name)
+        self._node_name = node_name
 
     # Commands
 
@@ -146,7 +146,11 @@ class VersionComponentProtocol(ChannelHandlerTreeNode, CommandIssuer):
     # Implement ChannelHandlerTreeNode
 
     async def on_received_message(self, channel_name_remainder, message):
-        """Handle a message recognized as being handled by the node."""
+        """Handle a message recognized as being handled by the node.
+
+        If the full version becomes discovered and is different from what was
+        previously recorded, notifies the parent's version receivers.
+        """
         if message.payload is None:
             return
         if message.channel == self.name_path:
@@ -165,15 +169,9 @@ class VersionProtocol(ChannelHandlerTreeNode, CommandIssuer):
         """Initialize member variables."""
         super().__init__(**kwargs)
 
-        self.major = VersionComponentProtocol(
-            self, 'Major', '0', **kwargs
-        )
-        self.minor = VersionComponentProtocol(
-            self, 'Minor', '1', **kwargs
-        )
-        self.patch = VersionComponentProtocol(
-            self, 'Patch', '2', **kwargs
-        )
+        self.major = VersionComponentProtocol(self, 'Major', '0', **kwargs)
+        self.minor = VersionComponentProtocol(self, 'Minor', '1', **kwargs)
+        self.patch = VersionComponentProtocol(self, 'Patch', '2', **kwargs)
 
         self.version: Version = Version(None, None, None)
         self.__version_receivers: List[VersionReceiver] = []
@@ -214,14 +212,10 @@ class VersionProtocol(ChannelHandlerTreeNode, CommandIssuer):
             self.patch.node_name: self.patch
         }
 
-    # Implement MessageReceiver
+    # Implement ChannelHandlerTreeNode
 
     async def on_received_message(self, channel_name_remainder, message):
-        """Handle a message recognized as being handled by the node.
-
-        If all components of the version have been received and the version is
-        different than what was previously stored, forwards full version to receivers.
-        """
+        """Handle a message recognized as being handled by the node."""
         if message.payload is None:
             return
         self.on_response(message.channel)
