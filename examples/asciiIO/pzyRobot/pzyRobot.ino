@@ -2,7 +2,7 @@
 
 #define LHR_Messaging_ASCIIIO
 #define LHR_Protocol_Core
-//#define LHR_Protocol_Board
+#define LHR_Protocol_Board
 #define LHR_Protocol_AbsoluteLinearActuatorAxis
 #define LHR_Protocol_CumulativeLinearActuatorAxis
 #include <LiquidHandlingRobotics.h>

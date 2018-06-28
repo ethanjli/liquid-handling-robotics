@@ -30,7 +30,7 @@ class Child(ChannelHandlerTreeNode):
         ))
 
     @property
-    def child_handlers(self):
+    def child_prefix_handlers(self):
         return {
             '1': self.on_received_1_message,
             '2': self.on_received_2_message

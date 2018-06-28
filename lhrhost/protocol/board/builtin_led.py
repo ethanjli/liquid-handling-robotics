@@ -179,21 +179,44 @@ class BuiltinLEDBlinkProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
 
     # Implement ChannelHandlerTreeNode
 
+    @property
+    def child_handlers(self):
+        """Return a dict of handlers, keyed by channel paths below current path."""
+        return {
+            'h': self.on_received_high_interval_message,
+            'l': self.on_received_low_interval_message,
+            'p': self.on_received_periods_message,
+            'n': self.on_received_notify_message,
+        }
+
+    async def on_received_high_interval_message(self, channel_name_remainder, message):
+        """Handle a message recognized as being handled by the child handler."""
+        await self.notify_builtin_led_receivers_high_interval(message.payload)
+
+    async def on_received_low_interval_message(self, channel_name_remainder, message):
+        """Handle a message recognized as being handled by the child handler."""
+        await self.notify_builtin_led_receivers_low_interval(message.payload)
+
+    async def on_received_periods_message(self, channel_name_remainder, message):
+        """Handle a message recognized as being handled by the child handler."""
+        await self.notify_builtin_led_receivers_periods(message.payload)
+
+    async def on_received_notify_message(self, channel_name_remainder, message):
+        """Handle a message recognized as being handled by the child handler."""
+        await self.notify_builtin_led_receivers_notify(message.payload)
+
+    async def on_any_message(self, message):
+        """Handle any message whether or not it is recognized as by the node."""
+        if message.payload is None:
+            return
+        self.on_response(message.channel)
+
     async def on_received_message(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the node."""
         if message.payload is None:
             return
         if message.channel == self.name_path:
             await self.notify_builtin_led_receivers(message.payload)
-        elif message.channel == self.name_path + 'h':
-            await self.notify_builtin_led_receivers_high_interval(message.payload)
-        elif message.channel == self.name_path + 'l':
-            await self.notify_builtin_led_receivers_low_interval(message.payload)
-        elif message.channel == self.name_path + 'p':
-            await self.notify_builtin_led_receivers_periods(message.payload)
-        elif message.channel == self.name_path + 'n':
-            await self.notify_builtin_led_receivers_notify(message.payload)
-        self.on_response(message.channel)
 
 
 class BuiltinLEDProtocol(ChannelHandlerTreeNode, CommandIssuer):
@@ -244,6 +267,12 @@ class BuiltinLEDProtocol(ChannelHandlerTreeNode, CommandIssuer):
 
     # Implement MessageReceiver
 
+    async def on_any_message(self, message):
+        """Handle any message whether or not it is recognized as by the node."""
+        if message.payload is None:
+            return
+        self.on_response(message.channel)
+
     async def on_received_message(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the node."""
         if message.payload is None:
@@ -251,4 +280,3 @@ class BuiltinLEDProtocol(ChannelHandlerTreeNode, CommandIssuer):
         # TODO: validate the channel name
         if message.channel == self.name_path:
             await self.notify_builtin_led_receivers(message.payload)
-        self.on_response(message.channel)

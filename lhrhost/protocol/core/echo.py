@@ -79,6 +79,12 @@ class EchoProtocol(ChannelHandlerTreeNode, CommandIssuer):
 
     # Implement ChannelHandlerTreeNode
 
+    async def on_any_message(self, message):
+        """Handle any message whether or not it is recognized as by the node."""
+        if message.payload is None:
+            return
+        self.on_response(message.channel)
+
     async def on_received_message(self, channel_name_remainder, message) -> None:
         """Handle received message.
 
@@ -88,4 +94,3 @@ class EchoProtocol(ChannelHandlerTreeNode, CommandIssuer):
             return
         if message.channel == self.name_path:
             await self.notify_echo_receivers(message.payload)
-        self.on_response(message.channel)

@@ -161,13 +161,22 @@ class ChannelTreeNode(metaclass=InterfaceClass):
 class ChannelHandlerTreeNode(ChannelTreeNode, MessageReceiver, metaclass=InterfaceClass):
     """Mixin for a command handler in a hierarchical handler tree."""
 
+    async def on_any_message(self, message):
+        """Handle any message whether or not it is recognized as by the node."""
+        pass
+
     async def on_received_message(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the node."""
         pass
 
     @property
+    def child_prefix_handlers(self):
+        """Return a dict of handlers, keyed by channel path prefixes below current path."""
+        return {}
+
+    @property
     def child_handlers(self):
-        """Return a dict of handlers, keyed by their channel paths below current path."""
+        """Return a dict of handlers, keyed by channel paths below current path."""
         return {}
 
     # Implement MessageReceiver
@@ -175,23 +184,23 @@ class ChannelHandlerTreeNode(ChannelTreeNode, MessageReceiver, metaclass=Interfa
     async def on_message(self, message):
         """Receive and handle a message by dispatching it to the appropriate handler."""
         channel_name = message.channel
+        await self.on_any_message(message)
         if not channel_name.startswith(self.name_path):
             return
         channel_name_remainder = channel_name[len(self.name_path):]
         await self.on_received_message(channel_name_remainder, message)
 
         try:
-            for (channel_name_remainder_prefix, handler) in self.child_handlers.items():
-                if channel_name_remainder.startswith(channel_name_remainder_prefix):
-                    await handler(channel_name_remainder, message)
+            await self.child_handlers[channel_name_remainder](
+                channel_name_remainder, message
+            )
         except KeyError:
             pass
-        try:
-            for child in self.children.values():
-                await child.on_message(message)
-        except KeyError:
-            pass
-        # TODO: propagate on_response calls for CommandIssuers down the tree
+        for (channel_name_remainder_prefix, handler) in self.child_prefix_handlers.items():
+            if channel_name_remainder.startswith(channel_name_remainder_prefix):
+                await handler(channel_name_remainder, message)
+        for child in self.children.values():
+            await child.on_message(message)
 
 
 class ChannelHandlerTreeChildNode(ChannelHandlerTreeNode):

@@ -128,6 +128,12 @@ class VersionComponentProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
 
     # Implement ChannelHandlerTreeNode
 
+    async def on_any_message(self, message):
+        """Handle any message whether or not it is recognized as by the node."""
+        if message.payload is None:
+            return
+        self.on_response(message.channel)
+
     async def on_received_message(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the node.
 
@@ -142,7 +148,6 @@ class VersionComponentProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
             self.parent.version[int(self.node_name)] = new
             if self.parent.version.known and new != previous:
                 await self.parent.notify_version_receivers()
-        self.on_response(message.channel)
 
 
 class VersionProtocol(ChannelHandlerTreeNode, CommandIssuer):
@@ -197,8 +202,8 @@ class VersionProtocol(ChannelHandlerTreeNode, CommandIssuer):
 
     # Implement ChannelHandlerTreeNode
 
-    async def on_received_message(self, channel_name_remainder, message):
-        """Handle a message recognized as being handled by the node."""
+    async def on_any_message(self, message):
+        """Handle any message whether or not it is recognized as by the node."""
         if message.payload is None:
             return
         self.on_response(message.channel)

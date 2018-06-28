@@ -86,12 +86,17 @@ class IOPinsTypeProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
 
     # Implement ChannelHandlerTreeNode
 
+    async def on_any_message(self, message):
+        """Handle any message whether or not it is recognized as by the node."""
+        if message.payload is None:
+            return
+        self.on_response(message.channel)
+
     async def on_received_message(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the node."""
         if message.payload is None:
             return
         await self.notify_io_pins_receivers(channel_name_remainder, message.payload)
-        self.on_response(message.channel)
 
 
 class IOPinsProtocol(ChannelHandlerTreeNode, CommandIssuer):
@@ -132,8 +137,8 @@ class IOPinsProtocol(ChannelHandlerTreeNode, CommandIssuer):
 
     # Implement ChannelHandlerTreeNode
 
-    async def on_received_message(self, channel_name_remainder, message):
-        """Handle a message recognized as being handled by the node."""
+    async def on_any_message(self, message):
+        """Handle any message whether or not it is recognized as by the node."""
         if message.payload is None:
             return
         self.on_response(message.channel)

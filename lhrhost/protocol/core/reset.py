@@ -94,10 +94,15 @@ class ResetProtocol(ChannelHandlerTreeNode, CommandIssuer):
 
     # Implement ChannelHandlerTreeNode
 
-    async def on_received_message(self, channel_name_remainder, message):
+    async def on_any_message(self, channel_name_remainder, message):
+        """Handle any message whether or not it is recognized as by the node."""
+        if message.payload is None:
+            return
+        self.on_response(message.channel)
+
+    async def on_received_message(self, message):
         """Handle a message recognized as being handled by the node."""
         if message.payload is None:
             return
         if message.channel == self.name_path and message.payload == 1:
             await self.notify_reset_receivers()
-        self.on_response(message.channel)
