@@ -9,9 +9,9 @@ from lhrhost.messaging.presentation import (
     BasicTranslator, MessagePrinter
 )
 from lhrhost.messaging.presentation.actors import ConsoleManager
-from lhrhost.messaging.transport import SerializedMessagePrinter
 from lhrhost.messaging.transport.actors import TransportManager
 from lhrhost.tests.messaging.transport import console
+from lhrhost.util import cli
 
 # External imports
 from pulsar.api import arbiter
@@ -27,16 +27,16 @@ class Console(console.Console):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
         self.echo_response_printer = MessagePrinter(
-            prefix=('\t' * console.CONSOLE_WIDTH + '[Echo]\t')
+            prefix=('\t' * cli.CONSOLE_WIDTH + '[Echo]\t')
         )
         self.reset_response_printer = MessagePrinter(
-            prefix=('\t' * console.CONSOLE_WIDTH + '[Reset]\t')
+            prefix=('\t' * cli.CONSOLE_WIDTH + '[Reset]\t')
         )
         self.version_response_printer = MessagePrinter(
-            prefix=('\t' * console.CONSOLE_WIDTH + '[Version]\t')
+            prefix=('\t' * cli.CONSOLE_WIDTH + '[Version]\t')
         )
         self.builtin_led_response_printer = MessagePrinter(
-            prefix=('\t' * console.CONSOLE_WIDTH + '[BuiltinLED]\t')
+            prefix=('\t' * cli.CONSOLE_WIDTH + '[BuiltinLED]\t')
         )
         self.response_dispatcher = Dispatcher(
             receivers={
@@ -48,12 +48,8 @@ class Console(console.Console):
                 'l': [self.builtin_led_response_printer],
             }
         )
-        self.command_printer = SerializedMessagePrinter(
-            prefix='Sending command: '
-        )
         self.translator = BasicTranslator(
-            message_receivers=[self.response_dispatcher],
-            serialized_message_receivers=[self.command_printer]
+            message_receivers=[self.response_dispatcher]
         )
         self.transport_manager = TransportManager(
             self.arbiter, transport_loop,
@@ -61,9 +57,8 @@ class Console(console.Console):
         )
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.console_manager = ConsoleManager(
-            self.arbiter, lambda: [self.transport_manager.actor], self.translator,
-            console_header=console.CONSOLE_HEADER,
-            executor=self.executor,
+            self.arbiter, self.transport_manager.get_actors, self.translator,
+            console_header=cli.CONSOLE_HEADER, executor=self.executor,
             ready_waiter=self.transport_manager.wait_transport_connected
         )
 

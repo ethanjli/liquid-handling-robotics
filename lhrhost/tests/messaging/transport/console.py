@@ -7,6 +7,7 @@ import logging
 # Local package imports
 from lhrhost.messaging.transport import SerializedMessagePrinter
 from lhrhost.messaging.transport.actors import ConsoleManager, TransportManager
+from lhrhost.util import cli
 
 # External imports
 from pulsar.api import arbiter
@@ -20,12 +21,6 @@ LOGGING_CONFIG['handlers']['console']['formatter'] = 'simple'
 LOGGING_CONFIG['loggers']['pulsar'] = {'level': 'ERROR'}
 logging.config.dictConfig(LOGGING_CONFIG)
 
-CONSOLE_WIDTH = 8
-CONSOLE_HEADER = (
-    'Commands' + ('\t' * (CONSOLE_WIDTH - 1)) + 'Responses' + '\n' +
-    ('-' * 12 * CONSOLE_WIDTH)
-)
-
 
 class Console:
     """Actor-based serial console."""
@@ -34,7 +29,7 @@ class Console:
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
         self.response_printer = SerializedMessagePrinter(
-            prefix=('\t' * CONSOLE_WIDTH)
+            prefix=('\t' * cli.CONSOLE_WIDTH)
         )
         self.transport_manager = TransportManager(
             self.arbiter, transport_loop,
@@ -43,7 +38,7 @@ class Console:
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.console_manager = ConsoleManager(
             self.arbiter, self.transport_manager.get_actors,
-            console_header=CONSOLE_HEADER, executor=self.executor,
+            console_header=cli.CONSOLE_HEADER, executor=self.executor,
             ready_waiter=self.transport_manager.wait_transport_connected
         )
 

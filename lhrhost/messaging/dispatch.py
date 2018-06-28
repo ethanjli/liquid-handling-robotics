@@ -69,13 +69,13 @@ class Dispatcher(MessageReceiver):
 
     # Implement MessageReceiver
 
-    def on_message(self, message: Message) -> None:
+    async def on_message(self, message: Message) -> None:
         """Handle received message."""
         for receiver in self.__receivers[message.channel]:
-            receiver.on_message(message)
+            await receiver.on_message(message)
         for receiver in self.__receivers[None]:
-            receiver.on_message(message)
+            await receiver.on_message(message)
         for (prefix, receivers) in self.__prefix_receivers.items():
             if message.channel.startswith(prefix):
                 for receiver in receivers:
-                    receiver.on_message(message)
+                    await receiver.on_message(message)

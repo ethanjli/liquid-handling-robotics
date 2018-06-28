@@ -7,6 +7,7 @@ import logging
 from lhrhost.messaging.transport import SerializedMessagePrinter
 from lhrhost.messaging.transport.actors import BatchExecutionManager, TransportManager
 from lhrhost.tests.messaging.transport import console
+from lhrhost.util import batch
 
 # External imports
 from pulsar.api import arbiter
@@ -15,8 +16,6 @@ from pulsar.api import arbiter
 logging.config.dictConfig(console.LOGGING_CONFIG)
 
 LOGGING_CONFIG = console.LOGGING_CONFIG
-OUTPUT_WIDTH = console.CONSOLE_WIDTH
-OUTPUT_HEADER = console.CONSOLE_HEADER
 main = console.main
 
 
@@ -40,7 +39,7 @@ class Batch:
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.response_printer = SerializedMessagePrinter(prefix='\t' * OUTPUT_WIDTH)
+        self.response_printer = SerializedMessagePrinter(prefix=batch.RESPONSE_PREFIX)
         self.command_printer = SerializedMessagePrinter(prefix='  Sending: ')
         self.transport_manager = TransportManager(
             self.arbiter, transport_loop,
@@ -48,7 +47,7 @@ class Batch:
         )
         self.batch_execution_manager = BatchExecutionManager(
             self.arbiter, self.transport_manager.get_actors, self.test_routine,
-            header=OUTPUT_HEADER,
+            header=batch.OUTPUT_HEADER,
             ready_waiter=self.transport_manager.wait_transport_connected
         )
 

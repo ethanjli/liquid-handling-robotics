@@ -18,6 +18,15 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+# Printing
+CONSOLE_WIDTH = 6
+CONSOLE_HEADER = (
+    'Commands' + ('\t' * (CONSOLE_WIDTH - 1)) + 'Responses' + '\n' +
+    ('-' * (12 * CONSOLE_WIDTH + 8))
+)
+RESPONSE_PREFIX = '\t' * CONSOLE_WIDTH
+
+
 class ConsoleManager(Concurrent):
     """Abstract class to manage console input asynchronously.
 
@@ -89,13 +98,12 @@ class ConsoleManager(Concurrent):
         if callable(self._ready_waiter):
             await self._ready_waiter()
             self.flush_console_input()
+        await self.on_console_ready()
         logger.info('Ready for command-line input!')
-        try:
-            await self.on_console_ready()
-        except KeyboardInterrupt:
-            self.quit()
-            while True:
-                await asyncio.sleep(1.0)
+        logger.info(
+            'Enter commands as separate lines. '
+            'To quit, enter a blank line or press Ctrl-D.'
+        )
         while True:
             input_line = await self._loop.run_in_executor(
                 self.executor, self.get_console_input

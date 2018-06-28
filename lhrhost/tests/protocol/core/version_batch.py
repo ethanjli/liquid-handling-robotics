@@ -8,6 +8,7 @@ from lhrhost.messaging.presentation import BasicTranslator, MessagePrinter
 from lhrhost.messaging.transport.actors import BatchExecutionManager, TransportManager
 from lhrhost.protocol.core.version import VersionPrinter, VersionProtocol
 from lhrhost.tests.messaging.transport import echo
+from lhrhost.util import batch
 
 # External imports
 from pulsar.api import arbiter
@@ -37,14 +38,14 @@ class Batch(echo.Batch):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
         self.version_printer = VersionPrinter(prefix=(
-            '\t' * echo.OUTPUT_WIDTH + 'Version: '
+            batch.RESPONSE_PREFIX + 'Version: '
         ))
         self.command_printer = MessagePrinter(prefix='  Sending: ')
         self.version_protocol = VersionProtocol(
             version_receivers=[self.version_printer],
             command_receivers=[self.command_printer]
         )
-        self.response_printer = MessagePrinter(prefix='\t' * echo.OUTPUT_WIDTH)
+        self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
         self.translator = BasicTranslator(
             message_receivers=[self.response_printer, self.version_protocol]
         )
@@ -56,7 +57,7 @@ class Batch(echo.Batch):
         self.translator.serialized_message_receivers.append(self.transport_manager.command_sender)
         self.batch_execution_manager = BatchExecutionManager(
             self.arbiter, self.transport_manager.get_actors, self.test_routine,
-            header=echo.OUTPUT_HEADER,
+            header=batch.OUTPUT_HEADER,
             ready_waiter=self.transport_manager.wait_transport_connected
         )
 

@@ -18,6 +18,15 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+# Printing
+OUTPUT_WIDTH = 6
+OUTPUT_HEADER = (
+    'Commands' + ('\t' * (OUTPUT_WIDTH - 1)) + 'Responses' + '\n' +
+    ('-' * (12 * OUTPUT_WIDTH + 8))
+)
+RESPONSE_PREFIX = '\t' * OUTPUT_WIDTH
+
+
 # TODO: make this be a separate actor?
 class BatchExecutionManager(Concurrent):
     """Abstract class to manage batch execution asynchronously.
