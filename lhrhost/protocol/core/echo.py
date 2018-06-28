@@ -40,8 +40,8 @@ class EchoPrinter(EchoReceiver, Printer):
     """Simple class which prints received serialized messages."""
 
     def on_echo(self, payload: int) -> None:
-        """Receive and handle a serialized message."""
-        self.print('Echo {}'.format(payload))
+        """Receive and handle an echo response."""
+        self.print('Echo: {}'.format(payload))
 
 
 class EchoProtocol(MessageReceiver, CommandIssuer):
@@ -57,7 +57,7 @@ class EchoProtocol(MessageReceiver, CommandIssuer):
             self.__echo_receivers = [receiver for receiver in echo_receivers]
 
     def notify_echo_receivers(self, payload: int) -> None:
-        """Notify all receivers of impending echo."""
+        """Notify all receivers of received echo."""
         for receiver in self.__echo_receivers:
             receiver.on_echo(payload)
 
@@ -69,9 +69,7 @@ class EchoProtocol(MessageReceiver, CommandIssuer):
 
     async def request_wait_echo(self, payload: int):
         """Send an echo request command to message receivers."""
-        await self.issue_command(
-            Command(Message('e', payload), ['e'])
-        )
+        await self.issue_command(Command(Message('e', payload), ['e']))
 
     # Implement DeserializedMessageReceiver
 

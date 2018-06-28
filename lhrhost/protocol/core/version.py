@@ -71,7 +71,7 @@ class VersionReceiver(object, metaclass=InterfaceClass):
 
     @abstractmethod
     def on_version(self, version: Version) -> None:
-        """Receive and handle a (deserialized) message, i.e. a :class:`Message`."""
+        """Receive and handle a discovered version."""
         pass
 
 

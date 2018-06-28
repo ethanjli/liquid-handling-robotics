@@ -93,8 +93,6 @@ IOPins
 
   - IOPins/Digital
 
-    - IOPins/Digital/0
-    - IOPins/Digital/1
     - IOPins/Digital/2
     - IOPins/Digital/3
     - IOPins/Digital/4
@@ -121,8 +119,6 @@ IOPins
 
     - IOPins/Digital: `id`
 
-      - IOPins/Digital/0: `id0`
-      - IOPins/Digital/1: `id1`
       - IOPins/Digital/2: `id2`
       - IOPins/Digital/3: `id3`
       - IOPins/Digital/4: `id4`

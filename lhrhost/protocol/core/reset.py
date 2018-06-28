@@ -40,7 +40,7 @@ class ResetPrinter(ResetReceiver, Printer):
     """Simple class which prints received serialized messages."""
 
     def on_reset(self) -> None:
-        """Receive and handle a serialized message."""
+        """Receive and handle a reset response."""
         self.print('Resetting')
 
 
