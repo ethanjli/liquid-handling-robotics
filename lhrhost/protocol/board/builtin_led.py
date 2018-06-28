@@ -137,22 +137,14 @@ class BuiltinLEDProtocol(MessageReceiver, CommandIssuer):
     async def request_builtin_led(self, state: Optional[int]=None):
         """Send a BuiltinLED request command to message receivers."""
         # TODO: validate the state
-        await self.notify_message_receivers(Message('l', state))
-
-    async def request_wait_builtin_led(self, state: Optional[int]=None):
-        """Send a BuiltinLED request command to message receivers."""
-        # TODO: validate the state
-        await self.issue_command(Command(Message('l', state), ['l']))
+        message = Message('l', state)
+        await self.issue_command(Command(message))
 
     async def request_builtin_led_blink(self, state: Optional[int]=None):
         """Send a BuiltinLED/Blink request command to message receivers."""
         # TODO: validate the state
-        await self.notify_message_receivers(Message('lb', state))
-
-    async def request_wait_builtin_led_blink(self, state: Optional[int]=None):
-        """Send a BuiltinLED/Blink request command to message receivers."""
-        # TODO: validate the state
-        await self.issue_command(Command(Message('lb', state), ['lb']))
+        message = Message('lb', state)
+        await self.issue_command(Command(message))
 
     async def request_complete_builtin_led_blink(self, periods: int):
         """Send a BuiltinLED/Blink request command to message receivers.
@@ -160,48 +152,36 @@ class BuiltinLEDProtocol(MessageReceiver, CommandIssuer):
         Blink the built-in LED for a finite number of periods.
         """
         # TODO: validate periods
-        await self.request_wait_builtin_led_blink_periods(periods)
-        await self.issue_command(Command(Message('lb', 1), ['lb', 'lb', 'lbp']))
+        message = Message('lb', 1)
+        wait_channels = ['lb', 'lb', 'lbp']
+        await self.request_builtin_led_blink_periods(periods)
+        logger.debug('Starting to blink the LED...')
+        await self.issue_command(Command(message, wait_channels))
+        logger.debug('Finished blinking the LED...')
 
     async def request_builtin_led_blink_high_interval(self, interval: Optional[int]=None):
         """Send a BuiltinLED/Blink/HighInterval request command to message receivers."""
         # TODO: validate the state
-        await self.notify_message_receivers(Message('lbh', interval))
-
-    async def request_wait_builtin_led_blink_high_interval(self, interval: Optional[int]=None):
-        """Send a BuiltinLED/Blink/HighInterval request command to message receivers."""
-        # TODO: validate the state
-        await self.issue_command(Command(Message('lbh', interval), ['lbh']))
+        message = Message('lbh', interval)
+        await self.issue_command(Command(message))
 
     async def request_builtin_led_blink_low_interval(self, interval: Optional[int]=None):
         """Send a BuiltinLED/Blink/LowInterval request command to message receivers."""
         # TODO: validate the state
-        await self.notify_message_receivers(Message('lbl', interval))
-
-    async def request_wait_builtin_led_blink_low_interval(self, interval: Optional[int]=None):
-        """Send a BuiltinLED/Blink/LowInterval request command to message receivers."""
-        # TODO: validate the state
-        await self.issue_command(Command(Message('lbl', interval), ['lbl']))
+        message = Message('lbl', interval)
+        await self.issue_command(Command(message))
 
     async def request_builtin_led_blink_periods(self, periods: Optional[int]=None):
         """Send a BuiltinLED/Blink/Periods request command to message receivers."""
         # TODO: validate the state
-        await self.notify_message_receivers(Message('lbp', periods))
-
-    async def request_wait_builtin_led_blink_periods(self, periods: Optional[int]=None):
-        """Send a BuiltinLED/Blink/Periods request command to message receivers."""
-        # TODO: validate the state
-        await self.issue_command(Command(Message('lbp', periods), ['lbp']))
+        message = Message('lbp', periods)
+        await self.issue_command(Command(message))
 
     async def request_builtin_led_blink_notify(self, state: Optional[int]=None):
         """Send a BuiltinLED/Blink/Notify request command to message receivers."""
         # TODO: validate the state
-        await self.notify_message_receivers(Message('lbn', state))
-
-    async def request_wait_builtin_led_blink_notify(self, state: Optional[int]=None):
-        """Send a BuiltinLED/Blink/Notify request command to message receivers."""
-        # TODO: validate the state
-        await self.issue_command(Command(Message('lbn', state), ['lbn']))
+        message = Message('lbn', state)
+        await self.issue_command(Command(message))
 
     # Implement DeserializedMessageReceiver
 

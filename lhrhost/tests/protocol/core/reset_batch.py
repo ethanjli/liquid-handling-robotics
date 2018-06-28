@@ -66,20 +66,13 @@ class Batch(Batch):
         print(batch.RESPONSE_PREFIX + 'Reset completed!')
 
         print('RPC-style with acknowledgement response wait:')
-        await self.reset_protocol.request_wait_reset()
+        await self.reset_protocol.request_reset()
         print(batch.RESPONSE_PREFIX + 'Reset command acknowledged!')
         await self.transport_manager.connection_synchronizer.disconnected.wait()
         print(batch.RESPONSE_PREFIX + 'Connection lost!')
         await self.transport_manager.connection_synchronizer.connected.wait()
         print(batch.RESPONSE_PREFIX + 'Reset completed!')
         await asyncio.sleep(2.0)
-
-        print('Nowait:')
-        await self.reset_protocol.request_reset()
-        await self.transport_manager.connection_synchronizer.disconnected.wait()
-        print(batch.RESPONSE_PREFIX + 'Connection lost!')
-        await self.transport_manager.connection_synchronizer.connected.wait()
-        print(batch.RESPONSE_PREFIX + 'Reset completed!')
 
         await asyncio.sleep(2.0)
         print(batch.OUTPUT_FOOTER)

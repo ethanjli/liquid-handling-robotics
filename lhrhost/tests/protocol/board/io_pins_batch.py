@@ -56,20 +56,12 @@ class Batch(Batch):
         print('Running test routine...')
         await asyncio.sleep(1.0)
 
-        print('RPC-style:')
-        for i in range(4):
-            await self.io_pins_protocol.request_wait_io_pin_analog(i)
-        for i in range(2, 14):
-            await self.io_pins_protocol.request_wait_io_pin_digital(i)
-        await asyncio.sleep(1.0)
-
-        print('Nowait:')
         for i in range(4):
             await self.io_pins_protocol.request_io_pin_analog(i)
         for i in range(2, 14):
             await self.io_pins_protocol.request_io_pin_digital(i)
+        await asyncio.sleep(1.0)
 
-        await asyncio.sleep(2.0)
         print(batch.OUTPUT_FOOTER)
         print('Quitting...')
 

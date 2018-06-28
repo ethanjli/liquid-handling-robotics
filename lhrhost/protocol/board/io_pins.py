@@ -77,26 +77,16 @@ class IOPinsProtocol(MessageReceiver, CommandIssuer):
     # Commands
 
     async def request_io_pin_digital(self, pin: int):
-        """Send a IOPins/Digital/* command to message receivers."""
-        # TODO: validate the pin
-        await self.notify_message_receivers(Message('id{}'.format(pin)))
-
-    async def request_wait_io_pin_digital(self, pin: int):
         """Send an IOPins/Digital/* command to message receivers."""
         # TODO: validate the pin
-        channel = 'id{}'.format(pin)
-        await self.issue_command(Command(Message(channel), [channel]))
-
-    async def request_wait_io_pin_analog(self, pin: int):
-        """Send a IOPins/Analog/* command to message receivers."""
-        # TODO: validate the pin
-        channel = 'ia{}'.format(pin)
-        await self.issue_command(Command(Message(channel), [channel]))
+        message = Message('id{}'.format(pin))
+        await self.issue_command(Command(message))
 
     async def request_io_pin_analog(self, pin: int):
-        """Send an IOPins/Analog/* command to message receivers."""
+        """Send a IOPins/Analog/* command to message receivers."""
         # TODO: validate the pin
-        await self.notify_message_receivers(Message('ia{}'.format(pin)))
+        message = Message('ia{}'.format(pin))
+        await self.issue_command(Command(message))
 
     # Implement DeserializedMessageReceiver
 

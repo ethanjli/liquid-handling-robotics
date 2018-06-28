@@ -107,35 +107,24 @@ class VersionProtocol(MessageReceiver, CommandIssuer):
 
     async def request_full(self):
         """Send a Version command to message receivers."""
-        await self.notify_message_receivers(Message('v'))
+        message = Message('v')
+        wait_channels = ['v0', 'v1', 'v2']
+        await self.issue_command(Command(message, wait_channels))
 
     async def request_major(self):
         """Send a Version/Major request command to message receivers."""
-        await self.notify_message_receivers(Message('v0'))
+        message = Message('v0')
+        await self.issue_command(Command(message))
 
     async def request_minor(self):
         """Send a Version/Minor request command to message receivers."""
-        await self.notify_message_receivers(Message('v1'))
+        message = Message('v1')
+        await self.issue_command(Command(message))
 
     async def request_patch(self):
         """Send a Verson/Patch request command to message receivers."""
-        await self.notify_message_receivers(Message('v2'))
-
-    async def request_wait_full(self):
-        """Send a Version command to message receivers."""
-        await self.issue_command(Command(Message('v'), ['v0', 'v1', 'v2']))
-
-    async def request_wait_major(self):
-        """Send a Version/Major request command to message receivers."""
-        await self.issue_command(Command(Message('v0'), ['v0']))
-
-    async def request_wait_minor(self):
-        """Send a Version/Minor request command to message receivers."""
-        await self.issue_command(Command(Message('v1'), ['v1']))
-
-    async def request_wait_patch(self):
-        """Send a Verson/Patch request command to message receivers."""
-        await self.issue_command(Command(Message('v2'), ['v2']))
+        message = Message('v2')
+        await self.issue_command(Command(message))
 
     # Implement DeserializedMessageReceiver
 

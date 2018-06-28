@@ -26,7 +26,7 @@ class Batch(Batch):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
         self.version_printer = VersionPrinter(prefix=(
-            batch.RESPONSE_PREFIX + 'Version: '
+            batch.RESPONSE_PREFIX + 'Protocol: '
         ))
         self.command_printer = MessagePrinter(prefix='  Sending: ')
         self.version_protocol = VersionProtocol(
@@ -58,28 +58,17 @@ class Batch(Batch):
         print('Running test routine...')
         await asyncio.sleep(1.0)
 
-        print('RPC-style:')
         self.version_protocol.version.reset()
-        print('  Version full')
-        await self.version_protocol.request_wait_full()
-        self.version_protocol.version.reset()
-        print('  Version major')
-        await self.version_protocol.request_wait_major()
-        print('  Version minor')
-        await self.version_protocol.request_wait_minor()
-        print('  Version patch')
-        await self.version_protocol.request_wait_patch()
-        self.version_protocol.version.reset()
-
-        print('Nowait:')
         print('  Version full')
         await self.version_protocol.request_full()
+        self.version_protocol.version.reset()
         print('  Version major')
         await self.version_protocol.request_major()
         print('  Version minor')
         await self.version_protocol.request_minor()
         print('  Version patch')
         await self.version_protocol.request_patch()
+        self.version_protocol.version.reset()
 
         await asyncio.sleep(1.0)
         print(batch.OUTPUT_FOOTER)

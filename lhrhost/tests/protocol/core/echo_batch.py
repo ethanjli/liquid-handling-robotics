@@ -58,16 +58,10 @@ class Batch(Batch):
         print('Running test routine...')
         await asyncio.sleep(1.0)
 
-        print('RPC-style:')
-        for i in range(10):
-            await self.echo_protocol.request_wait_echo(i)
-        await asyncio.sleep(1.0)
-
-        print('Nowait:')
         for i in range(10):
             await self.echo_protocol.request_echo(i)
-
         await asyncio.sleep(1.0)
+
         print(batch.OUTPUT_FOOTER)
         print('Quitting...')
 

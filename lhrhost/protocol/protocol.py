@@ -17,7 +17,10 @@ _MessageReceivers = Iterable[MessageReceiver]
 # Commands, RPC-style
 
 class Command(object):
-    """An asynchronous command."""
+    """An asynchronous command.
+
+    If response_channels is None, it is set to be the channel of the message.
+    """
 
     def __init__(
         self, message: Message, response_channels: Optional[Iterable[str]]=None,
@@ -27,10 +30,11 @@ class Command(object):
         self.message: Message = message
         self.wait_task: Optional[asyncio.Future] = None
         self._responses_received = MultiDict()
-        if response_channels:
-            self._responses_received = MultiDict(
-                (channel, asyncio.Event()) for channel in response_channels
-            )
+        if response_channels is None:
+            response_channels = [message.channel]
+        self._responses_received = MultiDict(
+            (channel, asyncio.Event()) for channel in response_channels
+        )
         self._additional_events: Optional[Iterable[asyncio.Event]] = []
         if additional_events:
             self._additional_events = [event for event in additional_events]

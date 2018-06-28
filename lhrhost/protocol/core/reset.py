@@ -65,19 +65,16 @@ class ResetProtocol(MessageReceiver, CommandIssuer):
     async def request_reset(self):
         """Send a Reset command to message receivers."""
         logger.info('Resetting connection...')
-        await self.notify_message_receivers(Message('r', 1))
-
-    async def request_wait_reset(self):
-        """Send a Reset command to message receivers."""
-        logger.info('Resetting connection...')
-        await self.issue_command(Command(Message('r', 1), ['r']))
+        message = Message('r', 1)
+        await self.issue_command(Command(message))
         logger.debug('Reset command acknowledged!')
 
     async def request_complete_reset(self):
         """Send a Reset command to message receivers."""
         logger.info('Resetting connection...')
+        message = Message('r', 1)
         await self.issue_command(Command(
-            Message('r', 1), ['r'], [self.connection_synchronizer.disconnected]
+            message, additional_events=[self.connection_synchronizer.disconnected]
         ))
         logger.debug('Reset command acknowledged, connection lost!')
         await self.connection_synchronizer.connected.wait()

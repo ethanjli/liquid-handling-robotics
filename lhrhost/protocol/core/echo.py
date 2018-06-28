@@ -62,11 +62,8 @@ class EchoProtocol(MessageReceiver, CommandIssuer):
 
     async def request_echo(self, payload: Optional[int]=None):
         """Send a Echo command to message receivers."""
-        await self.notify_message_receivers(Message('e', payload))
-
-    async def request_wait_echo(self, payload: Optional[int]=None):
-        """Send a Echo command to message receivers."""
-        await self.issue_command(Command(Message('e', payload), ['e']))
+        message = Message('e', payload)
+        await self.issue_command(Command(message))
 
     # Implement DeserializedMessageReceiver
 
