@@ -7,7 +7,10 @@ from typing import Iterable, List, Optional
 
 # Local package imports
 from lhrhost.messaging.presentation import Message
-from lhrhost.protocol import ChannelHandlerTreeNode, Command, CommandIssuer
+from lhrhost.protocol import (
+    ChannelHandlerTreeChildNode, ChannelHandlerTreeNode,
+    Command, CommandIssuer
+)
 from lhrhost.util.interfaces import InterfaceClass
 from lhrhost.util.printing import Printer
 
@@ -108,16 +111,13 @@ class VersionPrinter(VersionReceiver, Printer):
         self.print('Version {}'.format(version))
 
 
-class VersionComponentProtocol(ChannelHandlerTreeNode, CommandIssuer):
+class VersionComponentProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
     """Tracks protocol component version."""
 
-    def __init__(self, parent, node_channel, node_name, **kwargs):
+    def __init__(self, *args, **kwargs):
         """Initialize member variables."""
-        super().__init__(**kwargs)
-        self.command_receivers = parent.command_receivers
-        self._parent = parent
-        self._node_channel = node_channel
-        self._node_name = node_name
+        super().__init__(*args, **kwargs)
+        self.command_receivers = self.parent.command_receivers
 
     # Commands
 
@@ -125,23 +125,6 @@ class VersionComponentProtocol(ChannelHandlerTreeNode, CommandIssuer):
         """Send a Version/_ request command to message receivers."""
         message = Message(self.name_path)
         await self.issue_command(Command(message))
-
-    # Implement ChannelTreeNode
-
-    @property
-    def parent(self):
-        """Return the parent ChannelTreeNode."""
-        return self._parent
-
-    @property
-    def node_channel(self) -> str:
-        """Return the channel of the node as a string."""
-        return self._node_channel
-
-    @property
-    def node_name(self) -> str:
-        """Return the channel name of the node as a string."""
-        return self._node_name
 
     # Implement ChannelHandlerTreeNode
 

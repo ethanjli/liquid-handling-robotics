@@ -191,3 +191,32 @@ class ChannelHandlerTreeNode(ChannelTreeNode, MessageReceiver, metaclass=Interfa
                 await child.on_message(message)
         except KeyError:
             pass
+        # TODO: propagate on_response calls for CommandIssuers down the tree
+
+
+class ChannelHandlerTreeChildNode(ChannelHandlerTreeNode):
+    """Mixin for a non-root command handler in a hierarchical handler tree."""
+
+    def __init__(self, parent, node_channel, node_name, **kwargs):
+        """Initialize member variables."""
+        super().__init__(**kwargs)
+        self._parent = parent
+        self._node_channel = node_channel
+        self._node_name = node_name
+
+    # Implement ChannelTreeNode
+
+    @property
+    def parent(self):
+        """Return the parent ChannelTreeNode."""
+        return self._parent
+
+    @property
+    def node_channel(self) -> str:
+        """Return the channel of the node as a string."""
+        return self._node_channel
+
+    @property
+    def node_name(self) -> str:
+        """Return the channel name of the node as a string."""
+        return self._node_name

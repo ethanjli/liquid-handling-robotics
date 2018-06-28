@@ -3,5 +3,6 @@
 This implements the set of commands and responses the host will handle.
 """
 from lhrhost.protocol.protocol import (
-    ChannelTreeNode, ChannelHandlerTreeNode, Command, CommandIssuer
+    Command, CommandIssuer,
+    ChannelTreeNode, ChannelHandlerTreeNode, ChannelHandlerTreeChildNode
 )
