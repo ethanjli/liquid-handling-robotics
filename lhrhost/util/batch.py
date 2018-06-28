@@ -24,6 +24,9 @@ OUTPUT_HEADER = (
     'Commands' + ('\t' * (OUTPUT_WIDTH - 1)) + 'Responses' + '\n' +
     ('-' * (12 * OUTPUT_WIDTH + 8))
 )
+OUTPUT_FOOTER = (
+    ('-' * (12 * OUTPUT_WIDTH + 8))
+)
 RESPONSE_PREFIX = '\t' * OUTPUT_WIDTH
 
 

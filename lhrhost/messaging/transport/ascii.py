@@ -224,7 +224,7 @@ async def transport_loop(actor, on_connection=None, on_disconnection=None, **kwa
         except ConnectionAbortedError:
             logger.error('Connection to device lost! Please reconnect the device...')
         except ConnectionResetError:
-            logger.error('Connection was reset! Reconnecting...')
+            logger.warning('Connection was reset! Reconnecting...')
         except KeyboardInterrupt:
             logger.info('Quitting...')
             break

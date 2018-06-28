@@ -118,42 +118,42 @@ class ConnectionSynchronizer():
 
     def __init__(self):
         """Initialize member variables."""
-        self._connected = asyncio.Event()
-        self._disconnected = asyncio.Event()
-        self._disconnected.set()
+        self.connected = asyncio.Event()
+        self.disconnected = asyncio.Event()
+        self.disconnected.set()
 
     def on_connected(self):
         """Set event flags to notify waiters of connection."""
-        if not self._connected.is_set():
+        if not self.connected.is_set():
             logger.info('Connected!')
         else:
             logger.warning('Already connected!')
-        self._connected.set()
-        self._disconnected.clear()
+        self.connected.set()
+        self.disconnected.clear()
 
     def on_disconnected(self):
         """Set event flags to notify waiters of disconnection."""
         logger.info('Disconnected!')
-        self._connected.clear()
-        self._disconnected.set()
+        self.connected.clear()
+        self.disconnected.set()
 
     async def wait_connected(self):
         """Block until connection."""
-        await self._connected.wait()
+        await self.connected.wait()
 
     async def wait_disconnected(self):
         """Block until disconnection."""
-        await self._disconnected.wait()
+        await self.disconnected.wait()
 
     @property
-    def connected(self) -> bool:
+    def is_connected(self) -> bool:
         """Check whether connected."""
-        return self._connected.is_set()
+        return self.connected.is_set()
 
     @property
-    def disconnected(self) -> bool:
+    def is_disconnected(self) -> bool:
         """Check whether disconnected."""
-        return self._disconnected.is_set()
+        return self.disconnected.is_set()
 
 
 class TransportManager(Concurrent):

@@ -82,6 +82,8 @@ class Batch(Batch):
         await self.version_protocol.request_patch()
 
         await asyncio.sleep(1.0)
+        print(batch.OUTPUT_FOOTER)
+        print('Quitting...')
 
 
 if __name__ == '__main__':

@@ -77,7 +77,6 @@ class VersionReceiver(object, metaclass=InterfaceClass):
 
 # Type-checking names
 _VersionReceivers = Iterable[VersionReceiver]
-_MessageReceivers = Iterable[MessageReceiver]
 
 
 # Printing

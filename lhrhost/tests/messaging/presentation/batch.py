@@ -54,6 +54,9 @@ class Batch(Batch):
             await self.translator.on_message(message)
             await asyncio.sleep(0.5)
 
+        print(batch.OUTPUT_FOOTER)
+        print('Quitting...')
+
 
 if __name__ == '__main__':
     main(Batch)

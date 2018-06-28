@@ -17,16 +17,20 @@ class Command(object):
     """An asynchronous command."""
 
     def __init__(
-        self, message: Message, response_channels: Optional[Iterable[str]]=None
+        self, message: Message, response_channels: Optional[Iterable[str]]=None,
+        additional_events: Optional[Iterable[asyncio.Event]]=None
     ):
         """Initialize member variables."""
         self.message: Message = message
         self.wait_task: Optional[asyncio.Future] = None
-        self.__responses_received: Dict[str, asyncio.Event] = {}
+        self._responses_received: Dict[str, asyncio.Event] = {}
         if response_channels:
             self._responses_received = {
                 channel: asyncio.Event() for channel in response_channels
             }
+        self._additional_events: Optional[Iterable[asyncio.Event]] = []
+        if additional_events:
+            self._additional_events = [event for event in additional_events]
 
     def on_response(self, channel):
         """Handle a potential response if it matches the right channel."""
@@ -38,7 +42,10 @@ class Command(object):
     def start_wait_task(self, **kwargs):
         """Start the task to wait for responses to the command."""
         self.wait_task = asyncio.wait(
-            [event.wait() for event in self._responses_received.values()],
+            (
+                [event.wait() for event in self._responses_received.values()] +
+                [event.wait() for event in self._additional_events]
+            ),
             **kwargs
         )
 

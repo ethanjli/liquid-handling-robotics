@@ -66,6 +66,9 @@ class Batch:
                 on_serialized_message(message)
             await asyncio.sleep(0.5)
 
+        print(batch.OUTPUT_FOOTER)
+        print('Quitting...')
+
     def run(self):
         """Run the batch routine, blocking the caller's thread."""
         self.arbiter.start()
