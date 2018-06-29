@@ -6,6 +6,7 @@ import logging
 # Local package imports
 from lhrhost.messaging.presentation import BasicTranslator, MessagePrinter
 from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
+from lhrhost.plotting.plotter import LinearActuatorPlotter as Plotter
 from lhrhost.protocol.linear_actuator import Printer, Protocol
 from lhrhost.tests.messaging.transport.batch import (
     Batch, BatchExecutionManager, LOGGING_CONFIG, main
@@ -25,18 +26,17 @@ class Batch(Batch):
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.protocol_printer = Printer(
-            'Z-Axis', prefix=batch.RESPONSE_PREFIX
-        )
-        self.command_printer = MessagePrinter(prefix='  Sending: ')
+        self.protocol_plotter = Plotter()
+        # self.command_printer = MessagePrinter(prefix='  Sending: ')
         self.protocol = Protocol(
-            'ZAxis', 'z',
-            response_receivers=[self.protocol_printer],
-            command_receivers=[self.command_printer]
+            'Pipettor Axis', 'p',
+            response_receivers=[self.protocol_plotter],
+            # command_receivers=[self.command_printer]
         )
-        self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
+        # self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
         self.translator = BasicTranslator(
-            message_receivers=[self.response_printer, self.protocol]
+            # message_receivers=[self.response_printer, self.protocol]
+            message_receivers=[self.protocol]
         )
         self.protocol.command_receivers.append(self.translator)
         self.response_receiver = ResponseReceiver(
@@ -53,54 +53,26 @@ class Batch(Batch):
             header=batch.OUTPUT_HEADER,
             ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
         )
+        print('Showing plot...')
+        self.protocol_plotter.plotter.show()
 
     async def test_routine(self):
         """Run the batch execution test routine."""
         print('Running test routine...')
-        await self.z.initialized.wait()
-
-        print('RPC-style with empty payloads:')
-        await self.protocol.request()
-        await self.protocol.position.request()
-        await self.protocol.smoothed_position.request()
-        await self.protocol.motor.request()
-
-        print('Recursive request through handler tree with empty payloads:')
-        await self.protocol.request_all()
-
-        print('Motor direct duty control')
-        # Test basic motor direct duty control
-        await self.protocol.motor.request_complete(-255)
-        await self.protocol.motor.request_complete(255)
-        await self.protocol.motor.request_complete(-100)
-        # Test motor polarity setting
-        await self.protocol.motor.motor_polarity.request(-1)
-        await self.protocol.motor.request_complete(-150)
-        await self.protocol.motor.motor_polarity.request(1)
-        await self.protocol.motor.request_complete(-100)
-        # Test timer timeout
-        await self.protocol.motor.timer_timeout.request(200)
-        for i in range(10):
-            await self.protocol.motor.request_complete(150)
-            await asyncio.sleep(0.4)
-        await self.protocol.motor.timer_timeout.request(10000)
-
-        print('Motor direct duty control with position notification')
-        await self.protocol.position.notify.change_only.request(0)
-        task = self.protocol.position.notify.request_complete_time_interval(20, 100)
-        await asyncio.sleep(1.0)
-        await self.protocol.motor.request(-80)
-        await task
+        await self.protocol.initialized.wait()
 
         print('Motor position feedback control with position and motor duty notification')
         await self.protocol.position.notify.change_only.request(1)
-        await self.protocol.position.notify.interval.request(100)
+        await self.protocol.position.notify.interval.request(5)
         await self.protocol.motor.notify.change_only.request(1)
-        await self.protocol.motor.notify.interval.request(100)
+        await self.protocol.motor.notify.interval.request(5)
         await self.protocol.position.notify.request(2)
         await self.protocol.motor.notify.request(2)
-        await self.protocol.feedback_controller.request_complete(1000)
-        await self.protocol.feedback_controller.request_complete(0)
+        for i in range(5):
+            await self.protocol.feedback_controller.request_complete(800)
+            await asyncio.sleep(1.0)
+            await self.protocol.feedback_controller.request_complete(900)
+            await asyncio.sleep(1.0)
         await self.protocol.position.notify.request(0)
         await self.protocol.motor.notify.request(0)
 
