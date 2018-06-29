@@ -12,6 +12,8 @@ from lhrhost.protocol.linear_actuator.motor import Protocol as MotorProtocol
 from lhrhost.protocol.linear_actuator.position import Protocol as PositionProtocol
 from lhrhost.protocol.linear_actuator.smoothed_position import Protocol as \
     SmoothedPositionProtocol
+from lhrhost.protocol.linear_actuator.feedback_controller import Protocol as \
+    FeedbackControllerProtocol
 from lhrhost.util.interfaces import InterfaceClass
 from lhrhost.util.printing import Printer
 
@@ -541,7 +543,7 @@ class Protocol(ProtocolHandlerNode):
         self.position = PositionProtocol(parent=self, **kwargs)
         self.smoothed_position = SmoothedPositionProtocol(parent=self, **kwargs)
         self.motor = MotorProtocol(parent=self, **kwargs)
-        # self.feedback_controller = FeedbackControllerProtocol(parent=self, **kwargs)
+        self.feedback_controller = FeedbackControllerProtocol(parent=self, **kwargs)
 
     # Commands
 
@@ -558,7 +560,7 @@ class Protocol(ProtocolHandlerNode):
         """Return a list of child nodes."""
         return [
             self.position, self.smoothed_position,
-            self.motor,  # self.feedback_controller
+            self.motor, self.feedback_controller
         ]
 
     def get_response_notifier(self, receiver):

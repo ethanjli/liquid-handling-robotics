@@ -95,7 +95,99 @@ class Printer(Receiver, Printer):
         ))
 
 
-class BuiltinLEDBlinkProtocol(ProtocolHandlerNode):
+class BlinkHighIntervalProtocol(ProtocolHandlerNode):
+    """Notifies on the Built-in LED blinker's HIGH interval."""
+
+    def __init__(self, **kwargs):
+        """Initialize member variables."""
+        super().__init__('HighInterval', 'h', **kwargs)
+        self.response_receivers = self.parent.response_receivers
+
+    # Commands
+
+    async def request(self, interval: Optional[int]=None):
+        """Send a BuiltinLED/Blink/HighInterval request command to message receivers."""
+        # TODO: validate the interval
+        message = Message(self.name_path, interval)
+        await self.issue_command(Command(message))
+
+    # Implement ProtocolHandlerNode
+
+    def get_response_notifier(self, receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_builtin_led_blink_high_interval
+
+
+class BlinkLowIntervalProtocol(ProtocolHandlerNode):
+    """Notifies on the Built-in LED blinker's LOW interval."""
+
+    def __init__(self, **kwargs):
+        """Initialize member variables."""
+        super().__init__('LowInterval', 'l', **kwargs)
+        self.response_receivers = self.parent.response_receivers
+
+    # Commands
+
+    async def request(self, interval: Optional[int]=None):
+        """Send a BuiltinLED/Blink/LowInterval request command to message receivers."""
+        # TODO: validate the interval
+        message = Message(self.name_path, interval)
+        await self.issue_command(Command(message))
+
+    # Implement ProtocolHandlerNode
+
+    def get_response_notifier(self, receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_builtin_led_blink_low_interval
+
+
+class BlinkPeriodsProtocol(ProtocolHandlerNode):
+    """Notifies on the Built-in LED blinker's LOW interval."""
+
+    def __init__(self, **kwargs):
+        """Initialize member variables."""
+        super().__init__('Periods', 'p', **kwargs)
+        self.response_receivers = self.parent.response_receivers
+
+    # Commands
+
+    async def request(self, periods: Optional[int]=None):
+        """Send a BuiltinLED/Blink/Periods request command to message receivers."""
+        # TODO: validate the periods
+        message = Message(self.name_path, periods)
+        await self.issue_command(Command(message))
+
+    # Implement ProtocolHandlerNode
+
+    def get_response_notifier(self, receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_builtin_led_blink_periods
+
+
+class BlinkNotifyProtocol(ProtocolHandlerNode):
+    """Notifies on the Built-in LED blinker's LOW interval."""
+
+    def __init__(self, **kwargs):
+        """Initialize member variables."""
+        super().__init__('Notify', 'n', **kwargs)
+        self.response_receivers = self.parent.response_receivers
+
+    # Commands
+
+    async def request(self, periods: Optional[int]=None):
+        """Send a BuiltinLED/Blink/Notify request command to message receivers."""
+        # TODO: validate the periods
+        message = Message(self.name_path, periods)
+        await self.issue_command(Command(message))
+
+    # Implement ProtocolHandlerNode
+
+    def get_response_notifier(self, receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_builtin_led_blink_notify
+
+
+class BlinkProtocol(ProtocolHandlerNode):
     """Blinks the built-in LED."""
 
     def __init__(self, **kwargs):
@@ -103,30 +195,16 @@ class BuiltinLEDBlinkProtocol(ProtocolHandlerNode):
         super().__init__('Blink', 'b', **kwargs)
         self.response_receivers = self.parent.response_receivers
 
-    async def notify_response_receivers(self, state: int) -> None:
-        """Notify all receivers of received BuiltinLED/Blink response."""
-        for receiver in self.response_receivers:
-            await receiver.on_builtin_led_blink(state)
+        self.high_interval = BlinkHighIntervalProtocol(parent=self)
+        self.low_interval = BlinkLowIntervalProtocol(parent=self)
+        self.periods = BlinkPeriodsProtocol(parent=self)
+        self.notify = BlinkNotifyProtocol(parent=self)
 
-    async def notify_response_receivers_high_interval(self, interval: int) -> None:
-        """Notify all receivers of received BuiltinLED/Blink/HighInterval response."""
-        for receiver in self.response_receivers:
-            await receiver.on_builtin_led_blink_high_interval(interval)
+    # Implement ProtocolHandlerNode
 
-    async def notify_response_receivers_low_interval(self, interval: int) -> None:
-        """Notify all receivers of received BuiltinLED/Blink/LowInterval response."""
-        for receiver in self.response_receivers:
-            await receiver.on_builtin_led_blink_low_interval(interval)
-
-    async def notify_response_receivers_periods(self, periods: int) -> None:
-        """Notify all receivers of received BuiltinLED/Blink/Periods response."""
-        for receiver in self.response_receivers:
-            await receiver.on_builtin_led_blink_periods(periods)
-
-    async def notify_response_receivers_notify(self, state: int) -> None:
-        """Notify all receivers of received BuiltinLED/Blink/Notify response."""
-        for receiver in self.response_receivers:
-            await receiver.on_builtin_led_blink_notify(state)
+    def get_response_notifier(self, receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_builtin_led_blink
 
     # Commands
 
@@ -144,62 +222,17 @@ class BuiltinLEDBlinkProtocol(ProtocolHandlerNode):
         # TODO: validate periods
         message = Message(self.name_path, 1)
         wait_channels = [self.name_path, self.name_path, self.name_path + 'p']
-        await self.request_periods(periods)
+        await self.periods.request(periods)
         logger.debug('Starting to blink the LED...')
         await self.issue_command(Command(message, wait_channels))
         logger.debug('Finished blinking the LED...')
 
-    async def request_high_interval(self, interval: Optional[int]=None):
-        """Send a BuiltinLED/Blink/HighInterval request command to message receivers."""
-        # TODO: validate the state
-        message = Message(self.name_path + 'h', interval)
-        await self.issue_command(Command(message))
-
-    async def request_low_interval(self, interval: Optional[int]=None):
-        """Send a BuiltinLED/Blink/LowInterval request command to message receivers."""
-        # TODO: validate the state
-        message = Message(self.name_path + 'l', interval)
-        await self.issue_command(Command(message))
-
-    async def request_periods(self, periods: Optional[int]=None):
-        """Send a BuiltinLED/Blink/Periods request command to message receivers."""
-        # TODO: validate the state
-        message = Message(self.name_path + 'p', periods)
-        await self.issue_command(Command(message))
-
-    async def request_notify(self, state: Optional[int]=None):
-        """Send a BuiltinLED/Blink/Notify request command to message receivers."""
-        # TODO: validate the state
-        message = Message(self.name_path + 'n', state)
-        await self.issue_command(Command(message))
-
-    # Implement ChannelHandlerTreeNode
+    # Implement ProtocolHandlerNode
 
     @property
-    def child_handlers(self):
-        """Return a dict of handlers, keyed by channel paths below current path."""
-        return {
-            'h': self.on_received_message_high_interval,
-            'l': self.on_received_message_low_interval,
-            'p': self.on_received_message_periods,
-            'n': self.on_received_message_notify,
-        }
-
-    async def on_received_message_high_interval(self, channel_name_remainder, message):
-        """Handle a message recognized as being handled by the child handler."""
-        await self.notify_response_receivers_high_interval(message.payload)
-
-    async def on_received_message_low_interval(self, channel_name_remainder, message):
-        """Handle a message recognized as being handled by the child handler."""
-        await self.notify_response_receivers_low_interval(message.payload)
-
-    async def on_received_message_periods(self, channel_name_remainder, message):
-        """Handle a message recognized as being handled by the child handler."""
-        await self.notify_response_receivers_periods(message.payload)
-
-    async def on_received_message_notify(self, channel_name_remainder, message):
-        """Handle a message recognized as being handled by the child handler."""
-        await self.notify_response_receivers_notify(message.payload)
+    def children_list(self):
+        """Return a list of child nodes."""
+        return [self.high_interval, self.low_interval, self.periods, self.notify]
 
 
 class Protocol(ProtocolHandlerNode):
@@ -214,7 +247,7 @@ class Protocol(ProtocolHandlerNode):
         if response_receivers:
             self.response_receivers = [receiver for receiver in response_receivers]
 
-        self.blink = BuiltinLEDBlinkProtocol(parent=self, **kwargs)
+        self.blink = BlinkProtocol(parent=self, **kwargs)
 
     # Commands
 
@@ -231,7 +264,6 @@ class Protocol(ProtocolHandlerNode):
         """Return a list of child nodes."""
         return [self.blink]
 
-    async def notify_response_receivers(self, state: int) -> None:
-        """Notify all receivers of received BuiltinLED response."""
-        for receiver in self.response_receivers:
-            await receiver.on_builtin_led(state)
+    def get_response_notifier(self, receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_builtin_led
