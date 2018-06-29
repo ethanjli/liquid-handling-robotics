@@ -19,7 +19,6 @@ class Protocol(ProtocolHandlerNode):
     def __init__(self, **kwargs):
         """Initialize member variables."""
         super().__init__('Position', 'p', **kwargs)
-        self.command_receivers = self.parent.command_receivers
         self.response_receivers = self.parent.response_receivers
 
         self.notify = NotifyProtocol(parent=self)

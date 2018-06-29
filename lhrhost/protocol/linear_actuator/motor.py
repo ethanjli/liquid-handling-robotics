@@ -20,13 +20,7 @@ class StallProtectorTimeoutProtocol(ProtocolHandlerNode):
     def __init__(self, **kwargs):
         """Initialize member variables."""
         super().__init__('StallProtectorTimeout', 's', **kwargs)
-        self.command_receivers = self.parent.command_receivers
         self.response_receivers = self.parent.response_receivers
-
-    async def notify_response_receivers(self, timeout: int) -> None:
-        """Notify all receivers of received LA/Motor/StallProtectorTimeout response."""
-        for receiver in self.response_receivers:
-            await receiver.on_linear_actuator_motor_stall_protector_timeout(timeout)
 
     # Commands
 
@@ -36,6 +30,12 @@ class StallProtectorTimeoutProtocol(ProtocolHandlerNode):
         message = Message(self.name_path, timeout)
         await self.issue_command(Command(message))
 
+    # Implement ProtocolHandlerNode
+
+    def get_response_notifier(self, receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_linear_actuator_motor_stall_protector_timeout
+
 
 class TimerTimeoutProtocol(ProtocolHandlerNode):
     """Notifies on the linear actuator motor's stall protector timeout."""
@@ -43,13 +43,7 @@ class TimerTimeoutProtocol(ProtocolHandlerNode):
     def __init__(self, **kwargs):
         """Initialize member variables."""
         super().__init__('TimerTimeout', 't', **kwargs)
-        self.command_receivers = self.parent.command_receivers
         self.response_receivers = self.parent.response_receivers
-
-    async def notify_response_receivers(self, timeout: int) -> None:
-        """Notify all receivers of received LA/Motor/TimerTimeout response."""
-        for receiver in self.response_receivers:
-            await receiver.on_linear_actuator_motor_stall_protector_timeout(timeout)
 
     # Commands
 
@@ -59,6 +53,12 @@ class TimerTimeoutProtocol(ProtocolHandlerNode):
         message = Message(self.name_path, timeout)
         await self.issue_command(Command(message))
 
+    # Implement ProtocolHandlerNode
+
+    def get_response_notifier(self, receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_linear_actuator_motor_timer_timeout
+
 
 class MotorPolarityProtocol(ProtocolHandlerNode):
     """Notifies on the linear actuator motor's polarity."""
@@ -66,13 +66,7 @@ class MotorPolarityProtocol(ProtocolHandlerNode):
     def __init__(self, **kwargs):
         """Initialize member variables."""
         super().__init__('MotorPolarity', 'p', **kwargs)
-        self.command_receivers = self.parent.command_receivers
         self.response_receivers = self.parent.response_receivers
-
-    async def notify_response_receivers(self, state: int) -> None:
-        """Notify all receivers of received LA/Motor/MotorPolarity response."""
-        for receiver in self.response_receivers:
-            await receiver.on_linear_actuator_motor_motor_polarity(state)
 
     # Commands
 
@@ -82,6 +76,12 @@ class MotorPolarityProtocol(ProtocolHandlerNode):
         message = Message(self.name_path, state)
         await self.issue_command(Command(message))
 
+    # Implement ProtocolHandlerNode
+
+    def get_response_notifier(self, receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_linear_actuator_motor_motor_polarity
+
 
 class Protocol(ProtocolHandlerNode):
     """Notifies on the linear actuator's motor duty."""
@@ -89,7 +89,6 @@ class Protocol(ProtocolHandlerNode):
     def __init__(self, **kwargs):
         """Initialize member variables."""
         super().__init__('Motor', 'm', **kwargs)
-        self.command_receivers = self.parent.command_receivers
         self.response_receivers = self.parent.response_receivers
 
         self.notify = NotifyProtocol(parent=self)
@@ -133,3 +132,9 @@ class Protocol(ProtocolHandlerNode):
             self.timer_timeout.node_name: self.timer_timeout,
             self.motor_polarity.node_name: self.motor_polarity
         }
+
+    # Implement ProtocolHandlerNode
+
+    def get_response_notifier(self, receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_linear_actuator_motor

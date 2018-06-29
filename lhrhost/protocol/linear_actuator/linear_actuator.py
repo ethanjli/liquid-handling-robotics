@@ -274,7 +274,7 @@ class Printer(Receiver, Printer):
             0: 'Manual Brake',
             -1: 'Stopped Stall',
             -2: 'Stopped Convergence',
-            -3: 'Stopped Tiimeout'
+            -3: 'Stopped Timeout'
         }
         self.print('{}: {}'.format(self.axis, state_names[state]))
 
@@ -310,7 +310,7 @@ class Printer(Receiver, Printer):
     ) -> None:
         """Receive and handle a LinearActuator/Position/Notify/Number response."""
         self.print('{} Position Notifications: notify {}'.format(
-            self.axis, '{} times' if number >= 0 else 'forever'
+            self.axis, '{} times'.format(number) if number >= 0 else 'forever'
         ))
 
     async def on_linear_actuator_smoothed_position(self, position: int) -> None:
@@ -543,11 +543,6 @@ class Protocol(ProtocolHandlerNode):
         self.motor = MotorProtocol(parent=self, **kwargs)
         # self.feedback_controller = FeedbackControllerProtocol(parent=self, **kwargs)
 
-    async def notify_response_receivers(self, state: int) -> None:
-        """Notify all receivers of received LinearActuator response."""
-        for receiver in self.response_receivers:
-            await receiver.on_linear_actuator(state)
-
     # Commands
 
     async def request(self, state: Optional[int]=None):
@@ -567,3 +562,9 @@ class Protocol(ProtocolHandlerNode):
             self.motor.node_name: self.motor,
             # self.feedback_controller.node_name: self.feedback_controller
         }
+
+    # Implement ProtocolHandlerNode
+
+    def get_response_notifier(self, receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_linear_actuator

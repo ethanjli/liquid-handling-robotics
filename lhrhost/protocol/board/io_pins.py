@@ -58,7 +58,6 @@ class TypeProtocol(ProtocolHandlerNode):
     def __init__(self, channel, channel_name, **kwargs):
         """Initialize member variables."""
         super().__init__(channel, channel_name, **kwargs)
-        self.command_receivers = self.parent.command_receivers
         self.response_receivers = self.parent.response_receivers
 
     async def notify_response_receivers(self, pin: int, payload: int) -> None:

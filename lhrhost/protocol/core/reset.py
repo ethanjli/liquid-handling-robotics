@@ -77,14 +77,22 @@ class Protocol(ProtocolHandlerNode):
 
     # Implement ProtocolHandlerNode
 
-    async def notify_response_receivers(self, payload) -> None:
-        """Notify all receivers of received Reset response."""
+    def transform_response_payload(self, payload):
+        """Transform the payload into a list of args for the response receiver's method.
+
+        The list of args will be unpacked in the response receiver's method, which
+        is specified by get_response_notifier. Return None to avoid notifying any
+        receivers.
+        """
         if payload == 1:
-            for receiver in self.response_receivers:
-                await receiver.on_reset()
+            return tuple()
         elif payload == 0:
-            pass
+            return None
         else:
             raise ValueError('Invalid {} payload {}!'.format(
                 self.channel_path, payload
             ))
+
+    def get_response_notifier(self, receiver: Receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_reset

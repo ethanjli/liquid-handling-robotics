@@ -114,7 +114,6 @@ class ComponentProtocol(ProtocolHandlerNode):
     def __init__(self, channel, channel_name, **kwargs):
         """Initialize member variables."""
         super().__init__(channel, channel_name, **kwargs)
-        self.command_receivers = self.parent.command_receivers
 
     # Commands
 

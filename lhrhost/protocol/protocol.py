@@ -205,7 +205,7 @@ class ChannelHandlerTreeNode(ChannelTreeNode, MessageReceiver, metaclass=Interfa
 
 class ProtocolHandlerNode(ChannelHandlerTreeNode, CommandIssuer):
     """Mixin for a non-root command handler in a hierarchical handler tree."""
-    # TODO: notify_response_receivers should await on the gather; there should be an interface for calling the awaited method on each receiver, and notify_response_receivers should be implemented in this mixin
+
     # TODO: there should be a list of children which is used to build the children dict
     # TODO: for channels which handle their child nodes use __getattr__ overloading; define a virtual_children dict for child handlers and functions, maybe using a decorator on the corresponding notify_response_receivers methods?
     # TODO: make every channel be its own node, instead of using channel handlers?
@@ -218,10 +218,35 @@ class ProtocolHandlerNode(ChannelHandlerTreeNode, CommandIssuer):
         self._parent = parent
         self._node_channel = node_channel
         self._node_name = node_name
+        if self.parent is not None:
+            self.command_receivers = self.parent.command_receivers
 
     async def notify_response_receivers(self, payload: Any) -> None:
         """Validate the payload and notify the response receivers."""
-        pass
+        result = self.transform_response_payload(payload)
+        if result is None:
+            return
+        notifiers = [
+            self.get_response_notifier(receiver) for receiver in self.response_receivers
+        ]
+        notifiers = [notifier for notifier in notifiers if notifier is not None]
+        await asyncio.gather(*[notifier(*result) for notifier in notifiers])
+
+    def transform_response_payload(self, payload) -> Optional[Iterable[Any]]:
+        """Transform the payload into a list of args for the response receiver's method.
+
+        The list of args will be unpacked in the response receiver's method, which
+        is specified by get_response_notifier. Return None to avoid notifying any
+        receivers.
+        """
+        return (payload,)
+
+    def get_response_notifier(self, receiver):
+        """Return the response receiver's method for receiving a response.
+
+        Return None to avoid notifying any receivers.
+        """
+        return None
 
     # Implement ChannelTreeNode
 

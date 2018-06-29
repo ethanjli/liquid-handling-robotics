@@ -62,7 +62,6 @@ class Protocol(ProtocolHandlerNode):
 
     # Implement ProtocolHandlerNode
 
-    async def notify_response_receivers(self, payload: int) -> None:
-        """Notify all receivers of a received Echo response."""
-        for receiver in self.response_receivers:
-            await receiver.on_echo(payload)
+    def get_response_notifier(self, receiver: Receiver):
+        """Return the response receiver's method for receiving a response."""
+        return receiver.on_echo

@@ -66,6 +66,10 @@ class Batch(Batch):
         await self.protocol.motor.request()
         await self.protocol.motor.motor_polarity.request()
         await self.protocol.motor.timer_timeout.request()
+        await self.protocol.position.notify.request()
+        await self.protocol.position.notify.interval.request()
+        await self.protocol.position.notify.change_only.request()
+        await self.protocol.position.notify.number.request()
 
         print('Motor direct duty control')
         # Test basic motor direct duty control
@@ -78,10 +82,18 @@ class Batch(Batch):
         await self.protocol.motor.motor_polarity.request(1)
         await self.protocol.motor.request_complete(-100)
         # Test timer timeout
+        await self.protocol.motor.timer_timeout.request(200)
         for i in range(10):
-            await self.protocol.motor.timer_timeout.request(200)
             await self.protocol.motor.request_complete(150)
             await asyncio.sleep(0.4)
+        await self.protocol.motor.timer_timeout.request(10000)
+
+        print('Motor direct duty control with position notification')
+        await self.protocol.position.notify.change_only.request(0)
+        task = self.protocol.position.notify.request_complete_time_interval(20, 100)
+        await asyncio.sleep(1.0)
+        await self.protocol.motor.request(-80)
+        await task
 
         print(batch.OUTPUT_FOOTER)
         print('Quitting...')
