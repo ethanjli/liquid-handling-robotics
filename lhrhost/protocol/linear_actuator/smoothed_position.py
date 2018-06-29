@@ -114,11 +114,11 @@ class Protocol(ProtocolHandlerNode):
         super().__init__('SmoothedPosition', 's', **kwargs)
         self.response_receivers = self.parent.response_receivers
 
-        self.notify = NotifyProtocol(parent=self)
-        self.snap_multiplier = SnapMultiplierProtocol(parent=self)
-        self.range_low = RangeLowProtocol(parent=self)
-        self.range_high = RangeHighProtocol(parent=self)
-        self.activity_threshold = ActivityThresholdProtocol(parent=self)
+        # self.notify = NotifyProtocol(parent=self)
+        # self.snap_multiplier = SnapMultiplierProtocol(parent=self)
+        # self.range_low = RangeLowProtocol(parent=self)
+        # self.range_high = RangeHighProtocol(parent=self)
+        # self.activity_threshold = ActivityThresholdProtocol(parent=self)
 
     async def notify_response_receivers(self, position: int) -> None:
         """Notify all receivers of received LA/SmoothedPosition response."""
@@ -139,8 +139,8 @@ class Protocol(ProtocolHandlerNode):
     def children_list(self):
         """Return a list of child nodes."""
         return [
-            self.notify,
-            self.snap_multiplier,
-            self.range_low, self.range_high,
-            self.activity_threshold
+            # self.notify,
+            # self.snap_multiplier,
+            # self.range_low, self.range_high,
+            # self.activity_threshold
         ]

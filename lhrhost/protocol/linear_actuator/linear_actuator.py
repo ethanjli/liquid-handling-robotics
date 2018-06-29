@@ -331,7 +331,7 @@ class Printer(Receiver, Printer):
         self, position: int
     ) -> None:
         """Receive and handle a LA/SP/RangeLow response."""
-        self.print('{} Smoothed Position Range: >= {}'.format(
+        self.print('{} Smoothed Position: >= {}'.format(
             self.axis, position
         ))
 
@@ -339,7 +339,7 @@ class Printer(Receiver, Printer):
         self, position: int
     ) -> None:
         """Receive and handle a LA/SP/RangeHigh response."""
-        self.print('{} Smoothed Position Range: <= {}'.format(
+        self.print('{} Smoothed Position: <= {}'.format(
             self.axis, position
         ))
 
@@ -454,7 +454,7 @@ class Printer(Receiver, Printer):
         self, position: int
     ) -> None:
         """Receive and handle a LA/FC/Limits/Position/Low response."""
-        self.print('{} Feedback Controller Position Range: >= {}'.format(
+        self.print('{} Feedback Controller Position: >= {}'.format(
             self.axis, position
         ))
 
@@ -462,7 +462,7 @@ class Printer(Receiver, Printer):
         self, position: int
     ) -> None:
         """Receive and handle a LA/FC/Limits/Position/High response."""
-        self.print('{} Feedback Controller Position Range: <= {}'.format(
+        self.print('{} Feedback Controller Position: <= {}'.format(
             self.axis, position
         ))
 
@@ -470,7 +470,7 @@ class Printer(Receiver, Printer):
         self, duty: int
     ) -> None:
         """Receive and handle a LA/FC/Limits/Motor/Forwards/Low response."""
-        self.print('{} Feedback Controller Motor Duty Forwards Range: >= {}'.format(
+        self.print('{} Feedback Controller Motor Duty Forwards: brake below {}'.format(
             self.axis, duty
         ))
 
@@ -478,7 +478,7 @@ class Printer(Receiver, Printer):
         self, duty: int
     ) -> None:
         """Receive and handle a LA/FC/Limits/Motor/Forwards/High response."""
-        self.print('{} Feedback Controller Motor Duty Forwards Range: <= {}'.format(
+        self.print('{} Feedback Controller Motor Duty Forwards: saturate above {}'.format(
             self.axis, duty
         ))
 
@@ -486,7 +486,7 @@ class Printer(Receiver, Printer):
         self, duty: int
     ) -> None:
         """Receive and handle a LA/FC/Limits/Motor/Backwards/Low response."""
-        self.print('{} Feedback Controller Motor Duty Backwards Range: >= {}'.format(
+        self.print('{} Feedback Controller Motor Duty Backwards: brake above {}'.format(
             self.axis, duty
         ))
 
@@ -494,7 +494,7 @@ class Printer(Receiver, Printer):
         self, duty: int
     ) -> None:
         """Receive and handle a LA/FC/Limits/Motor/Backwards/High response."""
-        self.print('{} Feedback Controller Motor Duty Backwards Range: <= {}'.format(
+        self.print('{} Feedback Controller Motor Duty Backwards: saturate below {}'.format(
             self.axis, duty
         ))
 

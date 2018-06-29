@@ -64,12 +64,9 @@ class Batch(Batch):
         await self.protocol.position.request()
         await self.protocol.smoothed_position.request()
         await self.protocol.motor.request()
-        await self.protocol.motor.motor_polarity.request()
-        await self.protocol.motor.timer_timeout.request()
-        await self.protocol.position.notify.request()
-        await self.protocol.position.notify.interval.request()
-        await self.protocol.position.notify.change_only.request()
-        await self.protocol.position.notify.number.request()
+
+        print('Recursive request through handler tree with empty payloads:')
+        await self.protocol.request_all()
 
         print('Motor direct duty control')
         # Test basic motor direct duty control
@@ -94,6 +91,18 @@ class Batch(Batch):
         await asyncio.sleep(1.0)
         await self.protocol.motor.request(-80)
         await task
+
+        print('Motor position feedback control with position and motor duty notification')
+        await self.protocol.position.notify.change_only.request(1)
+        await self.protocol.position.notify.interval.request(100)
+        await self.protocol.motor.notify.change_only.request(1)
+        await self.protocol.motor.notify.interval.request(100)
+        await self.protocol.position.notify.request(2)
+        await self.protocol.motor.notify.request(2)
+        await self.protocol.feedback_controller.request_complete(1000)
+        await self.protocol.feedback_controller.request_complete(0)
+        await self.protocol.position.notify.request(0)
+        await self.protocol.motor.notify.request(0)
 
         print(batch.OUTPUT_FOOTER)
         print('Quitting...')

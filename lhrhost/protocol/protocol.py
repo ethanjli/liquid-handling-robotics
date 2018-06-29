@@ -255,6 +255,13 @@ class ProtocolHandlerNode(ChannelHandlerTreeNode, CommandIssuer):
         """Return a list of child nodes."""
         return []
 
+    async def request_all(self):
+        """Recursively attempt to call the request method with an empty payload."""
+        if callable(getattr(self, 'request', None)):
+            await self.request()
+        for child in self.children_list:
+            await child.request_all()
+
     # Implement ChannelTreeNode
 
     @property
