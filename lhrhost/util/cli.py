@@ -8,6 +8,7 @@ try:
     readline
 except ImportError:
     pass
+import sys
 from abc import abstractmethod
 
 # Local package imports
@@ -25,6 +26,33 @@ CONSOLE_HEADER = (
     ('-' * (12 * CONSOLE_WIDTH + 8))
 )
 RESPONSE_PREFIX = '\t' * CONSOLE_WIDTH
+
+
+class Prompt:
+    """Functor for async input.
+
+    Reference:
+        https://stackoverflow.com/a/35514777
+
+    """
+
+    def __init__(self, loop=None):
+        """Initialize member variables."""
+        if loop is None:
+            loop = asyncio.get_event_loop()
+        self.loop = loop
+        self.input_queue = asyncio.Queue(loop=self.loop)
+        self.loop.add_reader(sys.stdin, self.on_input)
+
+    def on_input(self):
+        """Put available input from stdin into the input queue."""
+        asyncio.ensure_future(self.input_queue.put(sys.stdin.readline()), loop=self.loop)
+
+    async def __call__(self, msg, end='\n', flush=False):
+        """Request user input like Python's built-in :fun:`input`."""
+        print(msg, end=end, flush=flush)
+        input_line = await self.input_queue.get()
+        return input_line.rstrip('\n')
 
 
 class ConsoleManager(Concurrent):
