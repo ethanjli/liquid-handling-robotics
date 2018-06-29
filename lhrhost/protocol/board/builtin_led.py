@@ -224,16 +224,12 @@ class Protocol(ProtocolHandlerNode):
         message = Message(self.name_path, state)
         await self.issue_command(Command(message))
 
-    # Implement ChannelTreeNode
+    # Implement ProtocolHandlerNode
 
     @property
-    def children(self):
-        """Return a dict of the child ChannelTreeNodes keyed by prefixes."""
-        return {
-            self.blink.node_name: self.blink
-        }
-
-    # Implement ProtocolHandlerNode
+    def children_list(self):
+        """Return a list of child nodes."""
+        return [self.blink]
 
     async def notify_response_receivers(self, state: int) -> None:
         """Notify all receivers of received BuiltinLED response."""

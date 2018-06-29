@@ -105,12 +105,9 @@ class Protocol(ProtocolHandlerNode):
         self.analog = TypeProtocol('Analog', 'a', parent=self, **kwargs)
         self.digital = TypeProtocol('Digital', 'd', parent=self, **kwargs)
 
-    # Implement ChannelTreeNode
+    # Implement ProtocolHandlerNode
 
     @property
-    def children(self):
-        """Return a dict of the child ChannelTreeNodes keyed by prefixes."""
-        return {
-            self.analog.node_name: self.analog,
-            self.digital.node_name: self.digital
-        }
+    def children_list(self):
+        """Return a list of child nodes."""
+        return [self.analog, self.digital]

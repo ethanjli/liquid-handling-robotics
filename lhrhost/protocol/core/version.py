@@ -169,13 +169,9 @@ class Protocol(ProtocolHandlerNode):
         wait_channels = ['v0', 'v1', 'v2']
         await self.issue_command(Command(message, wait_channels))
 
-    # Implement ChannelTreeNode
+    # Implement ProtocolHandlerNode
 
     @property
-    def children(self):
-        """Return a dict of the child ChannelTreeNodes keyed by prefixes."""
-        return {
-            self.major.node_name: self.major,
-            self.minor.node_name: self.minor,
-            self.patch.node_name: self.patch
-        }
+    def children_list(self):
+        """Return a list of child nodes."""
+        return [self.major, self.minor, self.patch]

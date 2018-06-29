@@ -121,19 +121,15 @@ class Protocol(ProtocolHandlerNode):
         await self.issue_command(Command(message, wait_channels))
         logger.debug('Finished motor direct duty control!')
 
-    # Implement ChannelHandlerTreeNode
+    # Implement ProtocolHandlerNode
 
     @property
-    def children(self):
-        """Return a dict of handlers, keyed by channel paths below current path."""
-        return {
-            self.notify.node_name: self.notify,
-            self.stall_protector_timeout.node_name: self.stall_protector_timeout,
-            self.timer_timeout.node_name: self.timer_timeout,
-            self.motor_polarity.node_name: self.motor_polarity
-        }
-
-    # Implement ProtocolHandlerNode
+    def children_list(self):
+        """Return a list of child nodes."""
+        return [
+            self.notify,
+            self.stall_protector_timeout, self.timer_timeout, self.motor_polarity
+        ]
 
     def get_response_notifier(self, receiver):
         """Return the response receiver's method for receiving a response."""

@@ -36,11 +36,9 @@ class Protocol(ProtocolHandlerNode):
         message = Message(self.name_path)
         await self.issue_command(Command(message))
 
-    # Implement ChannelHandlerTreeNode
+    # Implement ProtocolHandlerNode
 
     @property
-    def children(self):
-        """Return a dict of handlers, keyed by channel paths below current path."""
-        return {
-            self.notify.node_name: self.notify
-        }
+    def children_list(self):
+        """Return a list of child nodes."""
+        return [self.notify]

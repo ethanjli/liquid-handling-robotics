@@ -85,7 +85,7 @@ class Protocol(ProtocolHandlerNode):
         receivers.
         """
         if payload == 1:
-            return tuple()
+            return ()
         elif payload == 0:
             return None
         else:

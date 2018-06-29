@@ -14,7 +14,7 @@ logger.addHandler(logging.NullHandler())
 
 
 class IntervalProtocol(ProtocolHandlerNode):
-    """Notifies on the linear actuator motor's stall protector timeout."""
+    """Notifies on the linear actuator signal notifier's notification interval."""
 
     def __init__(self, **kwargs):
         """Initialize member variables."""
@@ -48,7 +48,7 @@ class IntervalProtocol(ProtocolHandlerNode):
 
 
 class ChangeOnlyProtocol(ProtocolHandlerNode):
-    """Notifies on the linear actuator motor's stall protector timeout."""
+    """Notifies on the linear actuator signal notifier's notification behavior."""
 
     def __init__(self, **kwargs):
         """Initialize member variables."""
@@ -82,7 +82,7 @@ class ChangeOnlyProtocol(ProtocolHandlerNode):
 
 
 class NumberProtocol(ProtocolHandlerNode):
-    """Notifies on the linear actuator motor's stall protector timeout."""
+    """Notifies on the linear actuator signal notifier's notification duration."""
 
     def __init__(self, **kwargs):
         """Initialize member variables."""
@@ -161,18 +161,12 @@ class Protocol(ProtocolHandlerNode):
         await self.issue_command(Command(message, wait_channels))
         logger.debug('Finished notifying on {}...'.format(self.parent.channel_path))
 
-    # Implement ChannelHandlerTreeNode
+    # Implement ProtocolHandlerNode
 
     @property
-    def children(self):
-        """Return a dict of handlers, keyed by channel paths below current path."""
-        return {
-            self.interval.node_name: self.interval,
-            self.change_only.node_name: self.change_only,
-            self.number.node_name: self.number
-        }
-
-    # Implement ProtocolHandlerNode
+    def children_list(self):
+        """Return a list of child nodes."""
+        return [self.interval, self.change_only, self.number]
 
     def get_response_notifier(self, receiver):
         """Return the response receiver's method for receiving a response."""

@@ -8,7 +8,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 # Local package imports
 from lhrhost.messaging.presentation import Message, MessageReceiver
-from lhrhost.util.interfaces import InterfaceClass
+from lhrhost.util.interfaces import InterfaceClass, cached_property
 
 # External imports
 from multidict import MultiDict
@@ -137,7 +137,7 @@ class ChannelTreeNode(metaclass=InterfaceClass):
         """Return the channel of the node as a string."""
         pass
 
-    @property
+    @cached_property
     def channel_path(self) -> str:
         """Return the full channel path of the node as a string."""
         if self.parent is None:
@@ -150,7 +150,7 @@ class ChannelTreeNode(metaclass=InterfaceClass):
         """Return the channel name of the node as a string."""
         pass
 
-    @property
+    @cached_property
     def name_path(self) -> str:
         """Return the channel name of the node as a string."""
         if self.parent is None:
@@ -206,10 +206,6 @@ class ChannelHandlerTreeNode(ChannelTreeNode, MessageReceiver, metaclass=Interfa
 class ProtocolHandlerNode(ChannelHandlerTreeNode, CommandIssuer):
     """Mixin for a non-root command handler in a hierarchical handler tree."""
 
-    # TODO: there should be a list of children which is used to build the children dict
-    # TODO: for channels which handle their child nodes use __getattr__ overloading; define a virtual_children dict for child handlers and functions, maybe using a decorator on the corresponding notify_response_receivers methods?
-    # TODO: make every channel be its own node, instead of using channel handlers?
-    # TODO: the child handler methods should check for empty payload
     # TODO:implement feedbackcontroller nodes
 
     def __init__(self, node_channel, node_name, parent=None, **kwargs):
@@ -223,6 +219,12 @@ class ProtocolHandlerNode(ChannelHandlerTreeNode, CommandIssuer):
 
     async def notify_response_receivers(self, payload: Any) -> None:
         """Validate the payload and notify the response receivers."""
+        if payload is None:
+            logger.warn(
+                'Received response {} with an empty payload. This should not '
+                'happen, and the response has been ignored.'.format(payload)
+            )
+            return
         result = self.transform_response_payload(payload)
         if result is None:
             return
@@ -248,12 +250,22 @@ class ProtocolHandlerNode(ChannelHandlerTreeNode, CommandIssuer):
         """
         return None
 
+    @property
+    def children_list(self):
+        """Return a list of child nodes."""
+        return []
+
     # Implement ChannelTreeNode
 
     @property
     def parent(self):
         """Return the parent ChannelTreeNode."""
         return self._parent
+
+    @cached_property
+    def children(self):
+        """Return a dict of the child ChannelTreeNodes keyed by prefixes, if any."""
+        return {child.node_name: child for child in self.children_list}
 
     @property
     def node_channel(self) -> str:

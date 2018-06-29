@@ -551,19 +551,15 @@ class Protocol(ProtocolHandlerNode):
         message = Message(self.name_path, state)
         await self.issue_command(Command(message))
 
-    # Implement ChannelTreeNode
+    # Implement ProtocolHandlerNode
 
     @property
-    def children(self):
-        """Return a dict of the child ChannelTreeNodes keyed by prefixes."""
-        return {
-            self.position.node_name: self.position,
-            self.smoothed_position.node_name: self.smoothed_position,
-            self.motor.node_name: self.motor,
-            # self.feedback_controller.node_name: self.feedback_controller
-        }
-
-    # Implement ProtocolHandlerNode
+    def children_list(self):
+        """Return a list of child nodes."""
+        return [
+            self.position, self.smoothed_position,
+            self.motor,  # self.feedback_controller
+        ]
 
     def get_response_notifier(self, receiver):
         """Return the response receiver's method for receiving a response."""
