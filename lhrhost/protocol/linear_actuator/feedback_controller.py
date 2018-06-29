@@ -298,8 +298,8 @@ class Protocol(ProtocolHandlerNode):
         message = Message(self.name_path, position)
         wait_channels = [
             self.name_path,
+            self.parent.name_path,
             self.parent.position.name_path,
-            self.parent.motor.name_path,
             self.name_path,
             self.parent.name_path
         ]

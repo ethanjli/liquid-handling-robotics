@@ -1,6 +1,7 @@
 """LinearActuator channels of linear actuator protocol."""
 
 # Standard imports
+import asyncio
 import logging
 from abc import abstractmethod
 from typing import Iterable, List, Optional
@@ -545,6 +546,8 @@ class Protocol(ProtocolHandlerNode):
         self.motor = MotorProtocol(parent=self, **kwargs)
         self.feedback_controller = FeedbackControllerProtocol(parent=self, **kwargs)
 
+        self.initialized = asyncio.Event()
+
     # Commands
 
     async def request(self, state: Optional[int]=None):
@@ -566,3 +569,8 @@ class Protocol(ProtocolHandlerNode):
     def get_response_notifier(self, receiver):
         """Return the response receiver's method for receiving a response."""
         return receiver.on_linear_actuator
+
+    async def on_received_message(self, channel_name_remainder, message) -> None:
+        """Handle received message."""
+        await super().on_received_message(channel_name_remainder, message)
+        self.initialized.set()
