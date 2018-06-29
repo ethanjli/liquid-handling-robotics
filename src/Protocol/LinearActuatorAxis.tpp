@@ -100,6 +100,7 @@ void Notifier<Messager, SignalType>::notifyState() {
 
   sender.sendChannelStart();
   sender.sendChannelChar(axisChannel);
+  sender.sendChannelChar(signalChannel);
   sender.sendChannelChar(kNotify);
   sender.sendChannelEnd();
   sender.sendPayload(static_cast<int>(state));
