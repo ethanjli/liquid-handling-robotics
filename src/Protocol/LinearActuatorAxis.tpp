@@ -122,9 +122,11 @@ void Notifier<Messager, SignalType>::onReceivedMessage() {
           break;
         case 1:
           state = State::iterationIntervals;
+          if (changeOnly) prevSignalValue = signalValue - 1;
           break;
         case 2:
           state = State::timeIntervals;
+          if (changeOnly) prevSignalValue = signalValue - 1;
           break;
       }
     }
