@@ -7,7 +7,7 @@ from typing import Iterable, List, Optional
 
 # Local package imports
 from lhrhost.messaging.presentation import Message
-from lhrhost.protocol import ChannelHandlerTreeNode, Command, CommandIssuer
+from lhrhost.protocol import Command, ProtocolHandlerNode
 from lhrhost.util.interfaces import InterfaceClass
 from lhrhost.util.printing import Printer
 
@@ -18,7 +18,7 @@ logger.addHandler(logging.NullHandler())
 
 # Receipt of Echoes
 
-class EchoReceiver(object, metaclass=InterfaceClass):
+class Receiver(object, metaclass=InterfaceClass):
     """Interface for a class which receives Echo events."""
 
     @abstractmethod
@@ -28,12 +28,12 @@ class EchoReceiver(object, metaclass=InterfaceClass):
 
 
 # Type-checking names
-_EchoReceivers = Iterable[EchoReceiver]
+_Receivers = Iterable[Receiver]
 
 
 # Printing
 
-class EchoPrinter(EchoReceiver, Printer):
+class Printer(Receiver, Printer):
     """Simple class which prints received Echo responses."""
 
     async def on_echo(self, payload: int) -> None:
@@ -41,56 +41,28 @@ class EchoPrinter(EchoReceiver, Printer):
         self.print('Echo: {}'.format(payload))
 
 
-class EchoProtocol(ChannelHandlerTreeNode, CommandIssuer):
+class Protocol(ProtocolHandlerNode):
     """Sends and receives echoes."""
 
     def __init__(
-        self, echo_receivers: Optional[_EchoReceivers]=None, **kwargs
+        self, response_receivers: Optional[_Receivers]=None, **kwargs
     ):
         """Initialize member variables."""
-        super().__init__(**kwargs)
-        self.__echo_receivers: List[EchoReceiver] = []
-        if echo_receivers:
-            self.__echo_receivers = [receiver for receiver in echo_receivers]
-
-    async def notify_echo_receivers(self, payload: int) -> None:
-        """Notify all receivers of a received Echo response."""
-        for receiver in self.__echo_receivers:
-            await receiver.on_echo(payload)
+        super().__init__('Echo', 'e', **kwargs)
+        self.response_receivers: List[Receiver] = []
+        if response_receivers:
+            self.response_receivers = [receiver for receiver in response_receivers]
 
     # Commands
 
-    async def request_echo(self, payload: Optional[int]=None):
+    async def request(self, payload: Optional[int]=None):
         """Send a Echo command to message receivers."""
         message = Message(self.name_path, payload)
         await self.issue_command(Command(message))
 
-    # Implement ChannelTreeNode
+    # Implement ProtocolHandlerNode
 
-    @property
-    def node_channel(self) -> str:
-        """Return the channel of the node as a string."""
-        return 'Echo'
-
-    @property
-    def node_name(self) -> str:
-        """Return the channel name of the node as a string."""
-        return 'e'
-
-    # Implement ChannelHandlerTreeNode
-
-    async def on_any_message(self, message):
-        """Handle any message whether or not it is recognized as by the node."""
-        if message.payload is None:
-            return
-        self.on_response(message.channel)
-
-    async def on_received_message(self, channel_name_remainder, message) -> None:
-        """Handle received message.
-
-        Only handles known Echo messages.
-        """
-        if message.payload is None:
-            return
-        if message.channel == self.name_path:
-            await self.notify_echo_receivers(message.payload)
+    async def notify_response_receivers(self, payload: int) -> None:
+        """Notify all receivers of a received Echo response."""
+        for receiver in self.response_receivers:
+            await receiver.on_echo(payload)

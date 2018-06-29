@@ -6,7 +6,7 @@ import logging
 # Local package imports
 from lhrhost.messaging.presentation import BasicTranslator, MessagePrinter
 from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
-from lhrhost.protocol.core.reset import ResetPrinter, ResetProtocol
+from lhrhost.protocol.core.reset import Printer, Protocol
 from lhrhost.tests.messaging.transport.batch import (
     Batch, BatchExecutionManager, LOGGING_CONFIG, main
 )
@@ -40,11 +40,11 @@ class Batch(Batch):
             ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
         )
 
-        self.protocol_printer = ResetPrinter(prefix=(batch.RESPONSE_PREFIX))
+        self.protocol_printer = Printer(prefix=(batch.RESPONSE_PREFIX))
         self.command_printer = MessagePrinter(prefix='  Sending: ')
-        self.protocol = ResetProtocol(
+        self.protocol = Protocol(
             self.transport_manager.connection_synchronizer,
-            reset_receivers=[self.protocol_printer],
+            response_receivers=[self.protocol_printer],
             command_receivers=[self.command_printer, self.translator]
         )
         self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
@@ -61,12 +61,12 @@ class Batch(Batch):
         await asyncio.sleep(1.0)
 
         print('RPC-style with completion wait:')
-        await self.protocol.request_complete_reset()
+        await self.protocol.request_complete()
         await asyncio.sleep(2.0)
         print(batch.RESPONSE_PREFIX + 'Reset completed!')
 
         print('RPC-style with acknowledgement response wait:')
-        await self.protocol.request_reset()
+        await self.protocol.request()
         print(batch.RESPONSE_PREFIX + 'Reset command acknowledged!')
         await self.transport_manager.connection_synchronizer.disconnected.wait()
         print(batch.RESPONSE_PREFIX + 'Connection lost!')

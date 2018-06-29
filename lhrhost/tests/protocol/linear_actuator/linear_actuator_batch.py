@@ -6,7 +6,7 @@ import logging
 # Local package imports
 from lhrhost.messaging.presentation import BasicTranslator, MessagePrinter
 from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
-from lhrhost.protocol.linear_actuator import LinearActuatorPrinter, LinearActuatorProtocol
+from lhrhost.protocol.linear_actuator import Printer, Protocol
 from lhrhost.tests.messaging.transport.batch import (
     Batch, BatchExecutionManager, LOGGING_CONFIG, main
 )
@@ -25,13 +25,13 @@ class Batch(Batch):
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.protocol_printer = LinearActuatorPrinter(
-            'Pipettor Axis', prefix=batch.RESPONSE_PREFIX
+        self.protocol_printer = Printer(
+            'Z-Axis', prefix=batch.RESPONSE_PREFIX
         )
         self.command_printer = MessagePrinter(prefix='  Sending: ')
-        self.protocol = LinearActuatorProtocol(
-            'Pipettor', 'p',
-            linear_actuator_receivers=[self.protocol_printer],
+        self.protocol = Protocol(
+            'ZAxis', 'z',
+            response_receivers=[self.protocol_printer],
             command_receivers=[self.command_printer]
         )
         self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
@@ -57,14 +57,31 @@ class Batch(Batch):
     async def test_routine(self):
         """Run the batch execution test routine."""
         print('Running test routine...')
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(5.0)
 
         print('RPC-style with empty payloads:')
         await self.protocol.request()
         await self.protocol.position.request()
+        await self.protocol.smoothed_position.request()
         await self.protocol.motor.request()
+        await self.protocol.motor.motor_polarity.request()
+        await self.protocol.motor.timer_timeout.request()
 
-        await self.protocol.motor.request(-255)
+        print('Motor direct duty control')
+        # Test basic motor direct duty control
+        await self.protocol.motor.request_complete(-255)
+        await self.protocol.motor.request_complete(255)
+        await self.protocol.motor.request_complete(-100)
+        # Test motor polarity setting
+        await self.protocol.motor.motor_polarity.request(-1)
+        await self.protocol.motor.request_complete(-150)
+        await self.protocol.motor.motor_polarity.request(1)
+        await self.protocol.motor.request_complete(-100)
+        # Test timer timeout
+        for i in range(10):
+            await self.protocol.motor.timer_timeout.request(200)
+            await self.protocol.motor.request_complete(150)
+            await asyncio.sleep(0.4)
 
         print(batch.OUTPUT_FOOTER)
         print('Quitting...')

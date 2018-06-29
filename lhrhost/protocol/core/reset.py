@@ -7,7 +7,7 @@ from typing import Iterable, List, Optional
 
 # Local package imports
 from lhrhost.messaging.presentation import Message
-from lhrhost.protocol import ChannelHandlerTreeNode, Command, CommandIssuer
+from lhrhost.protocol import Command, ProtocolHandlerNode
 from lhrhost.util.interfaces import InterfaceClass
 from lhrhost.util.printing import Printer
 
@@ -18,7 +18,7 @@ logger.addHandler(logging.NullHandler())
 
 # Receipt of Resets
 
-class ResetReceiver(object, metaclass=InterfaceClass):
+class Receiver(object, metaclass=InterfaceClass):
     """Interface for a class which receives Reset events."""
 
     @abstractmethod
@@ -28,12 +28,12 @@ class ResetReceiver(object, metaclass=InterfaceClass):
 
 
 # Type-checking names
-_ResetReceivers = Iterable[ResetReceiver]
+_Receivers = Iterable[Receiver]
 
 
 # Printing
 
-class ResetPrinter(ResetReceiver, Printer):
+class Printer(Receiver, Printer):
     """Simple class which prints received Reset responses."""
 
     async def on_reset(self) -> None:
@@ -41,35 +41,30 @@ class ResetPrinter(ResetReceiver, Printer):
         self.print('Resetting')
 
 
-class ResetProtocol(ChannelHandlerTreeNode, CommandIssuer):
+class Protocol(ProtocolHandlerNode):
     """Sends and receives hard resets."""
 
     def __init__(
         self, connection_synchronizer,
-        reset_receivers: Optional[_ResetReceivers]=None, **kwargs
+        response_receivers: Optional[_Receivers]=None, **kwargs
     ):
         """Initialize member variables."""
-        super().__init__(**kwargs)
+        super().__init__('Reset', 'r', **kwargs)
         self.connection_synchronizer = connection_synchronizer
-        self.__reset_receivers: List[ResetReceiver] = []
-        if reset_receivers:
-            self.__reset_receivers = [receiver for receiver in reset_receivers]
-
-    async def notify_reset_receivers(self) -> None:
-        """Notify all receivers of received Reset response."""
-        for receiver in self.__reset_receivers:
-            await receiver.on_reset()
+        self.response_receivers: List[Receiver] = []
+        if response_receivers:
+            self.response_receivers = [receiver for receiver in response_receivers]
 
     # Commands
 
-    async def request_reset(self):
+    async def request(self):
         """Send a Reset command to message receivers."""
         logger.info('Resetting connection...')
         message = Message(self.name_path, 1)
         await self.issue_command(Command(message))
         logger.debug('Reset command acknowledged!')
 
-    async def request_complete_reset(self):
+    async def request_complete(self):
         """Send a Reset command to message receivers."""
         logger.info('Resetting connection...')
         message = Message(self.name_path, 1)
@@ -80,29 +75,16 @@ class ResetProtocol(ChannelHandlerTreeNode, CommandIssuer):
         await self.connection_synchronizer.connected.wait()
         logger.debug('Connection fully reset!')
 
-    # Implement ChannelTreeNode
+    # Implement ProtocolHandlerNode
 
-    @property
-    def node_channel(self) -> str:
-        """Return the channel of the node as a string."""
-        return 'Reset'
-
-    @property
-    def node_name(self) -> str:
-        """Return the channel name of the node as a string."""
-        return 'r'
-
-    # Implement ChannelHandlerTreeNode
-
-    async def on_any_message(self, channel_name_remainder, message):
-        """Handle any message whether or not it is recognized as by the node."""
-        if message.payload is None:
-            return
-        self.on_response(message.channel)
-
-    async def on_received_message(self, message):
-        """Handle a message recognized as being handled by the node."""
-        if message.payload is None:
-            return
-        if message.channel == self.name_path and message.payload == 1:
-            await self.notify_reset_receivers()
+    async def notify_response_receivers(self, payload) -> None:
+        """Notify all receivers of received Reset response."""
+        if payload == 1:
+            for receiver in self.response_receivers:
+                await receiver.on_reset()
+        elif payload == 0:
+            pass
+        else:
+            raise ValueError('Invalid {} payload {}!'.format(
+                self.channel_path, payload
+            ))

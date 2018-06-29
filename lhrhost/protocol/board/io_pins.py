@@ -7,10 +7,7 @@ from typing import Iterable, List, Optional
 
 # Local package imports
 from lhrhost.messaging.presentation import Message
-from lhrhost.protocol import (
-    ChannelHandlerTreeChildNode, ChannelHandlerTreeNode,
-    Command, CommandIssuer
-)
+from lhrhost.protocol import Command, ProtocolHandlerNode
 from lhrhost.util.interfaces import InterfaceClass
 from lhrhost.util.printing import Printer
 
@@ -21,7 +18,7 @@ logger.addHandler(logging.NullHandler())
 
 # Receipt of IOPins
 
-class IOPinsReceiver(object, metaclass=InterfaceClass):
+class Receiver(object, metaclass=InterfaceClass):
     """Interface for a class which receives IOPins/* events."""
 
     @abstractmethod
@@ -36,12 +33,12 @@ class IOPinsReceiver(object, metaclass=InterfaceClass):
 
 
 # Type-checking names
-_IOPinsReceivers = Iterable[IOPinsReceiver]
+_Receivers = Iterable[Receiver]
 
 
 # Printing
 
-class IOPinsPrinter(IOPinsReceiver, Printer):
+class Printer(Receiver, Printer):
     """Simple class which prints received IOPins/* responses."""
 
     async def on_io_pin_digital(self, pin: int, payload: int) -> None:
@@ -55,18 +52,18 @@ class IOPinsPrinter(IOPinsReceiver, Printer):
         self.print('Pin A{}: {}'.format(pin, payload))
 
 
-class IOPinsTypeProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
+class TypeProtocol(ProtocolHandlerNode):
     """Reads IO pins of the specified type."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, channel, channel_name, **kwargs):
         """Initialize member variables."""
-        super().__init__(*args, **kwargs)
+        super().__init__(channel, channel_name, **kwargs)
         self.command_receivers = self.parent.command_receivers
-        self.io_pins_receivers = self.parent.io_pins_receivers
+        self.response_receivers = self.parent.response_receivers
 
-    async def notify_io_pins_receivers(self, pin: int, payload: int) -> None:
+    async def notify_response_receivers(self, pin: int, payload: int) -> None:
         """Notify all receivers of received IOPins/_/_ response."""
-        for receiver in self.io_pins_receivers:
+        for receiver in self.response_receivers:
             if self.node_channel == 'Analog':
                 await receiver.on_io_pin_analog(pin, payload)
             elif self.node_channel == 'Digital':
@@ -86,46 +83,30 @@ class IOPinsTypeProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
 
     # Implement ChannelHandlerTreeNode
 
-    async def on_any_message(self, message):
-        """Handle any message whether or not it is recognized as by the node."""
-        if message.payload is None:
-            return
-        self.on_response(message.channel)
-
     async def on_received_message(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the node."""
         if message.payload is None:
             return
-        await self.notify_io_pins_receivers(channel_name_remainder, message.payload)
+        await self.notify_response_receivers(channel_name_remainder, message.payload)
 
 
-class IOPinsProtocol(ChannelHandlerTreeNode, CommandIssuer):
+class Protocol(ProtocolHandlerNode):
     """Reads digital and analog IO pins."""
 
     def __init__(
-        self, io_pins_receivers: Optional[_IOPinsReceivers]=None, **kwargs
+        self, response_receivers: Optional[_Receivers]=None, **kwargs
     ):
         """Initialize member variables."""
-        super().__init__(**kwargs)
+        super().__init__('IOPins', 'i', **kwargs)
 
-        self.io_pins_receivers: List[IOPinsReceiver] = []
-        if io_pins_receivers:
-            self.io_pins_receivers = [receiver for receiver in io_pins_receivers]
+        self.response_receivers: List[Receiver] = []
+        if response_receivers:
+            self.response_receivers = [receiver for receiver in response_receivers]
 
-        self.analog = IOPinsTypeProtocol(self, 'Analog', 'a', **kwargs)
-        self.digital = IOPinsTypeProtocol(self, 'Digital', 'd', **kwargs)
+        self.analog = TypeProtocol('Analog', 'a', parent=self, **kwargs)
+        self.digital = TypeProtocol('Digital', 'd', parent=self, **kwargs)
 
     # Implement ChannelTreeNode
-
-    @property
-    def node_channel(self) -> str:
-        """Return the channel of the node as a string."""
-        return 'IOPins'
-
-    @property
-    def node_name(self) -> str:
-        """Return the channel name of the node as a string."""
-        return 'i'
 
     @property
     def children(self):
@@ -134,11 +115,3 @@ class IOPinsProtocol(ChannelHandlerTreeNode, CommandIssuer):
             self.analog.node_name: self.analog,
             self.digital.node_name: self.digital
         }
-
-    # Implement ChannelHandlerTreeNode
-
-    async def on_any_message(self, message):
-        """Handle any message whether or not it is recognized as by the node."""
-        if message.payload is None:
-            return
-        self.on_response(message.channel)

@@ -7,10 +7,7 @@ from typing import Iterable, List, Optional
 
 # Local package imports
 from lhrhost.messaging.presentation import Message
-from lhrhost.protocol import (
-    ChannelHandlerTreeChildNode, ChannelHandlerTreeNode,
-    Command, CommandIssuer
-)
+from lhrhost.protocol import Command, ProtocolHandlerNode
 from lhrhost.util.interfaces import InterfaceClass
 from lhrhost.util.printing import Printer
 
@@ -88,7 +85,7 @@ class Version(object):
 
 # Receipt of Versions
 
-class VersionReceiver(object, metaclass=InterfaceClass):
+class Receiver(object, metaclass=InterfaceClass):
     """Interface for a class which receives Version/* responses."""
 
     @abstractmethod
@@ -98,12 +95,12 @@ class VersionReceiver(object, metaclass=InterfaceClass):
 
 
 # Type-checking names
-_VersionReceivers = Iterable[VersionReceiver]
+_Receivers = Iterable[Receiver]
 
 
 # Printing
 
-class VersionPrinter(VersionReceiver, Printer):
+class Printer(Receiver, Printer):
     """Simple class which prints received Version/* responses."""
 
     async def on_version(self, version: Version) -> None:
@@ -111,12 +108,12 @@ class VersionPrinter(VersionReceiver, Printer):
         self.print('Version {}'.format(version))
 
 
-class VersionComponentProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
+class ComponentProtocol(ProtocolHandlerNode):
     """Tracks protocol component version."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, channel, channel_name, **kwargs):
         """Initialize member variables."""
-        super().__init__(*args, **kwargs)
+        super().__init__(channel, channel_name, **kwargs)
         self.command_receivers = self.parent.command_receivers
 
     # Commands
@@ -127,12 +124,6 @@ class VersionComponentProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
         await self.issue_command(Command(message))
 
     # Implement ChannelHandlerTreeNode
-
-    async def on_any_message(self, message):
-        """Handle any message whether or not it is recognized as by the node."""
-        if message.payload is None:
-            return
-        self.on_response(message.channel)
 
     async def on_received_message(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the node.
@@ -147,28 +138,28 @@ class VersionComponentProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
             new = int(message.payload)
             self.parent.version[int(self.node_name)] = new
             if self.parent.version.known and new != previous:
-                await self.parent.notify_version_receivers()
+                await self.parent.notify_response_receivers()
 
 
-class VersionProtocol(ChannelHandlerTreeNode, CommandIssuer):
+class Protocol(ProtocolHandlerNode):
     """Tracks protocol version."""
 
-    def __init__(self, version_receivers: Optional[_VersionReceivers]=None, **kwargs):
+    def __init__(self, response_receivers: Optional[_Receivers]=None, **kwargs):
         """Initialize member variables."""
-        super().__init__(**kwargs)
+        super().__init__('Version', 'v', **kwargs)
 
-        self.major = VersionComponentProtocol(self, 'Major', '0', **kwargs)
-        self.minor = VersionComponentProtocol(self, 'Minor', '1', **kwargs)
-        self.patch = VersionComponentProtocol(self, 'Patch', '2', **kwargs)
+        self.major = ComponentProtocol('Major', '0', parent=self, **kwargs)
+        self.minor = ComponentProtocol('Minor', '1', parent=self, **kwargs)
+        self.patch = ComponentProtocol('Patch', '2', parent=self, **kwargs)
 
         self.version: Version = Version(None, None, None)
-        self.__version_receivers: List[VersionReceiver] = []
-        if version_receivers:
-            self.__version_receivers = [receiver for receiver in version_receivers]
+        self.response_receivers: List[Receiver] = []
+        if response_receivers:
+            self.response_receivers = [receiver for receiver in response_receivers]
 
-    async def notify_version_receivers(self) -> None:
+    async def notify_response_receivers(self) -> None:
         """Notify all receivers of received Version response."""
-        for receiver in self.__version_receivers:
+        for receiver in self.response_receivers:
             await receiver.on_version(self.version)
 
     # Commands
@@ -182,16 +173,6 @@ class VersionProtocol(ChannelHandlerTreeNode, CommandIssuer):
     # Implement ChannelTreeNode
 
     @property
-    def node_channel(self) -> str:
-        """Return the channel of the node as a string."""
-        return 'Version'
-
-    @property
-    def node_name(self) -> str:
-        """Return the channel name of the node as a string."""
-        return 'v'
-
-    @property
     def children(self):
         """Return a dict of the child ChannelTreeNodes keyed by prefixes."""
         return {
@@ -199,11 +180,3 @@ class VersionProtocol(ChannelHandlerTreeNode, CommandIssuer):
             self.minor.node_name: self.minor,
             self.patch.node_name: self.patch
         }
-
-    # Implement ChannelHandlerTreeNode
-
-    async def on_any_message(self, message):
-        """Handle any message whether or not it is recognized as by the node."""
-        if message.payload is None:
-            return
-        self.on_response(message.channel)

@@ -6,7 +6,7 @@ import logging
 # Local package imports
 from lhrhost.messaging.presentation import BasicTranslator, MessagePrinter
 from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
-from lhrhost.protocol.board.io_pins import IOPinsPrinter, IOPinsProtocol
+from lhrhost.protocol.board.io_pins import Printer, Protocol
 from lhrhost.tests.messaging.transport.batch import (
     Batch, BatchExecutionManager, LOGGING_CONFIG, main
 )
@@ -25,10 +25,10 @@ class Batch(Batch):
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.protocol_printer = IOPinsPrinter(prefix=batch.RESPONSE_PREFIX)
+        self.protocol_printer = Printer(prefix=batch.RESPONSE_PREFIX)
         self.command_printer = MessagePrinter(prefix='  Sending: ')
-        self.protocol = IOPinsProtocol(
-            io_pins_receivers=[self.protocol_printer],
+        self.protocol = Protocol(
+            response_receivers=[self.protocol_printer],
             command_receivers=[self.command_printer]
         )
         self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)

@@ -7,10 +7,7 @@ from typing import Iterable, List, Optional
 
 # Local package imports
 from lhrhost.messaging.presentation import Message
-from lhrhost.protocol import (
-    ChannelHandlerTreeChildNode, ChannelHandlerTreeNode,
-    Command, CommandIssuer
-)
+from lhrhost.protocol import Command, ProtocolHandlerNode
 from lhrhost.util.interfaces import InterfaceClass
 from lhrhost.util.printing import Printer
 
@@ -21,7 +18,7 @@ logger.addHandler(logging.NullHandler())
 
 # Receipt of BuiltinLED
 
-class BuiltinLEDReceiver(object, metaclass=InterfaceClass):
+class Receiver(object, metaclass=InterfaceClass):
     """Interface for a class which receives builtin_led events.
 
     This may include versions from self or from other sources.
@@ -59,12 +56,12 @@ class BuiltinLEDReceiver(object, metaclass=InterfaceClass):
 
 
 # Type-checking names
-_BuiltinLEDReceivers = Iterable[BuiltinLEDReceiver]
+_Receivers = Iterable[Receiver]
 
 
 # Printing
 
-class BuiltinLEDPrinter(BuiltinLEDReceiver, Printer):
+class Printer(Receiver, Printer):
     """Simple class which prints received serialized messages."""
 
     async def on_builtin_led(self, state: int) -> None:
@@ -98,38 +95,38 @@ class BuiltinLEDPrinter(BuiltinLEDReceiver, Printer):
         ))
 
 
-class BuiltinLEDBlinkProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
+class BuiltinLEDBlinkProtocol(ProtocolHandlerNode):
     """Blinks the built-in LED."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         """Initialize member variables."""
-        super().__init__(*args, **kwargs)
+        super().__init__('Blink', 'b', **kwargs)
         self.command_receivers = self.parent.command_receivers
-        self.builtin_led_receivers = self.parent.builtin_led_receivers
+        self.response_receivers = self.parent.response_receivers
 
-    async def notify_builtin_led_receivers(self, state: int) -> None:
+    async def notify_response_receivers(self, state: int) -> None:
         """Notify all receivers of received BuiltinLED/Blink response."""
-        for receiver in self.builtin_led_receivers:
+        for receiver in self.response_receivers:
             await receiver.on_builtin_led_blink(state)
 
-    async def notify_builtin_led_receivers_high_interval(self, interval: int) -> None:
+    async def notify_response_receivers_high_interval(self, interval: int) -> None:
         """Notify all receivers of received BuiltinLED/Blink/HighInterval response."""
-        for receiver in self.builtin_led_receivers:
+        for receiver in self.response_receivers:
             await receiver.on_builtin_led_blink_high_interval(interval)
 
-    async def notify_builtin_led_receivers_low_interval(self, interval: int) -> None:
+    async def notify_response_receivers_low_interval(self, interval: int) -> None:
         """Notify all receivers of received BuiltinLED/Blink/LowInterval response."""
-        for receiver in self.builtin_led_receivers:
+        for receiver in self.response_receivers:
             await receiver.on_builtin_led_blink_low_interval(interval)
 
-    async def notify_builtin_led_receivers_periods(self, periods: int) -> None:
+    async def notify_response_receivers_periods(self, periods: int) -> None:
         """Notify all receivers of received BuiltinLED/Blink/Periods response."""
-        for receiver in self.builtin_led_receivers:
+        for receiver in self.response_receivers:
             await receiver.on_builtin_led_blink_periods(periods)
 
-    async def notify_builtin_led_receivers_notify(self, state: int) -> None:
+    async def notify_response_receivers_notify(self, state: int) -> None:
         """Notify all receivers of received BuiltinLED/Blink/Notify response."""
-        for receiver in self.builtin_led_receivers:
+        for receiver in self.response_receivers:
             await receiver.on_builtin_led_blink_notify(state)
 
     # Commands
@@ -191,52 +188,34 @@ class BuiltinLEDBlinkProtocol(ChannelHandlerTreeChildNode, CommandIssuer):
 
     async def on_received_message_high_interval(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the child handler."""
-        await self.notify_builtin_led_receivers_high_interval(message.payload)
+        await self.notify_response_receivers_high_interval(message.payload)
 
     async def on_received_message_low_interval(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the child handler."""
-        await self.notify_builtin_led_receivers_low_interval(message.payload)
+        await self.notify_response_receivers_low_interval(message.payload)
 
     async def on_received_message_periods(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the child handler."""
-        await self.notify_builtin_led_receivers_periods(message.payload)
+        await self.notify_response_receivers_periods(message.payload)
 
     async def on_received_message_notify(self, channel_name_remainder, message):
         """Handle a message recognized as being handled by the child handler."""
-        await self.notify_builtin_led_receivers_notify(message.payload)
-
-    async def on_any_message(self, message):
-        """Handle any message whether or not it is recognized as by the node."""
-        if message.payload is None:
-            return
-        self.on_response(message.channel)
-
-    async def on_received_message(self, channel_name_remainder, message):
-        """Handle a message recognized as being handled by the node."""
-        if message.payload is None:
-            return
-        if message.channel == self.name_path:
-            await self.notify_builtin_led_receivers(message.payload)
+        await self.notify_response_receivers_notify(message.payload)
 
 
-class BuiltinLEDProtocol(ChannelHandlerTreeNode, CommandIssuer):
+class Protocol(ProtocolHandlerNode):
     """Sets the built-in LED."""
 
     def __init__(
-        self, builtin_led_receivers: Optional[_BuiltinLEDReceivers]=None, **kwargs
+        self, response_receivers: Optional[_Receivers]=None, **kwargs
     ):
         """Initialize member variables."""
-        super().__init__(**kwargs)
-        self.builtin_led_receivers: List[BuiltinLEDReceiver] = []
-        if builtin_led_receivers:
-            self.builtin_led_receivers = [receiver for receiver in builtin_led_receivers]
+        super().__init__('BuiltinLED', 'l', **kwargs)
+        self.response_receivers: List[Receiver] = []
+        if response_receivers:
+            self.response_receivers = [receiver for receiver in response_receivers]
 
-        self.blink = BuiltinLEDBlinkProtocol(self, 'Blink', 'b', **kwargs)
-
-    async def notify_builtin_led_receivers(self, state: int) -> None:
-        """Notify all receivers of received BuiltinLED response."""
-        for receiver in self.builtin_led_receivers:
-            await receiver.on_builtin_led(state)
+        self.blink = BuiltinLEDBlinkProtocol(parent=self, **kwargs)
 
     # Commands
 
@@ -249,34 +228,15 @@ class BuiltinLEDProtocol(ChannelHandlerTreeNode, CommandIssuer):
     # Implement ChannelTreeNode
 
     @property
-    def node_channel(self) -> str:
-        """Return the channel of the node as a string."""
-        return 'BuiltinLED'
-
-    @property
-    def node_name(self) -> str:
-        """Return the channel name of the node as a string."""
-        return 'l'
-
-    @property
     def children(self):
         """Return a dict of the child ChannelTreeNodes keyed by prefixes."""
         return {
             self.blink.node_name: self.blink
         }
 
-    # Implement MessageReceiver
+    # Implement ProtocolHandlerNode
 
-    async def on_any_message(self, message):
-        """Handle any message whether or not it is recognized as by the node."""
-        if message.payload is None:
-            return
-        self.on_response(message.channel)
-
-    async def on_received_message(self, channel_name_remainder, message):
-        """Handle a message recognized as being handled by the node."""
-        if message.payload is None:
-            return
-        # TODO: validate the channel name
-        if message.channel == self.name_path:
-            await self.notify_builtin_led_receivers(message.payload)
+    async def notify_response_receivers(self, state: int) -> None:
+        """Notify all receivers of received BuiltinLED response."""
+        for receiver in self.response_receivers:
+            await receiver.on_builtin_led(state)

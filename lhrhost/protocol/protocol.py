@@ -4,7 +4,7 @@
 import asyncio
 import logging
 from abc import abstractmethod
-from typing import Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 # Local package imports
 from lhrhost.messaging.presentation import Message, MessageReceiver
@@ -203,25 +203,25 @@ class ChannelHandlerTreeNode(ChannelTreeNode, MessageReceiver, metaclass=Interfa
             await child.on_message(message)
 
 
-class ChannelHandlerTreeChildNode(ChannelHandlerTreeNode):
+class ProtocolHandlerNode(ChannelHandlerTreeNode, CommandIssuer):
     """Mixin for a non-root command handler in a hierarchical handler tree."""
-    # TODO: rename notify_linear_actuator_receivers/etc. to notify_response_receivers/etc.
-    # TODO: make this subclass CommandIssuer, provide on_any_message
-    # TODO: set parent to default to None, and make child nodes define their own names/channels when appropriate; make everything be a ChildNode (and rename to a better name, e.g. ProtocolHandlerNode)
-    # TODO: instead of linear_actuator_receivers/etc. and notify_linear_actuator_receivers/etc., just have response_receivers and notify_response_receivers/etc.
-    # TODO: protocol class names should be shorter; don't repeat module names in class names
-    # TODO: split up linear_actuator.py into multiple modules
+    # TODO: notify_response_receivers should await on the gather; there should be an interface for calling the awaited method on each receiver, and notify_response_receivers should be implemented in this mixin
+    # TODO: there should be a list of children which is used to build the children dict
     # TODO: for channels which handle their child nodes use __getattr__ overloading; define a virtual_children dict for child handlers and functions, maybe using a decorator on the corresponding notify_response_receivers methods?
-    # TODO: the child handler methods should check for empty payload
     # TODO: make every channel be its own node, instead of using channel handlers?
+    # TODO: the child handler methods should check for empty payload
     # TODO:implement feedbackcontroller nodes
 
-    def __init__(self, parent, node_channel, node_name, **kwargs):
+    def __init__(self, node_channel, node_name, parent=None, **kwargs):
         """Initialize member variables."""
         super().__init__(**kwargs)
         self._parent = parent
         self._node_channel = node_channel
         self._node_name = node_name
+
+    async def notify_response_receivers(self, payload: Any) -> None:
+        """Validate the payload and notify the response receivers."""
+        pass
 
     # Implement ChannelTreeNode
 
@@ -239,3 +239,16 @@ class ChannelHandlerTreeChildNode(ChannelHandlerTreeNode):
     def node_name(self) -> str:
         """Return the channel name of the node as a string."""
         return self._node_name
+
+    async def on_any_message(self, message):
+        """Handle any message whether or not it is recognized as by the node."""
+        if message.payload is None:
+            return
+        self.on_response(message.channel)
+
+    async def on_received_message(self, channel_name_remainder, message) -> None:
+        """Handle received message."""
+        if message.payload is None:
+            return
+        if message.channel == self.name_path:
+            await self.notify_response_receivers(message.payload)
