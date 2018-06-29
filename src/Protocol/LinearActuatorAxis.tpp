@@ -681,7 +681,7 @@ void LinearActuatorAxis<LinearActuator, Messager>::onFeedbackControllerPIDMessag
   if (channelLength != channelParsedLength + 1) return;
 
   // Expects channelLength == 4
-  switch (parser.channel[channelParsedLength + 1]) {
+  switch (parser.channel[channelParsedLength]) {
     case kKp:
       if (parser.receivedPayload()) actuator.pid.setKp(fixedPointToFloat(parser.payload));
       messager.sendResponse(floatToFixedPoint(actuator.pid.getKp()));
