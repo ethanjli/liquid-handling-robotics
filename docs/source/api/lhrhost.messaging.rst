@@ -9,7 +9,6 @@ lhrhost.messaging package
        :caption: Submodules:
        :maxdepth: 2
 
-       lhrhost.messaging.dispatch
        lhrhost.messaging.transport
 
 

@@ -8,7 +8,7 @@ namespace LiquidHandlingRobotics { namespace Protocol {
 const uint16_t kVersion[] PROGMEM = {
   1, // Major, position 0
   0, // Minor, position 1
-  0  // Patch, position 2
+  1  // Patch, position 2
 };
 
 enum class WatchdogTimeout : uint8_t {

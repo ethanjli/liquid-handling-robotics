@@ -10,6 +10,9 @@ lhrhost.messaging.transport package
        :maxdepth: 2
 
        lhrhost.messaging.transport.transport
+       lhrhost.messaging.transport.ascii
+       lhrhost.messaging.transport.firmata
+       lhrhost.messaging.transport.actors
 
 
 
