@@ -364,6 +364,276 @@ LinearActuator/FeedbackController/PID
    :align: center
    :caption: : Examples of commands and responses associated with the LinearActuator/FeedbackController channel.
 
+
+Quick Reference
+---------------
+
+Below is a list of common tasks you might want to tell the peripheral to execute, and the corresponding messages to send and wait for; additionally, there is a table of all command/response channels for a linear actuator axis. In this quick reference, replace `_` with the name of your linear actuator, e.g. `p`, `z`, `y`, or `x`.
+
+Functionalities
+~~~~~~~~~~~~~~~
+
+To query the actuator for its current position:
+
+- Send `<_p>()`.
+- Wait for a `<_p>(...)` response and read its payload.
+
+To start receiving position notifications every 50 ms from the actuator:
+
+- Send `<_pni>(50)`.
+- Send `<_pn>(2)`.
+- Wait for a `<_p>(...)` responses and read their payloads.
+
+To query the actuator for its current motor duty cycle:
+
+- Send `<_m>()`.
+- Wait for a `<_m>(...)` response and read its payload.
+
+To start receiving motor duty cycle notifications every 50 ms from the actuator:
+
+- Send `<_mni>(50)`.
+- Send `<_mn>(2)`.
+- Wait for `<_m>(...)` responses and read their payloads.
+
+To run the motor forwards at full power until the motor stalls:
+
+- Send `<_m>(255)`. The motor will start running.
+- The motor will eventually stop running. Wait for a `<_p>(...)` response, a `<_m>(0)` response, and a `<_>(...)` response, and read their payloads to determine the stopped state of the actuator.
+
+To run the motor backwards at half power for 100 ms or until the motor stalls, whichever happens first:
+
+- Send `<_mt>(100)`.
+- Send `<_m>(-127)`. The motor will start running.
+- After no more than 100 ms, the motor will stop running. Wait for a `<_p>(...)` response, a `<_m>(0)` response, and a `<_>(...)` response, and read their payloads to determine the stopped state of the actuator.
+
+To make the actuator go to position 50 and stop when it reaches that position or until the motor stalls or until 6 seconds have elapsed, whichever happens first:
+
+- Send `<_mt>(6000)`.
+- Send `<_f>(50)` and wait for a `<_f>(...)` response to see what the actual target position was set to. The feedback controller will start running.
+- The feedback controller will eventually stop running. Wait for a `<_p>(...)` response, a `<_m>(0)` response, a `<_f>(...)` response, and a `<_>(...)` response, and read their payloads to determine the stopped state of the actuator.
+
+To limit the actuator between positions 20 and 400 for position feedback control:
+
+- Send `<_flpl>(20)` and wait for a `<_flpl>(...)` response to see what the actual value was updated to.
+- Send `<_flph>(400)` and wait for a `<_flph>(...)` response to see what the actual value was updated to.
+
+To make the motor brake between duty cycles -20 and 40 for position feedback control:
+
+- Send `<_flmbl>(-20)` and wait for a `<_flmbl>(...)` response to see what the actual value was updated to.
+- Send `<_flmfl>(40)` and wait for a `<_flmfl>(...)` response to see what the actual value was updated to.
+
+To limit the motor between duty cycles -150 and 200 for position feedback control:
+
+- Send `<_flmbh>(-150)` and wait for a `<_flmbh>(...)` response to see what the actual value was updated to.
+- Send `<_flmfh>(200)` and wait for a `<_flmfh>(...)` response to see what the actual value was updated to.
+
+To set the PID controller to use Kp = 10, kd = 0.1, and ki = 0.5 for position feedback control:
+
+- Send `<_pp>(1000)` and wait for a `<_pp>(...)` response to see what the actual value was updated to.
+- Send `<_pd>(10)` and wait for a `<_pd>(...)` response to see what the actual value was updated to.
+- Send `<_pi>(50)` and wait for a `<_pi>(...)` response to see what the actual value was updated to.
+
+To make the Z-Axis actuator go to position 100, wait for 2 seconds after it finishes, then make the Pipettor Axis actuator go to position 200, wait for 2 seconds after it finishes, and then make the Z-Axis actuator go to position 900, and wait until it finishes:
+
+- Send `<zf>(100)`; wait for a `<zp>(...)` response, a `<zm>(0)` response, a `<zf>(100)`, and a `<z>(...)` response.
+- Wait 2 seconds
+- Send `<pf>(200)`; wait for a `<pp>(...)` response, a `<pm>(0)` response, a `<pf>(200)`, and a `<p>(...)` response.
+- Wait 2 seconds
+- Send `<zf>(300)`; wait for a `<zp>(...)` response, a `<zm>(0)` response, a `<zf>(300)`, and a `<z>(...)` response.
+
+To simultaneously make the Z-Axis actuator go to position 100 and the Y-Axis actuator go to position 360:
+
+- Send `<zf>(100)` and `<yf>(360)`
+- Wait for a `<zp>(...)` response, a `<zm>(0)` response, a `<zf>(100)`, a `<z>(...)` response, a `<yp>(...)` response, a `<ym>(0)` response, a `<yf>(100)`, and a `<y>(...)` response (not necessarily in that order).
+
+
+Commands Cheatsheet
+~~~~~~~~~~~~~~~~~~~
+
+Format:
+
+- Channel Name
+
+  - Semantics
+  - Description
+
+Commands:
+
+- `_`
+
+  - READ-only
+  - The current state of the linear actuator. `1`: direct motor duty control; `2`: position feedback control; `0`: manual braking; `-1`: stopped from stall; `-2`: stopped from convergence; `-3`: stopped from timer.
+
+- `_p`
+
+  - READ-only
+  - The current position of the linear actuator.
+
+- `_pn`
+
+  - READ/WRITE+Actions
+  - Whether the peripheral will periodically send the position to the host with a specified interval. `0`: no notifications; `1`: event loop iteration intervals; `2`: time intervals).
+
+- `_pni`
+
+  - READ/WRITE
+  - The interval at which the peripheral will send the position to the host.
+
+- `_pnc`
+
+  - READ/WRITE
+  - Whether the peripheral will only send the position if it has changed since the last position the peripheral sent. Boolean payload.
+
+- `_pnn`
+
+  - READ/WRITE
+  - The number of positions the peripheral will send before it stops sending positions. Use a negative number to send positions indefinitely (until notifications are manually disabled).
+
+- `_s`
+
+  - READ-only
+  - The current smoothed position of the linear actuator.
+
+- `_sn`
+
+  - READ/WRITE+Actions
+  - Whether the peripheral will periodically send the smoothed position to the host with a specified interval. `0`: no notifications; `1`: event loop iteration intervals; `2`: time intervals).
+
+- `_sni`
+
+  - READ/WRITE
+  - The interval at which the peripheral will send the smoothed position to the host.
+
+- `_snc`
+
+  - READ/WRITE
+  - Whether the peripheral will only send the smoothed position if it has changed since the last smoothed position the peripheral sent. Boolean payload.
+
+- `_snn`
+
+  - READ/WRITE
+  - The number of smoothed positions the peripheral will send before it stops sending smoothed positions. Use a negative number to send smoothed positions indefinitely (until notifications are manually disabled).
+
+- `_ss`: not yet specified/implemented
+
+  - READ/WRITE
+  - How response the smoothed position will be to changes in the raw position.
+
+- `_sl`: not yet specified/implemented
+
+  - READ/WRITE
+  - The lowest allowed value for the smoothed position.
+
+- `_sh`: not yet specified/implemented
+
+  - READ/WRITE
+  - The highest allowed value for the smoothed position.
+
+- `_st`: not yet specified/implemented
+
+  - READ/WRITE
+  - How much the smoothed position must change from constant for it to no longer be considered constant.
+
+- `_m`
+
+  - READ/WRITE+Actions
+  - The current signed motor duty cycle (-255 to 255). Positive for forward motion, negative for backwards motion. 0 for braking. Writing to this value initiates motor direct duty control with the specified signed motor duty cycle.
+
+- `_mn`
+
+  - READ/WRITE+Actions
+  - Whether the peripheral will periodically send the motor duty cycle to the host with a specified interval. `0`: no notifications; `1`: event loop iteration intervals; `2`: time intervals).
+
+- `_mni`
+
+  - READ/WRITE
+  - The interval at which the peripheral will send the motor duty cycle to the host.
+
+- `_mnc`
+
+  - READ/WRITE
+  - Whether the peripheral will only send the motor duty cycle if it has changed since the last motor duty cycle the peripheral sent. Boolean payload.
+
+- `_mnn`
+
+  - READ/WRITE
+  - The number of motor duty cycles the peripheral will send before it stops sending motor duty cycles. Use a negative number to send motor duty cycles indefinitely (until notifications are manually disabled).
+
+- `_ms`
+
+  - READ/WRITE
+  - How long the motor is allowed to run without any changes to smoothed position (in any actuator control mode) before the actuator turns off the motor and enters the "stopped from stall" state.
+
+- `_mt`
+
+  - READ/WRITE
+  - How long the motor is allowed to run without (in any actuator control mode) before the actuator turns off the motor and enters the "stopped from timer timeout" state.
+
+- `_mp`
+
+  - READ/WRITE
+  - Whether the actuator should treat the motor as if its wires were flipped.
+
+- `_f`
+
+  - READ/WRITE+Actions
+  - The current setpoint of the position feedback controller. Writing to this value initiates position feedback control with the specified target position.
+
+- `_fc`
+
+  - READ/WRITE
+  - How long the controller is allowed to run with the motor in brake (0 duty cycle) before the controller stops and the actuator enters the "stopped from convergence" state.
+
+- `_flpl`
+
+  - READ/WRITE
+  - The lowest position the feedback controller is allowed to target.
+
+- `_flph`
+
+  - READ/WRITE
+  - The highest position the feedback controller is allowed to target.
+
+- `_flmfl`
+
+  - READ/WRITE
+  - The lowest duty cycle the feedback controller is allowed run the motor at in the forwards direction. Below this value, the motor brakes instead.
+
+- `_flmfh`
+
+  - READ/WRITE
+  - The highest duty cycle the feedback controller is allowed run the motor at in the forwards direction.
+
+- `_flmbl`
+
+  - READ/WRITE
+  - The highest (negative) duty cycle the feedback controller is allowed run the motor at in the backwards direction. Above this value, the motor brakes instead.
+
+- `_flmbh`
+
+  - READ/WRITE
+  - The lowest (negative) duty cycle the feedback controller is allowed run the motor at in the backwards direction.
+
+- `_fpp`
+
+  - READ/WRITE
+  - The proportional gain of the PID controller, multiplied by 100.
+
+- `_fpd`
+
+  - READ/WRITE
+  - The derivative gain of the PID controller, multiplied by 100.
+
+- `_fpi`
+
+  - READ/WRITE
+  - The integral gain of the PID controller, multiplied by 100.
+
+- `_fps`
+
+  - READ/WRITE
+  - The update interval time of the PID controller. Between these intervals, the PID controller maintains its last computed output.
+
 References
 ----------
 
