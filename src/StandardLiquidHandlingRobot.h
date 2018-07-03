@@ -115,7 +115,7 @@
 #pragma message("INFO: Basic protocol functionality can be updated with LHR_updateBasics(core, board).")
 #pragma message("INFO: Basic protocol functionality includes the Core protocol subset.");
 
-#if defined(LHR_Board) && !defined(LHR_Messaging_FirmataIO)
+#if defined(LHR_Board)// && !defined(LHR_Messaging_FirmataIO)
 #pragma message("INFO: Basic protocol functionality includes the Board protocol subset.");
   #define LHR_instantiateBoard(board)\
     LiquidHandlingRobotics::Board board(messager);
