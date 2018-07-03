@@ -24,52 +24,52 @@ group Basic example with convergence termination
   |||
   Host -> Peripheral: LinearActuator/FeedbackController/Limits/Position/Low(0)
   note left: READ+WRITE Command
-  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Position/Low(0)
+  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Position/Low(0)
   note right: READ response
   |||
   Host -> Peripheral: LinearActuator/FeedbackController/Limits/Position/High(1023)
   note left: READ+WRITE Command
-  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Position/High(1023)
+  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Position/High(1023)
   note right: READ response
   |||
   Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Forwards/Low(60)
   note left: READ+WRITE Command
-  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Forwards/Low(60)
+  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Motor/Forwards/Low(60)
   note right: READ response
   |||
   Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Forwards/High(255)
   note left: READ+WRITE Command
-  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Forwards/High(255)
+  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Motor/Forwards/High(255)
   note right: READ response
   |||
   Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Backwards/Low(-60)
   note left: READ+WRITE Command
-  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Backwards/Low(-60)
+  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Motor/Backwards/Low(-60)
   note right: READ response
   |||
   Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Backwards/High(-255)
   note left: READ+WRITE Command
-  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Backwards/High(-255)
+  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Motor/Backwards/High(-255)
   note right: READ response
   |||
   Host -> Peripheral: LinearActuator/FeedbackController/PID/Kp(1000)
   note left: READ+WRITE Command
-  Host -> Peripheral: LinearActuator/FeedbackController/PID/Kp(1000)
+  Peripheral -> Host: LinearActuator/FeedbackController/PID/Kp(1000)
   note right: READ response
   |||
   Host -> Peripheral: LinearActuator/FeedbackController/PID/Kd(100)
   note left: READ+WRITE Command
-  Host -> Peripheral: LinearActuator/FeedbackController/PID/Kd(100)
+  Peripheral -> Host: LinearActuator/FeedbackController/PID/Kd(100)
   note right: READ response
   |||
   Host -> Peripheral: LinearActuator/FeedbackController/PID/Ki(100)
   note left: READ+WRITE Command
-  Host -> Peripheral: LinearActuator/FeedbackController/PID/Ki(100)
+  Peripheral -> Host: LinearActuator/FeedbackController/PID/Ki(100)
   note right: READ response
   |||
   Host -> Peripheral: LinearActuator/FeedbackController/PID/SampleInterval(10)
   note left: READ+WRITE Command
-  Host -> Peripheral: LinearActuator/FeedbackController/PID/SampleInterval(10)
+  Peripheral -> Host: LinearActuator/FeedbackController/PID/SampleInterval(10)
   note right: READ response
 
   == Start Feedback Control ==
