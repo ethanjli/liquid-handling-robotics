@@ -113,6 +113,7 @@ class Protocol(ProtocolHandlerNode):
         message = Message(self.name_path, duty)
         wait_channels = [
             self.name_path,
+            self.parent.name_path,
             self.parent.position.name_path,
             self.name_path,
             self.parent.name_path

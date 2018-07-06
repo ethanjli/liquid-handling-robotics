@@ -214,6 +214,7 @@ class ProtocolHandlerNode(ChannelHandlerTreeNode, CommandIssuer):
         self._parent = parent
         self._node_channel = node_channel
         self._node_name = node_name
+        self.last_response_payload = None
         if self.parent is not None:
             self.command_receivers = self.parent.command_receivers
 
@@ -295,4 +296,6 @@ class ProtocolHandlerNode(ChannelHandlerTreeNode, CommandIssuer):
         if message.payload is None:
             return
         if message.channel == self.name_path:
+            if message.payload is not None:
+                self.last_response_payload = message.payload
             await self.notify_response_receivers(message.payload)

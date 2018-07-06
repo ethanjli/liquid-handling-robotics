@@ -573,4 +573,6 @@ class Protocol(ProtocolHandlerNode):
     async def on_received_message(self, channel_name_remainder, message) -> None:
         """Handle received message."""
         await super().on_received_message(channel_name_remainder, message)
-        self.initialized.set()
+        if message.channel == self.name_path:
+            self.initialized.set()
+            print(self.initialized.is_set())

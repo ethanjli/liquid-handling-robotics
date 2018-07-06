@@ -57,7 +57,7 @@ class Batch(Batch):
     async def test_routine(self):
         """Run the batch execution test routine."""
         print('Running test routine...')
-        await self.z.initialized.wait()
+        await self.protocol.initialized.wait()
 
         print('RPC-style with empty payloads:')
         await self.protocol.request()

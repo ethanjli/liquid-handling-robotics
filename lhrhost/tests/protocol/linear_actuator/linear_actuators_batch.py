@@ -70,27 +70,42 @@ class Batch(Batch):
 
         print('Sequential positioning')
         await self.y.feedback_controller.request_complete(720)
-        # await self.z.feedback_controller.request_complete(0)
-        # await self.z.feedback_controller.request_complete(1000)
+        print('  Y-Axis now at {}'.format(self.y.position.last_response_payload))
+        await self.z.feedback_controller.request_complete(0)
+        print('  Z-Axis now at {}'.format(self.z.position.last_response_payload))
+        await self.z.feedback_controller.request_complete(1000)
+        print('  Z-Axis now at {}'.format(self.z.position.last_response_payload))
         await self.y.feedback_controller.request_complete(0)
+        print('  Y-Axis now at {}'.format(self.y.position.last_response_payload))
 
         print('Concurrent positioning')
         z_task = self.z.feedback_controller.request_complete(0)
         y_task = self.y.feedback_controller.request_complete(720)
         await asyncio.gather(z_task, y_task)
+        print('  Z-Axis now at {}'.format(self.z.position.last_response_payload))
+        print('  Y-Axis now at {}'.format(self.y.position.last_response_payload))
         z_task = self.z.feedback_controller.request_complete(1000)
         y_task = self.y.feedback_controller.request_complete(0)
         await asyncio.gather(z_task, y_task)
+        print('  Z-Axis now at {}'.format(self.z.position.last_response_payload))
+        print('  Y-Axis now at {}'.format(self.y.position.last_response_payload))
 
         print('Concurrent sequential positioning')
+
         async def z_sequence():
             for i in range(4):
                 await self.z.feedback_controller.request_complete(0)
+                print('  Z-Axis now at {}'.format(self.z.position.last_response_payload))
                 await self.z.feedback_controller.request_complete(1000)
+                print('  Z-Axis now at {}'.format(self.z.position.last_response_payload))
+
         async def y_sequence():
             for i in range(4):
                 await self.y.feedback_controller.request_complete(0)
+                print('  Y-Axis now at {}'.format(self.y.position.last_response_payload))
                 await self.y.feedback_controller.request_complete(720)
+                print('  Y-Axis now at {}'.format(self.y.position.last_response_payload))
+
         await asyncio.gather(z_sequence(), y_sequence())
 
         print(batch.OUTPUT_FOOTER)
