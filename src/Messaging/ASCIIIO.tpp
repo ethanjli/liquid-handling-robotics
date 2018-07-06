@@ -59,7 +59,7 @@ void MessageSender<HardwareSerial>::sendMessageEnd() {
 
 template<>
 MessageParser<HardwareSerial>::MessageParser() :
-  transport(Serial)
+  MessageParser(Serial)
 {}
 
 // ASCIIMessager

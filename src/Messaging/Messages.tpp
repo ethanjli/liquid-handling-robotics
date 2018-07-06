@@ -22,13 +22,6 @@ template<class Transport>
 void MessageSender<Transport>::sendChannel(const char *channel) {
   sendChannelStart();
   transport.print(channel);
-  /*
-  char *curr = channel;
-  while (curr != nullptr && *curr != '\0') {
-    transport.write(*curr); // or sendChannelChar(*curr) for generalizability
-    ++curr;
-  }
-  */
   sendChannelEnd();
 }
 
@@ -69,8 +62,11 @@ void MessageSender<Transport>::sendPayload(int payload) {
 // StringParser
 
 template<uint8_t maxLength>
-StringParser<maxLength>::StringParser(char endDelimiter) :
-  endDelimiter(endDelimiter)
+StringParser<maxLength>::StringParser(
+    bool (*charValidityPredicate)(char),
+    char endDelimiter
+) :
+  isValidChar(charValidityPredicate), endDelimiter(endDelimiter)
 {}
 
 template<uint8_t maxLength>
@@ -119,7 +115,7 @@ bool StringParser<maxLength>::justReceived() const {
 
 template<uint8_t maxLength>
 void StringParser<maxLength>::parse(char current) {
-  if (isAlphaNumeric(current)) {
+  if (isValidChar(current)) {
     if (bufferPosition < maxLength) {
       buffer[bufferPosition] = current;
       ++bufferPosition;
@@ -198,7 +194,7 @@ void IntegerParser<Integer>::parse(char current) {
 template<class Transport>
 MessageParser<Transport>::MessageParser(Transport &transport) :
   transport(transport),
-  channelParser(kChannelEndDelimiter),
+  channelParser(isAlphaNumeric, kChannelEndDelimiter),
   payloadParser(kPayloadEndDelimiter),
   channelParsedLength(channelParser.parsedLength),
   payloadParsedLength(payloadParser.parsedLength)
