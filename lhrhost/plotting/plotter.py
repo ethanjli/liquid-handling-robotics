@@ -4,56 +4,118 @@ import datetime
 
 # External imports
 from bokeh.client import push_session
-from bokeh.models import ColumnDataSource, DatetimeTickFormatter
+from bokeh.layouts import column
+from bokeh.models import ColumnDataSource, DatetimeTickFormatter, annotations, arrow_heads
 from bokeh.plotting import curdoc, figure
 
 # Local package imports
-from lhrhost.protocol.linear_actuator.linear_actuator import Receiver as LinearActuatorReceiver
+from lhrhost.protocol.linear_actuator.linear_actuator \
+    import Receiver as LinearActuatorReceiver
 
 
 class Plotter():
     """Plots received data."""
 
-    def __init__(self, title, plot_width=800, plot_height=400):
-        """Initialize membeer variables."""
-        self.plot_source = ColumnDataSource({
+    def __init__(
+        self, title, rollover=500,
+        plot_width=800, plot_height=400, line_width=2
+    ):
+        """Initialize member variables."""
+        self.rollover = rollover
+        self.init_position_plot(title, plot_width, plot_height, line_width)
+        self.init_duty_plot(title, plot_width, plot_height, line_width)
+        self.last_position_time = None
+        self.last_position = None
+        self.last_duty_time = None
+        self.last_duty = None
+
+        self.session = None
+
+    def init_position_plot(self, title, plot_width, plot_height, line_width):
+        """Initialize member variables for position plotting."""
+        self.position_source = ColumnDataSource({
             'time': [],
-            'position': [],
-            'duty': []
+            'position': []
         })
-        self.fig = figure(
-            title=title,
+        self.position_fig = figure(
+            title='{}: {}'.format(title, 'Actuator Position'),
             plot_width=plot_width, plot_height=plot_height
         )
-        self.fig.xaxis.axis_label = 'Time from Start (s)'
-        self.fig.xaxis.formatter = DatetimeTickFormatter()
-        self.fig.yaxis.axis_label = 'Value'
-        self.position_line = self.fig.line(x='time', y='position', source=self.plot_source)
-        self.duty_line = self.fig.line(x='time', y='duty', source=self.plot_source)
-        self.session = None
+        self.position_fig.xaxis.axis_label = 'Time from Start (s)'
+        self.position_fig.xaxis.formatter = DatetimeTickFormatter()
+        self.position_fig.yaxis.axis_label = 'Position'
+        self.position_line = self.position_fig.line(
+            x='time', y='position', source=self.position_source, line_width=line_width
+        )
+
+    def init_duty_plot(self, title, plot_width, plot_height, line_width):
+        """Initialize member variables for motor duty cycle plotting."""
+        self.duty_source = ColumnDataSource({
+            'time': [],
+            'duty': []
+        })
+        self.duty_fig = figure(
+            title='{}: {}'.format(title, 'Actuator Effort'),
+            plot_width=plot_width, plot_height=plot_height,
+            y_range=[-255, 255], x_range=self.position_fig.x_range
+        )
+        self.duty_fig.xaxis.axis_label = 'Time from Start (s)'
+        self.duty_fig.xaxis.formatter = DatetimeTickFormatter()
+        self.duty_fig.yaxis.axis_label = 'Signed Motor Duty Cycle'
+        self.duty_line = self.duty_fig.line(
+            x='time', y='duty', source=self.duty_source, line_width=line_width
+        )
 
     def show(self):
         """Create the plot figure."""
         self.session = push_session(curdoc(), session_id='main')
-        self.session.show(self.fig)
+        self.session.show(column(self.position_fig, self.duty_fig))
 
-    def add_point(self, position, duty):
+    def add_position(self, position):
         """Add a point to the plot."""
-        self.plot_source.stream({
-            'time': [datetime.datetime.now()],
-            'position': [position],
+        self.last_position_time = datetime.datetime.now()
+        self.last_position = position
+        self.position_source.stream({
+            'time': [self.last_position_time],
+            'position': [self.last_position]
+        }, rollover=self.rollover)
+
+    def add_duty(self, duty):
+        """Add a point to the plot."""
+        self.last_duty_time = datetime.datetime.now()
+        self.last_duty = duty
+        self.duty_source.stream({
+            'time': [self.last_duty_time],
             'duty': [duty]
-        })
+        }, rollover=self.rollover)
+
+    def add_position_arrow(self, next_position, slope=0.5, line_width=2):
+        """Add an arrow from the last position point to the next position point."""
+        self.position_fig.add_layout(annotations.Arrow(
+            x_start=self.last_position_time,
+            y_start=self.last_position,
+            x_end=self.last_position_time + datetime.timedelta(
+                milliseconds=next_position * slope
+            ),
+            y_end=next_position,
+            end=arrow_heads.VeeHead(size=10),
+            line_width=line_width
+        ))
+
+    def add_duty_region(self, start_time, end_time, fill_color, fill_alpha=0.25):
+        """Add a shaded region between the two duty cycle times."""
+        self.duty_fig.add_layout(annotations.BoxAnnotation(
+            left=start_time, right=end_time,
+            fill_alpha=fill_alpha, fill_color=fill_color
+        ))
 
 
-class LinearActuatorPlotter(LinearActuatorReceiver):
+class LinearActuatorPlotter(Plotter, LinearActuatorReceiver):
     """Simple class which prints received serialized messages."""
 
     def __init__(self, *args, **kwargs):
         """Initialize member variables."""
-        self.plotter = Plotter(*args, **kwargs)
-        self.position = None
-        self.duty = None
+        super().__init__(*args, **kwargs)
 
     async def on_linear_actuator(self, state: int) -> None:
         """Receive and handle a LinearActuator response."""
@@ -61,8 +123,7 @@ class LinearActuatorPlotter(LinearActuatorReceiver):
 
     async def on_linear_actuator_position(self, position: int) -> None:
         """Receive and handle a LinearActuator/Position response."""
-        self.position = position
-        self.plotter.add_point(self.position, self.duty)
+        self.add_position(position)
 
     async def on_linear_actuator_position_notify(self, state: int) -> None:
         """Receive and handle a LinearActuator/Position/Notify response."""
@@ -139,8 +200,7 @@ class LinearActuatorPlotter(LinearActuatorReceiver):
 
     async def on_linear_actuator_motor(self, duty: int) -> None:
         """Receive and handle a LinearActuator/Motor response."""
-        self.duty = duty
-        self.plotter.add_point(self.position, self.duty)
+        self.add_duty(duty)
 
     async def on_linear_actuator_motor_stall_protector_timeout(
         self, timeout: int

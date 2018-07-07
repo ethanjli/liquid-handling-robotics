@@ -27,15 +27,11 @@ class Batch(Batch):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
         self.protocol_plotter = Plotter('Pipettor Axis State')
-        # self.command_printer = MessagePrinter(prefix='  Sending: ')
         self.protocol = Protocol(
             'Pipettor Axis', 'p',
-            response_receivers=[self.protocol_plotter],
-            # command_receivers=[self.command_printer]
+            response_receivers=[self.protocol_plotter]
         )
-        # self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
         self.translator = BasicTranslator(
-            # message_receivers=[self.response_printer, self.protocol]
             message_receivers=[self.protocol]
         )
         self.protocol.command_receivers.append(self.translator)
@@ -54,30 +50,47 @@ class Batch(Batch):
             ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
         )
         print('Showing plot...')
-        self.protocol_plotter.plotter.show()
+        self.protocol_plotter.show()
 
     async def test_routine(self):
         """Run the batch execution test routine."""
         print('Running test routine...')
         await self.protocol.initialized.wait()
+        self.colors = {
+            0: 'gray',  # braking
+            -1: 'orange',  # stalled
+            -2: 'green',  # converged
+            -3: 'yellow',  # timer
+        }
 
         print('Motor position feedback control with position and motor duty notification')
-        await self.protocol.position.notify.change_only.request(1)
-        await self.protocol.position.notify.interval.request(10)
-        await self.protocol.motor.notify.change_only.request(1)
-        await self.protocol.motor.notify.interval.request(10)
+        await self.protocol.position.notify.change_only.request(0)
+        await self.protocol.position.notify.interval.request(20)
+        await self.protocol.motor.notify.change_only.request(0)
+        await self.protocol.motor.notify.interval.request(20)
         await self.protocol.position.notify.request(2)
         await self.protocol.motor.notify.request(2)
-        for i in range(5):
-            await self.protocol.feedback_controller.request_complete(800)
-            await asyncio.sleep(1.0)
-            await self.protocol.feedback_controller.request_complete(900)
-            await asyncio.sleep(1.0)
+        for i in range(20):
+            await self.go_to_position(800)
+            await asyncio.sleep(0.5)
+            await self.go_to_position(900)
+            await asyncio.sleep(0.5)
         await self.protocol.position.notify.request(0)
         await self.protocol.motor.notify.request(0)
 
         print(batch.OUTPUT_FOOTER)
         print('Quitting...')
+
+    async def go_to_position(self, position):
+        """Send the actuator to the specified position."""
+        self.protocol_plotter.add_position_arrow(position)
+        motion_start_time = self.protocol_plotter.last_duty_time
+        await self.protocol.feedback_controller.request_complete(position)
+        motion_end_time = self.protocol_plotter.last_duty_time
+        self.protocol_plotter.add_duty_region(
+            motion_start_time, motion_end_time,
+            self.colors[self.protocol.last_response_payload]
+        )
 
 
 if __name__ == '__main__':
