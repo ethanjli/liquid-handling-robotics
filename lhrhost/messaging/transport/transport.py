@@ -5,6 +5,7 @@ in the host-peripheral messaging protocol.
 """
 
 # Standard imports
+import asyncio
 from abc import abstractmethod
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -120,8 +121,10 @@ class Transport(SerializedMessageReceiver, metaclass=InterfaceClass):
         Simply forwards the received message to receivers in
         :meth:`serialized_message_receivers`.
         """
-        for receiver in self.serialized_message_receivers:
-            await receiver.on_serialized_message(serialized_message)
+        await asyncio.gather(*[
+            receiver.on_serialized_message(serialized_message)
+            for receiver in self.serialized_message_receivers
+        ])
 
 
 class TransportConnectionManager(object, metaclass=InterfaceClass):

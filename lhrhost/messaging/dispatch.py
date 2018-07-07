@@ -6,6 +6,7 @@ from the presentation layer to application-layer receivers.
 """
 
 # Standard imports
+import asyncio
 from collections import defaultdict
 from typing import Dict, List, Optional
 
@@ -71,11 +72,13 @@ class Dispatcher(MessageReceiver):
 
     async def on_message(self, message: Message) -> None:
         """Handle received message."""
+        tasks = []
         for receiver in self.__receivers[message.channel]:
-            await receiver.on_message(message)
+            tasks.append(receiver.on_message(message))
         for receiver in self.__receivers[None]:
-            await receiver.on_message(message)
+            tasks.append(receiver.on_message(message))
         for (prefix, receivers) in self.__prefix_receivers.items():
             if message.channel.startswith(prefix):
                 for receiver in receivers:
-                    await receiver.on_message(message)
+                    tasks.append(receiver.on_message(message))
+        await asyncio.gather(*tasks)

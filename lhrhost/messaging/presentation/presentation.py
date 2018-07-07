@@ -4,6 +4,7 @@ This module implements the presentation layer in the host-peripheral messaging p
 """
 
 # Standard imports
+import asyncio
 import logging
 import re
 from abc import abstractmethod
@@ -126,6 +127,7 @@ class MessageReceiver(object, metaclass=InterfaceClass):
 _SerializedMessageReceivers = Iterable[SerializedMessageReceiver]
 _MessageReceivers = Iterable[MessageReceiver]
 
+
 # Printing
 
 class MessagePrinter(MessageReceiver, Printer):
@@ -200,7 +202,7 @@ class BasicTranslator(
             ])
         payload_pattern_template = ''.join([
             r'\s*', '\\', self._payload_start,
-            #r'(([-+]?\d+(\.\d*)?)|(\w*))',  # Allows decimal numbers and strings
+            # r'(([-+]?\d+(\.\d*)?)|(\w*))',  # Allows decimal numbers and strings
             r'(([-+]?\d+)|)',  # Only allows integers
             '\\', self._payload_end, r'\s*'
         ])
@@ -286,8 +288,10 @@ class BasicTranslator(
         """Handle a serialized message by deserializing it and forwarding it."""
         try:
             message = self.deserialize(line)
-            for receiver in self.message_receivers:
-                await receiver.on_message(message)
+            await asyncio.gather(*[
+                receiver.on_message(message)
+                for receiver in self.message_receivers
+            ])
         except InvalidSerializationError:
             logger.error('Received malformed serialized message: {}'.fomat(line))
 
@@ -296,5 +300,7 @@ class BasicTranslator(
     async def on_message(self, message: Message) -> None:
         """Handle a deserialized message by serializing it and forwarding it."""
         line = self.serialize(message)
-        for receiver in self.serialized_message_receivers:
-            await receiver.on_serialized_message(line)
+        await asyncio.gather(*[
+            receiver.on_serialized_message(line)
+            for receiver in self.serialized_message_receivers
+        ])

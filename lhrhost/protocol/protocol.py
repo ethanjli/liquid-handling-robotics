@@ -92,8 +92,10 @@ class CommandIssuer():
 
         Does not wait for responses from any receivers.
         """
-        for receiver in self.command_receivers:
-            await receiver.on_message(command.message)
+        await asyncio.gather(*[
+            receiver.on_message(command.message)
+            for receiver in self.command_receivers
+        ])
 
     async def issue_command(self, command: Command, cancel_previous=True, **kwargs) -> None:
         """Issue a command and wait for it to complete.
@@ -196,11 +198,13 @@ class ChannelHandlerTreeNode(ChannelTreeNode, MessageReceiver, metaclass=Interfa
             )
         except KeyError:
             pass
+        tasks = []
         for (channel_name_remainder_prefix, handler) in self.child_prefix_handlers.items():
             if channel_name_remainder.startswith(channel_name_remainder_prefix):
-                await handler(channel_name_remainder, message)
+                tasks.append(handler(channel_name_remainder, message))
         for child in self.children.values():
-            await child.on_message(message)
+            tasks.append(child.on_message(message))
+        await asyncio.gather(*tasks)
 
 
 class ProtocolHandlerNode(ChannelHandlerTreeNode, CommandIssuer):
@@ -260,8 +264,10 @@ class ProtocolHandlerNode(ChannelHandlerTreeNode, CommandIssuer):
         """Recursively attempt to call the request method with an empty payload."""
         if callable(getattr(self, 'request', None)):
             await self.request()
-        for child in self.children_list:
-            await child.request_all()
+        await asyncio.gather(*[
+            child.request_all()
+            for child in self.children_list
+        ])
 
     # Implement ChannelTreeNode
 

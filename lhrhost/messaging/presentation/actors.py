@@ -7,9 +7,6 @@ import logging
 from lhrhost.messaging.presentation import InvalidSerializationError
 from lhrhost.messaging.transport import actors
 
-# External imports
-import pulsar.api as ps
-
 # Logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

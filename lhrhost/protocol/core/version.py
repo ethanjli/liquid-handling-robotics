@@ -1,6 +1,7 @@
 """Version channels of core protocol."""
 
 # Standard imports
+import asyncio
 from abc import abstractmethod
 from functools import total_ordering
 from typing import Iterable, List, Optional
@@ -158,8 +159,10 @@ class Protocol(ProtocolHandlerNode):
 
     async def notify_response_receivers(self) -> None:
         """Notify all receivers of received Version response."""
-        for receiver in self.response_receivers:
-            await receiver.on_version(self.version)
+        await asyncio.gather(*[
+            receiver.on_version(self.version)
+            for receiver in self.response_receivers
+        ])
 
     # Commands
 

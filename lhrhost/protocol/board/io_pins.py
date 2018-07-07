@@ -1,6 +1,7 @@
 """IOPins channels of board protocol."""
 
 # Standard imports
+import asyncio
 import logging
 from abc import abstractmethod
 from typing import Iterable, List, Optional
@@ -62,15 +63,17 @@ class TypeProtocol(ProtocolHandlerNode):
 
     async def notify_response_receivers(self, pin: int, payload: int) -> None:
         """Notify all receivers of received IOPins/_/_ response."""
+        tasks = []
         for receiver in self.response_receivers:
             if self.node_channel == 'Analog':
-                await receiver.on_io_pin_analog(pin, payload)
+                tasks.append(receiver.on_io_pin_analog(pin, payload))
             elif self.node_channel == 'Digital':
-                await receiver.on_io_pin_analog(pin, payload)
+                tasks.append(receiver.on_io_pin_analog(pin, payload))
             else:
                 raise NotImplementedError(
                     'Unsupported channel {}!'.format(self.channel_path)
                 )
+        await asyncio.gather(*tasks)
 
     # Commands
 

@@ -575,4 +575,3 @@ class Protocol(ProtocolHandlerNode):
         await super().on_received_message(channel_name_remainder, message)
         if message.channel == self.name_path:
             self.initialized.set()
-            print(self.initialized.is_set())

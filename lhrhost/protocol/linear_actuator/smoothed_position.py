@@ -1,6 +1,7 @@
 """LinearActuator channels of linear actuator protocol."""
 
 # Standard imports
+import asyncio
 import logging
 from typing import Optional
 
@@ -122,8 +123,10 @@ class Protocol(ProtocolHandlerNode):
 
     async def notify_response_receivers(self, position: int) -> None:
         """Notify all receivers of received LA/SmoothedPosition response."""
-        for receiver in self.response_receivers:
-            await receiver.on_linear_actuator_smoothed_position(position)
+        await asyncio.gather(*[
+            receiver.on_linear_actuator_smoothed_position(position)
+            for receiver in self.response_receivers
+        ])
 
     # Commands
 

@@ -86,8 +86,10 @@ class CommandSender(SerializedMessageReceiver):
             command_targets = self.__command_targets()
         else:
             command_targets = self.__command_targets
-        for command_target in command_targets:
-            await ps.send(command_target, 'send_serialized_message', serialized_message)
+        await asyncio.gather(*[
+            ps.send(command_target, 'send_serialized_message', serialized_message)
+            for command_target in command_targets
+        ])
 
 
 class ResponseReceiver(SerializedMessageReceiver):
@@ -109,8 +111,10 @@ class ResponseReceiver(SerializedMessageReceiver):
 
     async def on_serialized_message(self, serialized_message: str) -> None:
         """Receive and a serialized message and forward it to receivers."""
-        for receiver in self.response_receivers:
-            await receiver.on_serialized_message(serialized_message)
+        await asyncio.gather(*[
+            receiver.on_serialized_message(serialized_message)
+            for receiver in self.response_receivers
+        ])
 
 
 class ConnectionSynchronizer():
