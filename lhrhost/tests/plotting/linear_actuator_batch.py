@@ -1,13 +1,13 @@
-"""Test LinearActuator RPC command functionality."""
+"""Test LinearActuator state plotting functionality."""
 # Standard imports
 import asyncio
 import logging
 
 # Local package imports
-from lhrhost.messaging.presentation import BasicTranslator, MessagePrinter
+from lhrhost.messaging.presentation import BasicTranslator
 from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
 from lhrhost.plotting.plotter import LinearActuatorPlotter as Plotter
-from lhrhost.protocol.linear_actuator import Printer, Protocol
+from lhrhost.protocol.linear_actuator import Protocol
 from lhrhost.tests.messaging.transport.batch import (
     Batch, BatchExecutionManager, LOGGING_CONFIG, main
 )
@@ -26,7 +26,7 @@ class Batch(Batch):
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.protocol_plotter = Plotter()
+        self.protocol_plotter = Plotter('Pipettor Axis State')
         # self.command_printer = MessagePrinter(prefix='  Sending: ')
         self.protocol = Protocol(
             'Pipettor Axis', 'p',
@@ -63,9 +63,9 @@ class Batch(Batch):
 
         print('Motor position feedback control with position and motor duty notification')
         await self.protocol.position.notify.change_only.request(1)
-        await self.protocol.position.notify.interval.request(5)
+        await self.protocol.position.notify.interval.request(10)
         await self.protocol.motor.notify.change_only.request(1)
-        await self.protocol.motor.notify.interval.request(5)
+        await self.protocol.motor.notify.interval.request(10)
         await self.protocol.position.notify.request(2)
         await self.protocol.motor.notify.request(2)
         for i in range(5):

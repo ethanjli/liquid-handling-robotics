@@ -1,38 +1,48 @@
+"""Support for real-time plotting of LinearActuator state."""
 # Standard imports
 import datetime
-
-# Local package imports
-from lhrhost.protocol.linear_actuator.linear_actuator import Receiver as LinearActuatorReceiver
 
 # External imports
 from bokeh.client import push_session
 from bokeh.models import ColumnDataSource, DatetimeTickFormatter
-from bokeh.plotting import figure, curdoc
+from bokeh.plotting import curdoc, figure
+
+# Local package imports
+from lhrhost.protocol.linear_actuator.linear_actuator import Receiver as LinearActuatorReceiver
 
 
 class Plotter():
-    def __init__(self):
+    """Plots received data."""
+
+    def __init__(self, title, plot_width=800, plot_height=400):
+        """Initialize membeer variables."""
         self.plot_source = ColumnDataSource(data={
             'time': [],
             'position': [],
             'duty': []
         })
-        self.fig = figure()
+        self.fig = figure(
+            plot_width=plot_width, plot_height=plot_height,
+            title=title
+        )
         self.fig.xaxis.formatter = DatetimeTickFormatter()
         self.position_line = self.fig.line(x='time', y='position', source=self.plot_source)
         self.duty_line = self.fig.line(x='time', y='duty', source=self.plot_source)
         self.session = None
 
     def show(self):
+        """Create the plot figure."""
         self.session = push_session(curdoc(), session_id='main')
         self.session.show(self.fig)
 
     def add_point(self, position, duty):
+        """Add a point to the plot."""
         self.plot_source.stream({
             'time': [datetime.datetime.now()],
             'position': [position],
             'duty': [duty]
         })
+
 
 class LinearActuatorPlotter(LinearActuatorReceiver):
     """Simple class which prints received serialized messages."""

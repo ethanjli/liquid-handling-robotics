@@ -4,3 +4,5 @@ pyserial~=3.4
 pyserial-asyncio~=0.4
 pulsar~=2.0
 pymata-aio~=2.21
+bokeh~=0.13
+opencv-python~=3.4
