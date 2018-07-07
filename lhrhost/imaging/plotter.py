@@ -2,6 +2,7 @@
 
 # External imports
 from bokeh.client import push_session
+from bokeh.models import ColumnDataSource
 from bokeh.plotting import curdoc, figure
 
 # Local package imports
@@ -14,9 +15,23 @@ import numpy as np
 class ImagePlotter(ImageReceiver):
     """Plots received images."""
 
-    def __init__(self):
+    def __init__(self, width=640, height=360):
         """Initialize member variables."""
-        self.fig = None
+        self.width = width
+        self.height = height
+
+        self.plot_source = ColumnDataSource({'image': []})
+        self.fig = figure(
+            title='Image Captured from Camera',
+            x_axis_location='above',
+            width=self.width, height=self.height,
+            x_range=[0, self.width], y_range=[self.height, 0]
+        )
+        self.image = None
+        self.image = self.fig.image_rgba(
+            image='image', x=0, y=self.height, dw=self.width, dh=self.height,
+            source=self.plot_source
+        )
         self.session = None
 
     def show(self):
@@ -37,12 +52,4 @@ class ImagePlotter(ImageReceiver):
         """Receive and plot a floating-point RGB image given as a numpy array."""
         image_rgba = self.convert_image(image_rgb)
         (height, width) = image_rgba.shape[:2]
-        self.fig = figure(
-            title='Image Captured from Camera',
-            x_axis_location='above',
-            x_range=[0, width], y_range=[height, 0],
-            plot_width=width, plot_height=height
-        )
-        self.fig.image_rgba(
-            image=[image_rgba], x=[0], y=[height], dw=[width], dh=[height]
-        )
+        self.plot_source.data = {'image': [image_rgba]}

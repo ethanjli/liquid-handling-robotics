@@ -16,7 +16,7 @@ class Plotter():
 
     def __init__(self, title, plot_width=800, plot_height=400):
         """Initialize membeer variables."""
-        self.plot_source = ColumnDataSource(data={
+        self.plot_source = ColumnDataSource({
             'time': [],
             'position': [],
             'duty': []
