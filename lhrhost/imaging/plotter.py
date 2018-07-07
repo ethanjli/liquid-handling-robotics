@@ -1,0 +1,48 @@
+"""Support for plotting of images."""
+
+# External imports
+from bokeh.client import push_session
+from bokeh.plotting import curdoc, figure
+
+# Local package imports
+from lhrhost.imaging.webcam import ImageReceiver
+
+# External imports
+import numpy as np
+
+
+class ImagePlotter(ImageReceiver):
+    """Plots received images."""
+
+    def __init__(self):
+        """Initialize member variables."""
+        self.fig = None
+        self.session = None
+
+    def show(self):
+        """Create the plot figure."""
+        self.session = push_session(curdoc(), session_id='main')
+        self.session.show(self.fig)
+
+    def convert_image(self, image_rgb):
+        """Convert a floating-point RGB image to a uint8 image which can be plotted."""
+        (height, width) = image_rgb.shape[:2]
+        image_rgba = np.dstack((image_rgb, np.ones((height, width))))
+        image_rgba *= 255
+        image_rgba = image_rgba.astype(np.uint8)
+        image_rgba = np.flipud(image_rgba)
+        return image_rgba
+
+    async def on_image(self, image_rgb):
+        """Receive and plot a floating-point RGB image given as a numpy array."""
+        image_rgba = self.convert_image(image_rgb)
+        (height, width) = image_rgba.shape[:2]
+        self.fig = figure(
+            title='Image Captured from Camera',
+            x_axis_location='above',
+            x_range=[0, width], y_range=[height, 0],
+            plot_width=width, plot_height=height
+        )
+        self.fig.image_rgba(
+            image=[image_rgba], x=[0], y=[height], dw=[width], dh=[height]
+        )

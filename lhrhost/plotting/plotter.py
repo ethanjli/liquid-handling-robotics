@@ -22,10 +22,12 @@ class Plotter():
             'duty': []
         })
         self.fig = figure(
-            plot_width=plot_width, plot_height=plot_height,
-            title=title
+            title=title,
+            plot_width=plot_width, plot_height=plot_height
         )
+        self.fig.xaxis.axis_label = 'Time from Start (s)'
         self.fig.xaxis.formatter = DatetimeTickFormatter()
+        self.fig.yaxis.axis_label = 'Value'
         self.position_line = self.fig.line(x='time', y='position', source=self.plot_source)
         self.duty_line = self.fig.line(x='time', y='duty', source=self.plot_source)
         self.session = None
@@ -49,8 +51,7 @@ class LinearActuatorPlotter(LinearActuatorReceiver):
 
     def __init__(self, *args, **kwargs):
         """Initialize member variables."""
-        super().__init__(*args, **kwargs)
-        self.plotter = Plotter()
+        self.plotter = Plotter(*args, **kwargs)
         self.position = None
         self.duty = None
 
