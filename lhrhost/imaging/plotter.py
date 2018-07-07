@@ -1,18 +1,18 @@
 """Support for plotting of images."""
 
 # External imports
-from bokeh.client import push_session
 from bokeh.models import ColumnDataSource
-from bokeh.plotting import curdoc, figure
+from bokeh.plotting import figure
 
 # Local package imports
 from lhrhost.imaging.webcam import ImageReceiver
+from lhrhost.plotting import DocumentLayout
 
 # External imports
 import numpy as np
 
 
-class ImagePlotter(ImageReceiver):
+class ImagePlotter(ImageReceiver, DocumentLayout):
     """Plots received images."""
 
     def __init__(self, width=640, height=360):
@@ -32,12 +32,8 @@ class ImagePlotter(ImageReceiver):
             image='image', x=0, y=self.height, dw=self.width, dh=self.height,
             source=self.plot_source
         )
-        self.session = None
 
-    def show(self):
-        """Create the plot figure."""
-        self.session = push_session(curdoc(), session_id='main')
-        self.session.show(self.fig)
+        self.session = None
 
     def convert_image(self, image_rgb):
         """Convert a floating-point RGB image to a uint8 image which can be plotted."""
@@ -53,3 +49,10 @@ class ImagePlotter(ImageReceiver):
         image_rgba = self.convert_image(image_rgb)
         (height, width) = image_rgba.shape[:2]
         self.plot_source.data = {'image': [image_rgba]}
+
+    # Implement DocumentLayout
+
+    @property
+    def layout(self):
+        """Return a document layout element."""
+        return self.fig

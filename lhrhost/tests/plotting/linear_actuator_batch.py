@@ -6,7 +6,7 @@ import logging
 # Local package imports
 from lhrhost.messaging.presentation import BasicTranslator
 from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
-from lhrhost.plotting.plotter import LinearActuatorPlotter as Plotter
+from lhrhost.plotting.linear_actuator import LinearActuatorPlotter as Plotter
 from lhrhost.protocol.linear_actuator import Protocol
 from lhrhost.tests.messaging.transport.batch import (
     Batch, BatchExecutionManager, LOGGING_CONFIG, main
@@ -60,7 +60,7 @@ class Batch(Batch):
             0: 'gray',  # braking
             -1: 'orange',  # stalled
             -2: 'green',  # converged
-            -3: 'yellow',  # timer
+            -3: 'red',  # timer
         }
 
         print('Motor position feedback control with position and motor duty notification')

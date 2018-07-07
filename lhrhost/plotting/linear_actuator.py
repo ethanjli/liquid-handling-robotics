@@ -3,17 +3,17 @@
 import datetime
 
 # External imports
-from bokeh.client import push_session
-from bokeh.layouts import column
+from bokeh import layouts
 from bokeh.models import ColumnDataSource, DatetimeTickFormatter, annotations, arrow_heads
-from bokeh.plotting import curdoc, figure
+from bokeh.plotting import figure
 
 # Local package imports
+from lhrhost.plotting import DocumentLayout
 from lhrhost.protocol.linear_actuator.linear_actuator \
     import Receiver as LinearActuatorReceiver
 
 
-class Plotter():
+class Plotter(DocumentLayout):
     """Plots received data."""
 
     def __init__(
@@ -28,6 +28,8 @@ class Plotter():
         self.last_position = None
         self.last_duty_time = None
         self.last_duty = None
+
+        self.column_layout = layouts.column(self.position_fig, self.duty_fig)
 
         self.session = None
 
@@ -66,11 +68,6 @@ class Plotter():
             x='time', y='duty', source=self.duty_source, line_width=line_width
         )
 
-    def show(self):
-        """Create the plot figure."""
-        self.session = push_session(curdoc(), session_id='main')
-        self.session.show(column(self.position_fig, self.duty_fig))
-
     def add_position(self, position):
         """Add a point to the plot."""
         self.last_position_time = datetime.datetime.now()
@@ -108,6 +105,13 @@ class Plotter():
             left=start_time, right=end_time,
             fill_alpha=fill_alpha, fill_color=fill_color
         ))
+
+    # Implement DocumentLayout
+
+    @property
+    def layout(self):
+        """Return a document layout element."""
+        return self.column_layout
 
 
 class LinearActuatorPlotter(Plotter, LinearActuatorReceiver):
