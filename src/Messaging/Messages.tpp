@@ -63,7 +63,7 @@ void MessageSender<Transport>::sendPayload(int payload) {
 
 template<uint8_t maxLength>
 StringParser<maxLength>::StringParser(
-    bool (*charValidityPredicate)(char),
+    bool (*charValidityPredicate)(int),
     char endDelimiter
 ) :
   isValidChar(charValidityPredicate), endDelimiter(endDelimiter)
@@ -115,7 +115,7 @@ bool StringParser<maxLength>::justReceived() const {
 
 template<uint8_t maxLength>
 void StringParser<maxLength>::parse(char current) {
-  if (isValidChar(current)) {
+  if (isAlphaNumeric(current)) {
     if (bufferPosition < maxLength) {
       buffer[bufferPosition] = current;
       ++bufferPosition;

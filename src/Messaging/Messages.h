@@ -63,7 +63,7 @@ namespace States {
 template <uint8_t maxLength>
 class StringParser {
   public:
-    StringParser(bool (*charValidityPredicate)(char), char endDelimiter = '\0');
+    StringParser(bool (*charValidityPredicate)(int), char endDelimiter = '\0');
 
     using State = States::Parsing::Field;
 
@@ -74,7 +74,7 @@ class StringParser {
 
     void setup();
 
-    bool (*isValidChar)(char);
+    const bool (*isValidChar)(int);
     bool onChar(char current);
     void reset();
 
