@@ -1,6 +1,7 @@
 """Support for real-time plotting of LinearActuator state."""
 # Standard imports
 import datetime
+import logging
 
 # External imports
 from bokeh import layouts
@@ -8,32 +9,35 @@ from bokeh.models import ColumnDataSource, DatetimeTickFormatter, annotations, a
 from bokeh.plotting import figure
 
 # Local package imports
-from lhrhost.plotting import DocumentLayout
+from lhrhost.plotting import DocumentLayout, DocumentModel
 from lhrhost.protocol.linear_actuator.linear_actuator \
     import Receiver as LinearActuatorReceiver
 
+# Logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
-class Plotter(DocumentLayout):
-    """Plots received data."""
+
+class StatePlot(DocumentLayout):
+    """Plot of received linear actuator state data."""
 
     def __init__(
-        self, title, rollover=500,
-        plot_width=800, plot_height=400, line_width=2
+        self, title, rollover=750,
+        plot_width=960, plot_height=320, line_width=2
     ):
         """Initialize member variables."""
+        super().__init__()
         self.rollover = rollover
-        self.init_position_plot(title, plot_width, plot_height, line_width)
-        self.init_duty_plot(title, plot_width, plot_height, line_width)
+        self._init_position_plot(title, plot_width, plot_height, line_width)
+        self._init_duty_plot(title, plot_width, plot_height, line_width)
         self.last_position_time = None
         self.last_position = None
         self.last_duty_time = None
         self.last_duty = None
 
-        self.column_layout = layouts.column(self.position_fig, self.duty_fig)
+        self.column_layout = layouts.column([self.position_fig, self.duty_fig])
 
-        self.session = None
-
-    def init_position_plot(self, title, plot_width, plot_height, line_width):
+    def _init_position_plot(self, title, plot_width, plot_height, line_width):
         """Initialize member variables for position plotting."""
         self.position_source = ColumnDataSource({
             'time': [],
@@ -50,7 +54,7 @@ class Plotter(DocumentLayout):
             x='time', y='position', source=self.position_source, line_width=line_width
         )
 
-    def init_duty_plot(self, title, plot_width, plot_height, line_width):
+    def _init_duty_plot(self, title, plot_width, plot_height, line_width):
         """Initialize member variables for motor duty cycle plotting."""
         self.duty_source = ColumnDataSource({
             'time': [],
@@ -86,13 +90,16 @@ class Plotter(DocumentLayout):
             'duty': [duty]
         }, rollover=self.rollover)
 
-    def add_position_arrow(self, next_position, slope=0.5, line_width=2):
+    def add_position_arrow(self, next_position, slope=2, line_width=2):
         """Add an arrow from the last position point to the next position point."""
+        if self.last_position_time is None or self.last_position is None:
+            logger.warn('Could not add position arrow from unknown last position!')
+            return
         self.position_fig.add_layout(annotations.Arrow(
             x_start=self.last_position_time,
             y_start=self.last_position,
             x_end=self.last_position_time + datetime.timedelta(
-                milliseconds=next_position * slope
+                milliseconds=abs(next_position - self.last_position) * slope
             ),
             y_end=next_position,
             end=arrow_heads.VeeHead(size=10),
@@ -114,12 +121,24 @@ class Plotter(DocumentLayout):
         return self.column_layout
 
 
-class LinearActuatorPlotter(Plotter, LinearActuatorReceiver):
+class LinearActuatorPlotter(DocumentModel, LinearActuatorReceiver):
     """Simple class which prints received serialized messages."""
 
     def __init__(self, *args, **kwargs):
         """Initialize member variables."""
-        super().__init__(*args, **kwargs)
+        super().__init__(StatePlot, *args, **kwargs)
+
+    def add_position_arrow(self, *args, **kwargs):
+        """Add an arrow from the last position point to the next position point."""
+        for plot in self.doc_layouts:
+            plot.update_doc(lambda: plot.add_position_arrow(*args, **kwargs))
+
+    def add_duty_region(self, *args, **kwargs):
+        """Add an arrow from the last position point to the next position point."""
+        for plot in self.doc_layouts:
+            plot.update_doc(lambda: plot.add_duty_region(*args, **kwargs))
+
+    # Implement LinearActuatorReceiver
 
     async def on_linear_actuator(self, state: int) -> None:
         """Receive and handle a LinearActuator response."""
@@ -127,7 +146,8 @@ class LinearActuatorPlotter(Plotter, LinearActuatorReceiver):
 
     async def on_linear_actuator_position(self, position: int) -> None:
         """Receive and handle a LinearActuator/Position response."""
-        self.add_position(position)
+        for plot in self.doc_layouts:
+            plot.update_doc(lambda: plot.add_position(position))
 
     async def on_linear_actuator_position_notify(self, state: int) -> None:
         """Receive and handle a LinearActuator/Position/Notify response."""
@@ -204,7 +224,8 @@ class LinearActuatorPlotter(Plotter, LinearActuatorReceiver):
 
     async def on_linear_actuator_motor(self, duty: int) -> None:
         """Receive and handle a LinearActuator/Motor response."""
-        self.add_duty(duty)
+        for plot in self.doc_layouts:
+            plot.update_doc(lambda: plot.add_duty(duty))
 
     async def on_linear_actuator_motor_stall_protector_timeout(
         self, timeout: int

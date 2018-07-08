@@ -26,9 +26,9 @@ class Batch(Batch):
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.protocol_plotter = Plotter('Pipettor Axis State')
+        self.protocol_plotter = Plotter('Y-Axis State')
         self.protocol = Protocol(
-            'Pipettor Axis', 'p',
+            'Y-Axis', 'y',
             response_receivers=[self.protocol_plotter]
         )
         self.translator = BasicTranslator(
@@ -70,10 +70,10 @@ class Batch(Batch):
         await self.protocol.motor.notify.interval.request(20)
         await self.protocol.position.notify.request(2)
         await self.protocol.motor.notify.request(2)
-        for i in range(20):
-            await self.go_to_position(800)
+        for i in range(10):
+            await self.go_to_position(0)
             await asyncio.sleep(0.5)
-            await self.go_to_position(900)
+            await self.go_to_position(720)
             await asyncio.sleep(0.5)
         await self.protocol.position.notify.request(0)
         await self.protocol.motor.notify.request(0)
