@@ -105,28 +105,16 @@ class WebcamModel(DocumentModel):
         )
 
 
-async def acquire_images(camera):
-    """Acquire a few images."""
-    prompt = Prompt()
-    await asyncio.sleep(2.0)
-    await prompt('Press enter to quit: ')
-
-
 def main():
     """Take an image and show it in Bokeh."""
-    loop = asyncio.get_event_loop()
-
     camera = Camera()
     model = WebcamModel(camera)
 
     camera.open(1)
 
     model.show()
-    task = loop.create_task(acquire_images(camera))
+    model.server.run_until_shutdown()
 
-    loop.run_until_complete(task)
-
-    model.server.stop()
     camera.close()
 
 
