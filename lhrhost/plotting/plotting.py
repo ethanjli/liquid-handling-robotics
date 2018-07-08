@@ -3,6 +3,7 @@
 # Standard imports
 import logging
 from abc import abstractmethod
+from functools import partial
 
 # External imports
 from bokeh.server.server import Server
@@ -22,19 +23,26 @@ class DocumentLayout(object, metaclass=InterfaceClass):
 
     def __init__(self):
         """Initialize member variables."""
-        self.doc = None
+        self.document = None
 
     def update_doc(self, callback):
-        """Run a callback on the document."""
-        self.doc.add_next_tick_callback(callback)
+        """Run a callback on the document.
+
+        The callback should take no arguments.
+        """
+        self.document.add_next_tick_callback(callback)
 
     def initialize_doc(self, doc):
         """Initialize the provided document."""
-        if self.doc is None:
+        if self.document is None:
+            self.set_doc(doc)
             doc.add_root(self.layout)
-            self.doc = doc
         else:
             logger.warning('Can only open one copy of the document!')
+
+    def set_doc(self, doc):
+        """Set the provided document to be the parent document."""
+        self.document = doc
 
     def show(self, route='/', address='localhost', port=5006):
         """Create a standalone singleton document."""
@@ -60,6 +68,14 @@ class DocumentModel(object):
         self.document_layout_class: DocumentLayout = document_layout_class
         self.args = args
         self.kwargs = kwargs
+
+    def update_docs(self, callback):
+        """Run a callback on all documents.
+
+        The callback should take exactly one argument, the DocumentLayout instance.
+        """
+        for doc_layout in self.doc_layouts:
+            doc_layout.document.add_next_tick_callback(partial(callback, doc_layout))
 
     def make_document_layout(self):
         """Return a new document layout instance."""

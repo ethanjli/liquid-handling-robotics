@@ -130,13 +130,11 @@ class LinearActuatorPlotter(DocumentModel, LinearActuatorReceiver):
 
     def add_position_arrow(self, *args, **kwargs):
         """Add an arrow from the last position point to the next position point."""
-        for plot in self.doc_layouts:
-            plot.update_doc(lambda: plot.add_position_arrow(*args, **kwargs))
+        self.update_docs(lambda plot: plot.add_position_arrow(*args, **kwargs))
 
     def add_duty_region(self, *args, **kwargs):
         """Add an arrow from the last position point to the next position point."""
-        for plot in self.doc_layouts:
-            plot.update_doc(lambda: plot.add_duty_region(*args, **kwargs))
+        self.update_docs(lambda plot: plot.add_duty_region(*args, **kwargs))
 
     # Implement LinearActuatorReceiver
 
@@ -146,8 +144,7 @@ class LinearActuatorPlotter(DocumentModel, LinearActuatorReceiver):
 
     async def on_linear_actuator_position(self, position: int) -> None:
         """Receive and handle a LinearActuator/Position response."""
-        for plot in self.doc_layouts:
-            plot.update_doc(lambda: plot.add_position(position))
+        self.update_docs(lambda plot: plot.add_position(position))
 
     async def on_linear_actuator_position_notify(self, state: int) -> None:
         """Receive and handle a LinearActuator/Position/Notify response."""
@@ -224,8 +221,7 @@ class LinearActuatorPlotter(DocumentModel, LinearActuatorReceiver):
 
     async def on_linear_actuator_motor(self, duty: int) -> None:
         """Receive and handle a LinearActuator/Motor response."""
-        for plot in self.doc_layouts:
-            plot.update_doc(lambda: plot.add_duty(duty))
+        self.update_docs(lambda plot: plot.add_duty(duty))
 
     async def on_linear_actuator_motor_stall_protector_timeout(
         self, timeout: int

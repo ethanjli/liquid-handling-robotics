@@ -68,7 +68,8 @@ class ImagePlotter(DocumentModel, ImageReceiver):
         """Initialize member variables."""
         super().__init__(ImagePlot, *args, **kwargs)
 
+    # Implement ImageReceiver
+
     async def on_image(self, image_rgb):
         """Receive and plot a floating-point RGB image given as a numpy array."""
-        for plot in self.doc_layouts:
-            plot.update_doc(lambda: plot.update_image(image_rgb))
+        self.update_docs(lambda plot: plot.update_image(image_rgb))
