@@ -32,8 +32,7 @@ class StatePlot(DocumentLayout):
         self._init_duty_plot(title, plot_width, plot_height, line_width)
         self.last_position_time = None
         self.last_position = None
-        self.last_duty_time = None
-        self.last_duty = None
+        self.duty_region_start_time = None
 
         self.column_layout = layouts.column([self.position_fig, self.duty_fig])
 
@@ -83,14 +82,12 @@ class StatePlot(DocumentLayout):
 
     def add_duty(self, duty):
         """Add a point to the plot."""
-        self.last_duty_time = datetime.datetime.now()
-        self.last_duty = duty
         self.duty_source.stream({
-            'time': [self.last_duty_time],
+            'time': [datetime.datetime.now()],
             'duty': [duty]
         }, rollover=self.rollover)
 
-    def add_position_arrow(self, next_position, slope=2, line_width=2):
+    def add_position_arrow(self, next_position, slope=1, line_width=2):
         """Add an arrow from the last position point to the next position point."""
         if self.last_position_time is None or self.last_position is None:
             logger.warn('Could not add position arrow from unknown last position!')
@@ -99,19 +96,30 @@ class StatePlot(DocumentLayout):
             x_start=self.last_position_time,
             y_start=self.last_position,
             x_end=self.last_position_time + datetime.timedelta(
-                milliseconds=abs(next_position - self.last_position) * slope
+                milliseconds=abs(next_position - self.last_position) / slope
             ),
             y_end=next_position,
             end=arrow_heads.VeeHead(size=10),
             line_width=line_width
         ))
 
-    def add_duty_region(self, start_time, end_time, fill_color, fill_alpha=0.25):
+    def add_duty_region(self, fill_color, start_time=None, end_time=None, fill_alpha=0.25):
         """Add a shaded region between the two duty cycle times."""
+        if start_time is None:
+            start_time = self.duty_region_start_time
+        if start_time is None:
+            logger.warn('Could not add duty region from unspecified start time!')
+            return
+        if end_time is None:
+            end_time = datetime.datetime.now()
         self.duty_fig.add_layout(annotations.BoxAnnotation(
             left=start_time, right=end_time,
             fill_alpha=fill_alpha, fill_color=fill_color
         ))
+
+    def start_duty_region(self):
+        """Start a duty cycle region."""
+        self.duty_region_start_time = datetime.datetime.now()
 
     # Implement DocumentLayout
 
@@ -127,6 +135,10 @@ class LinearActuatorPlotter(DocumentModel, LinearActuatorReceiver):
     def __init__(self, *args, **kwargs):
         """Initialize member variables."""
         super().__init__(StatePlot, *args, **kwargs)
+        self.last_position_time = None
+        self.last_position = None
+        self.last_duty_time = None
+        self.last_duty = None
 
     def add_position_arrow(self, *args, **kwargs):
         """Add an arrow from the last position point to the next position point."""
@@ -136,12 +148,20 @@ class LinearActuatorPlotter(DocumentModel, LinearActuatorReceiver):
         """Add an arrow from the last position point to the next position point."""
         self.update_docs(lambda plot: plot.add_duty_region(*args, **kwargs))
 
+    def start_duty_region(self):
+        """Add an arrow from the last position point to the next position point."""
+        self.update_docs(lambda plot: plot.start_duty_region())
+
     # Implement LinearActuatorReceiver
 
     async def on_linear_actuator_position(self, position: int) -> None:
         """Receive and handle a LinearActuator/Position response."""
+        self.last_position_time = datetime.datetime.now()
+        self.last_position = position
         self.update_docs(lambda plot: plot.add_position(position))
 
     async def on_linear_actuator_motor(self, duty: int) -> None:
         """Receive and handle a LinearActuator/Motor response."""
+        self.last_duty_time = datetime.datetime.now()
+        self.last_duty = duty
         self.update_docs(lambda plot: plot.add_duty(duty))
