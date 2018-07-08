@@ -29,225 +29,186 @@ class Receiver(object, metaclass=InterfaceClass):
     """Interface for a class which receives linear_actuator events.
 
     This may include versions from self or from other sources.
+    Interface methods are not abstract, to reduce excess boilerplate for
+    unhandled events.
     """
 
-    @abstractmethod
     async def on_linear_actuator(self, state: int) -> None:
         """Receive and handle a LinearActuator response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_position(self, position: int) -> None:
         """Receive and handle a LinearActuator/Position response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_position_notify(self, state: int) -> None:
         """Receive and handle a LinearActuator/Position/Notify response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_position_notify_interval(
         self, interval: int
     ) -> None:
         """Receive and handle a LinearActuator/Position/Notify/Interval response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_position_notify_change_only(
         self, state: int
     ) -> None:
         """Receive and handle a LinearActuator/Position/Notify/ChangeOnly response."""
         pass
 
-    @abstractmethod
-    async def on_linear_actuator_position_notify_number(
-        self, number: int
-    ) -> None:
+    async def on_linear_actuator_position_notify_number(self, number: int) -> None:
         """Receive and handle a LinearActuator/Position/Notify/Number response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_smoothed_position(self, position: int) -> None:
         """Receive and handle a LinearActuator/SmoothedPosition response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_smoothed_position_snap_multiplier(
         self, multiplier: int
     ) -> None:
         """Receive and handle a LA/SP/SnapMultiplier response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_smoothed_position_range_low(
         self, position: int
     ) -> None:
         """Receive and handle a LA/SP/RangeLow response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_smoothed_position_range_high(
         self, position: int
     ) -> None:
         """Receive and handle a LA/SP/RangeHigh response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_smoothed_position_activity_threshold(
         self, position_difference: int
     ) -> None:
         """Receive and handle a LA/SP/ActivityThreshold response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_smoothed_position_notify(self, state: int) -> None:
         """Receive and handle a LA/SP/Notify response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_smoothed_position_notify_interval(
         self, interval: int
     ) -> None:
         """Receive and handle a LA/SP/Notify/Interval response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_smoothed_position_notify_change_only(
         self, state: int
     ) -> None:
         """Receive and handle a LA/SP/Notify/ChangeOnly response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_smoothed_position_notify_number(
         self, number: int
     ) -> None:
         """Receive and handle a LA/SP/Notify/Number response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_motor(self, duty: int) -> None:
         """Receive and handle a LinearActuator/Motor response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_motor_stall_protector_timeout(
         self, timeout: int
     ) -> None:
         """Receive and handle a LinearActuator/Motor/StallProtectoTimeout response."""
         pass
 
-    @abstractmethod
-    async def on_linear_actuator_motor_timer_timeout(
-        self, timeout: int
-    ) -> None:
+    async def on_linear_actuator_motor_timer_timeout(self, timeout: int) -> None:
         """Receive and handle a LinearActuator/Motor/TimerTimeout response."""
         pass
 
-    @abstractmethod
-    async def on_linear_actuator_motor_motor_polarity(
-        self, state: int
-    ) -> None:
+    async def on_linear_actuator_motor_motor_polarity(self, state: int) -> None:
         """Receive and handle a LinearActuator/Motor/MotorPolarity response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_motor_notify(self, state: int) -> None:
         """Receive and handle a LinearActuator/Motor/Notify response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_motor_notify_interval(self, interval: int) -> None:
         """Receive and handle a LinearActuator/Motor/Notify/Interval response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_motor_notify_change_only(self, state: int) -> None:
         """Receive and handle a LinearActuator/Motor/Notify/ChangeOnly response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_motor_notify_number(self, number: int) -> None:
         """Receive and handle a LinearActuator/Motor/Notify/Number response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_feedback_controller(self, state: int) -> None:
         """Receive and handle a LinearActuator/FeedbackController response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_feedback_controller_convergence_timeout(
         self, timeout: int
     ) -> None:
         """Receive and handle a LA/FC/ConvergenceTimeout response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_feedback_controller_limits_position_low(
         self, position: int
     ) -> None:
         """Receive and handle a LA/FC/Limits/Position/Low response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_feedback_controller_limits_position_high(
         self, position: int
     ) -> None:
         """Receive and handle a LA/FC/Limits/Position/High response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_feedback_controller_limits_motor_forwards_low(
         self, duty: int
     ) -> None:
         """Receive and handle a LA/FC/Limits/Motor/Forwards/Low response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_feedback_controller_limits_motor_forwards_high(
         self, duty: int
     ) -> None:
         """Receive and handle a LA/FC/Limits/Motor/Forwards/High response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_feedback_controller_limits_motor_backwards_low(
         self, duty: int
     ) -> None:
         """Receive and handle a LA/FC/Limits/Motor/Backwards/Low response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_feedback_controller_limits_motor_backwards_high(
         self, duty: int
     ) -> None:
         """Receive and handle a LA/FC/Limits/Motor/Backwards/High response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_feedback_controller_pid_kp(
         self, coefficient: int
     ) -> None:
         """Receive and handle a LA/FC/PID/Kp response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_feedback_controller_pid_kd(
         self, coefficient: int
     ) -> None:
         """Receive and handle a LA/FC/PID/Kd response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_feedback_controller_pid_ki(
         self, coefficient: int
     ) -> None:
         """Receive and handle a LA/FC/PID/Ki response."""
         pass
 
-    @abstractmethod
     async def on_linear_actuator_feedback_controller_pid_sample_interval(
         self, interval: int
     ) -> None:
