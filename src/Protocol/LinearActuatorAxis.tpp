@@ -245,6 +245,7 @@ void LinearActuatorAxis<LinearActuator, Messager>::update() {
     case State::positionFeedbackControl:
       if (converged()) endControl(State::convergenceTimeoutStopped);
       else if (stalled()) endControl(State::stallTimeoutStopped);
+      else if (timed()) endControl(State::timerTimeoutStopped);
       break;
   }
 
