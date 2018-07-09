@@ -21,7 +21,7 @@ logger.addHandler(logging.NullHandler())
 class DocumentLayout(object, metaclass=InterfaceClass):
     """Interface for a class which specifies the layout of a single Bokeh document."""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """Initialize member variables."""
         self.document = None
 

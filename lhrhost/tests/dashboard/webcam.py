@@ -10,6 +10,7 @@ from bokeh.models import widgets
 
 # Local package imports
 from lhrhost.dashboard import DocumentLayout, DocumentModel
+from lhrhost.dashboard.widgets import Button
 from lhrhost.imaging.plotter import ImagePlotter
 from lhrhost.imaging.webcam import Camera, ImageReceiver
 
@@ -17,39 +18,26 @@ from lhrhost.imaging.webcam import Camera, ImageReceiver
 logging.basicConfig(level=logging.INFO)
 
 
-class CaptureButton(DocumentModel, ImageReceiver):
+class CaptureButton(Button, ImageReceiver):
     """Webcam capture button, synchronized across documents."""
 
     def __init__(self, camera):
         """Initialize member variables."""
-        super().__init__(widgets.Button, label='Capture image')
+        super().__init__(label='Capture image')
         self.camera = camera
 
-    def capture_image(self):
-        """Capture a new image."""
-        def update(button):
-            button.label = 'Capturing image...'
-            button.disabled = True
-        self.update_docs(update)
+    # Implement Button
 
+    def on_click(self):
+        """Handle a button click event."""
+        self.disable_button('Capturing image...')
         asyncio.get_event_loop().create_task(self.camera.capture_image())
-
-    # Implement DocumentModel
-
-    def make_document_layout(self):
-        """Return a new document layout instance."""
-        layout = super().make_document_layout()
-        layout.on_click(self.capture_image)
-        return layout
 
     # Implement ImageReceiver
 
     async def on_image(self, image_rgb):
         """Update button state in response to received image."""
-        def update(button):
-            button.label = 'Capture image'
-            button.disabled = False
-        self.update_docs(update)
+        self.enable_button('Capture image')
 
 
 class WebcamController(DocumentLayout):
