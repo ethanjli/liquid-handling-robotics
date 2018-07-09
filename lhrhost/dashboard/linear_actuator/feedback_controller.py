@@ -119,14 +119,14 @@ class LimitsModel(DocumentModel):
 class PIDKSlider(Slider):
     """PID gain coefficient slider, synchronized across documnts."""
 
-    def __init__(self, pid_gain_protocol, name, high):
+    def __init__(self, pid_gain_protocol, name, high, step=0.05):
         """Initialize member variables.
 
         high should be no larger than 32767 / 100.
         """
         super().__init__(
             'Initializing {} gain...'.format(name),
-            start=0, end=high, step=0.01, value=0
+            start=0, end=high, step=step, value=0
         )
         self.protocol = pid_gain_protocol
         self.name = name
@@ -139,9 +139,9 @@ class PIDKSlider(Slider):
         old_value = self.value
         self.value = new['value'][0]
         # Apply the updates
-        loop = asyncio.get_event_loop()
         if old_value != self.value:
             self.disable_slider('Updating {} gain...'.format(self.name))
+            loop = asyncio.get_event_loop()
             loop.create_task(self.protocol.request(int(self.value * 100)))
 
 
@@ -157,7 +157,6 @@ class PIDKpSlider(PIDKSlider, LinearActuatorReceiver):
             linear_actuator_protocol.feedback_controller.pid.kp,
             'proportional', high
         )
-        self.value = 0
 
     # Implement LinearActuatorReceiver
 
@@ -181,7 +180,6 @@ class PIDKdSlider(PIDKSlider, LinearActuatorReceiver):
             linear_actuator_protocol.feedback_controller.pid.kd,
             'derivative', high
         )
-        self.value = 0
 
     # Implement LinearActuatorReceiver
 
@@ -205,7 +203,6 @@ class PIDKiSlider(PIDKSlider, LinearActuatorReceiver):
             linear_actuator_protocol.feedback_controller.pid.ki,
             'integral', high
         )
-        self.value = 0
 
     # Implement LinearActuatorReceiver
 
@@ -217,19 +214,67 @@ class PIDKiSlider(PIDKSlider, LinearActuatorReceiver):
         self.enable_slider('Integral gain', self.value)
 
 
+class PIDSampleIntervalSlider(Slider, LinearActuatorReceiver):
+    """PID sample interval slider, synchronized across documents.
+
+    For some reason the peripheral's implementation of the sample interval channel
+    doesn't work right now.
+    """
+
+    def __init__(self, linear_actuator_protocol, high=20):
+        """Initialize member variables.
+
+        high should be no larger than 32767.
+        """
+        super().__init__(
+            'Initializing PID sampling interval...',
+            start=1, end=high, step=1, value=1
+        )
+        self.protocol = \
+            linear_actuator_protocol.feedback_controller.pid.sample_interval
+        self.value = 1
+
+    # Implement Slider
+
+    def on_value_change(self, attr, old, new):
+        """Set actuator limits."""
+        old_value = self.value
+        self.value = int(new['value'][0])
+        # Apply the updates
+        if old_value != self.value:
+            self.disable_slider('Updating PID sampling interval...')
+            loop = asyncio.get_event_loop()
+            loop.create_task(self.protocol.request(self.value))
+
+    # Implement LinearActuatorReceiver
+
+    async def on_linear_actuator_feedback_controller_pid_sample_interval(
+        self, interval: int
+    ) -> None:
+        """Receive and handle a LA/FC/PID/SampleInterval response."""
+        self.value = interval
+        self.enable_slider('PID sampling interval', self.value)
+
+
 class PIDPanel(DocumentLayout):
     """Panel for the feedback controller's PID controller."""
 
-    def __init__(self, pid_kp_slider, pid_kd_slider, pid_ki_slider):
+    def __init__(
+        self, pid_kp_slider, pid_kd_slider, pid_ki_slider,
+        # pid_sample_interval_slider
+    ):
         """Initialize member variables."""
         super().__init__()
 
         self.pid_kp_slider = pid_kp_slider.make_document_layout()
         self.pid_kd_slider = pid_kd_slider.make_document_layout()
         self.pid_ki_slider = pid_ki_slider.make_document_layout()
+        # self.pid_sample_interval_slider = \
+        #     pid_sample_interval_slider.make_document_layout()
 
         self.controller_widgets = layouts.widgetbox([
-            self.pid_kp_slider, self.pid_kd_slider, self.pid_ki_slider
+            self.pid_kp_slider, self.pid_kd_slider, self.pid_ki_slider,
+            # self.pid_sample_interval_slider
         ])
 
     # Implement DocumentLayout
@@ -248,11 +293,18 @@ class PIDModel(DocumentModel):
         self.pid_kp_model = PIDKpSlider(linear_actuator_protocol, *args, **kwargs)
         self.pid_kd_model = PIDKdSlider(linear_actuator_protocol, *args, **kwargs)
         self.pid_ki_model = PIDKiSlider(linear_actuator_protocol, *args, **kwargs)
+        # self.pid_sample_interval_model = \
+        #     PIDSampleIntervalSlider(linear_actuator_protocol, *args, **kwargs)
         linear_actuator_protocol.response_receivers.append(self.pid_kp_model)
         linear_actuator_protocol.response_receivers.append(self.pid_kd_model)
         linear_actuator_protocol.response_receivers.append(self.pid_ki_model)
+        # linear_actuator_protocol.response_receivers.append(
+        #     self.pid_sample_interval_model
+        # )
         super().__init__(
-            PIDPanel, self.pid_kp_model, self.pid_kd_model, self.pid_ki_model
+            PIDPanel,
+            self.pid_kp_model, self.pid_kd_model, self.pid_ki_model,
+            # self.pid_sample_interval_model
         )
 
 
