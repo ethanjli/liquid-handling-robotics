@@ -114,21 +114,13 @@ class PositionLimitsSlider(DocumentModel, LinearActuatorReceiver):
 class LimitsPanel(DocumentLayout):
     """Panel for the feedback controller's limits."""
 
-    def __init__(self, position_limits_slider, nest_level):
+    def __init__(self, position_limits_slider):
         """Initialize member variables."""
         super().__init__()
 
         self.position_limits_slider = position_limits_slider.make_document_layout()
 
-        self._init_controller_widgets(nest_level)
-
-    def _init_controller_widgets(self, nest_level):
-        """Initialize the linear actuator state plot panel."""
-        heading_level = 1 + nest_level
         self.controller_widgets = layouts.widgetbox([
-            widgets.Div(text='<h{}>Limits</h{}>'.format(
-                heading_level, heading_level
-            )),
             self.position_limits_slider
         ])
 
@@ -143,14 +135,14 @@ class LimitsPanel(DocumentLayout):
 class LimitsModel(DocumentModel):
     """Panel for the feedback controller's limits, synchronized across documents."""
 
-    def __init__(self, linear_actuator_protocol, *args, nest_level=0, **kwargs):
+    def __init__(self, linear_actuator_protocol, *args, **kwargs):
         """Initialize member variables."""
         self.position_limits_model = PositionLimitsSlider(
             linear_actuator_protocol, *args, **kwargs
         )
         linear_actuator_protocol.response_receivers.append(self.position_limits_model)
         super().__init__(
-            LimitsPanel, self.position_limits_model, nest_level
+            LimitsPanel, self.position_limits_model
         )
 
 
@@ -163,20 +155,15 @@ class FeedbackControllerPanel(DocumentLayout):
 
         self.limits_panel = limits_panel.make_document_layout()
 
-        self._init_panel_widgets(nest_level)
-
-        self.column_layout = layouts.column([
-            self.panel_widgets,
-            self.limits_panel.layout
-        ])
-
-    def _init_panel_widgets(self, nest_level):
-        """Initialize the linear actuator state plot panel."""
         heading_level = 1 + nest_level
-        self.panel_widgets = layouts.widgetbox([
+        self.column_layout = layouts.column([
             widgets.Div(text='<h{}>Feedback Controller</h{}>'.format(
                 heading_level, heading_level
-            ))
+            )),
+            widgets.Tabs(tabs=[
+                widgets.Panel(title='Limits', child=self.limits_panel.layout),
+                widgets.Panel(title='PID', child=layouts.column([]))
+            ])
         ])
 
     # Implement DocumentLayout
@@ -193,7 +180,7 @@ class FeedbackControllerModel(DocumentModel):
     def __init__(self, linear_actuator_protocol, *args, nest_level=0, **kwargs):
         """Initialize member variables."""
         self.limits_model = LimitsModel(
-            linear_actuator_protocol, *args, nest_level=nest_level + 1, **kwargs
+            linear_actuator_protocol, *args, **kwargs
         )
         super().__init__(
             FeedbackControllerPanel, self.limits_model, nest_level
