@@ -59,6 +59,10 @@ class PositionPlot(DocumentLayout):
             'position': [self.last_position]
         }, rollover=self.rollover)
 
+    def clear(self):
+        """Clear plot data."""
+        self.position_source.data = {'time': [], 'position': []}
+
     def add_arrow(self, next_position, slope=1, line_width=2):
         """Add an arrow from the last position point to the next position point."""
         if self.last_position_time is None or self.last_position is None:
@@ -91,6 +95,10 @@ class PositionPlotter(DocumentModel, LinearActuatorReceiver):
         super().__init__(PositionPlot, *args, **kwargs)
         self.last_position_time = None
         self.last_position = None
+
+    def clear(self):
+        """Clear plot data."""
+        self.update_docs(lambda plot: plot.clear())
 
     def add_arrow(self, *args, **kwargs):
         """Add an arrow from the most recent position point to the next position point."""
@@ -142,6 +150,10 @@ class DutyPlot(DocumentLayout):
             'duty': [duty]
         }, rollover=self.rollover)
 
+    def clear(self):
+        """Clear plot data."""
+        self.duty_source.data = {'time': [], 'duty': []}
+
     def add_region(self, fill_color, start_time=None, end_time=None, fill_alpha=0.25):
         """Add a shaded region between the two duty cycle times."""
         if start_time is None:
@@ -176,6 +188,10 @@ class DutyPlotter(DocumentModel, LinearActuatorReceiver):
         super().__init__(DutyPlot, *args, **kwargs)
         self.last_duty_time = None
         self.last_duty = None
+
+    def clear(self):
+        """Clear plot data."""
+        self.update_docs(lambda plot: plot.clear())
 
     def add_region(self, *args, **kwargs):
         """Add an arrow from the last position point to the next position point."""

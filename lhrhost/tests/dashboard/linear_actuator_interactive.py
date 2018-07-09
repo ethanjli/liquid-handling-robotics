@@ -12,6 +12,7 @@ from lhrhost.tests.messaging.transport.batch import (
     Batch, BatchExecutionManager, LOGGING_CONFIG, main
 )
 from lhrhost.util import batch
+from lhrhost.util.cli import Prompt
 
 # External imports
 from pulsar.api import arbiter
@@ -43,7 +44,6 @@ class Batch(Batch):
         )
         self.batch_execution_manager = BatchExecutionManager(
             self.arbiter, self.transport_manager.command_sender, self.test_routine,
-            header=batch.OUTPUT_HEADER,
             ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
         )
         print('Showing plot...')
@@ -51,6 +51,8 @@ class Batch(Batch):
 
     async def test_routine(self):
         """Run the batch execution test routine."""
+        prompt = Prompt(end='', flush=True)
+
         print('Running test routine...')
         await self.protocol.initialized.wait()
         self.colors = {
@@ -65,17 +67,25 @@ class Batch(Batch):
         await self.protocol.position.notify.interval.request(20)
         await self.protocol.motor.notify.change_only.request(0)
         await self.protocol.motor.notify.interval.request(20)
-        await self.protocol.position.notify.request(2)
-        await self.protocol.motor.notify.request(2)
-        for i in range(10):
-            await self.go_to_position(100)
-            await asyncio.sleep(0.5)
-            await self.go_to_position(700)
-            await asyncio.sleep(0.5)
-        await self.protocol.position.notify.request(0)
-        await self.protocol.motor.notify.request(0)
 
-        print(batch.OUTPUT_FOOTER)
+        try:
+            while True:
+                await self.protocol.position.notify.request(2)
+                await self.protocol.motor.notify.request(2)
+                for i in range(5):
+                    await self.go_to_position(100)
+                    await asyncio.sleep(0.5)
+                    await self.go_to_position(700)
+                    await asyncio.sleep(0.5)
+                await self.protocol.position.notify.request(0)
+                await self.protocol.motor.notify.request(0)
+                await prompt('Press enter to restart: ')
+                self.protocol_plotter.position_plotter.clear()
+                self.protocol_plotter.duty_plotter.clear()
+        except KeyboardInterrupt:
+            await self.protocol.position.notify.request(0)
+            await self.protocol.motor.notify.request(0)
+
         print('Idling...')
         self.protocol_plotter.server.run_until_shutdown()
 
