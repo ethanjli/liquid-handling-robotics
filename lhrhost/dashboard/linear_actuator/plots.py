@@ -241,11 +241,11 @@ class LinearActuatorPlot(DocumentLayout):
         """Return a document layout element."""
         return self.column_layout
 
-    def initialize_doc(self, doc):
+    def initialize_doc(self, doc, as_root=False):
         """Initialize the provided document."""
-        super().initialize_doc(doc)
-        self.position_plot.set_doc(self.document)
-        self.duty_plot.set_doc(self.document)
+        super().initialize_doc(doc, as_root)
+        self.position_plot.initialize_doc(self.document)
+        self.duty_plot.initialize_doc(self.document)
 
 
 class LinearActuatorPlotter(DocumentModel):

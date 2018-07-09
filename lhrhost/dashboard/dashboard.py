@@ -32,21 +32,23 @@ class DocumentLayout(object, metaclass=InterfaceClass):
         """
         self.document.add_next_tick_callback(callback)
 
-    def initialize_doc(self, doc):
+    def initialize_doc(self, doc, as_root=False):
         """Initialize the provided document."""
         if self.document is None:
-            self.set_doc(doc)
-            doc.add_root(self.layout)
+            self.document = doc
+            if as_root:
+                doc.add_root(self.layout)
         else:
             logger.warning('Can only open one copy of the document!')
 
-    def set_doc(self, doc):
-        """Set the provided document to be the parent document."""
-        self.document = doc
-
     def show(self, route='/', address='localhost', port=5006):
         """Create a standalone singleton document."""
-        self.server = Server({route: self.initialize_doc}, address=address, port=port)
+        self.server = Server(
+            {
+                route: lambda doc: self.initialize_doc(doc, as_root=True)
+            },
+            address=address, port=port
+        )
         self.server.start()
         logger.info('Serving document at {}:{}{}'.format(
             self.server.address, self.server.port, route
@@ -86,7 +88,7 @@ class DocumentModel(object):
     def initialize_doc(self, doc):
         """Initialize the provided empty document with a new layout instance."""
         doc_layout = self.make_document_layout()
-        doc_layout.initialize_doc(doc)
+        doc_layout.initialize_doc(doc, as_root=True)
 
     def show(self, route='/', address='localhost', port=5006):
         """Create a standalone document for each connection.
