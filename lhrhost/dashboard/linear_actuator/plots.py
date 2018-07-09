@@ -276,7 +276,7 @@ class DutyPlotter(DocumentModel, LinearActuatorReceiver):
 class LinearActuatorPlot(DocumentLayout):
     """Plot of received linear actuator state data."""
 
-    def __init__(self, position_plotter, duty_plotter, title):
+    def __init__(self, position_plotter, duty_plotter, title, nest_level):
         """Initialize member variables."""
         super().__init__()
 
@@ -284,17 +284,20 @@ class LinearActuatorPlot(DocumentLayout):
         self.duty_plot = duty_plotter.make_document_layout()
         self.duty_plot.duty_fig.x_range = self.position_plot.position_fig.x_range
 
-        self._init_controller_widgets(title)
+        self._init_controller_widgets(title, nest_level)
         self.column_layout = layouts.column([
             self.controller_widgets,
             self.position_plot.layout,
             self.duty_plot.layout
         ])
 
-    def _init_controller_widgets(self, title):
+    def _init_controller_widgets(self, title, nest_level):
         """Initialize the linear actuator state plot panel."""
+        heading_level = 1 + nest_level
         self.controller_widgets = layouts.widgetbox([
-            widgets.Div(text='<h1>{}</h1>'.format(title))
+            widgets.Div(text='<h{}>{}</h{}>'.format(
+                heading_level, title, heading_level
+            ))
         ])
 
     # Implement DocumentLayout
@@ -314,13 +317,17 @@ class LinearActuatorPlot(DocumentLayout):
 class LinearActuatorPlotter(DocumentModel):
     """Simple class which prints received serialized messages."""
 
-    def __init__(self, linear_actuator_protocol, *args, **kwargs):
+    def __init__(self, linear_actuator_protocol, *args, nest_level=0, **kwargs):
         """Initialize member variables."""
         self.position_plotter = PositionPlotter('Actuator Position', *args, **kwargs)
         self.duty_plotter = DutyPlotter('Actuator Effort', *args, **kwargs)
         linear_actuator_protocol.response_receivers.append(self.position_plotter)
         linear_actuator_protocol.response_receivers.append(self.duty_plotter)
+        if nest_level == 0:
+            title = linear_actuator_protocol.channel_path
+        else:
+            title = 'State Plots'
         super().__init__(
             LinearActuatorPlot, self.position_plotter, self.duty_plotter,
-            linear_actuator_protocol.channel_path
+            title, nest_level=nest_level
         )

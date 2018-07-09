@@ -5,6 +5,7 @@ import logging
 
 # External imports
 from bokeh import layouts
+from bokeh.models import widgets
 
 # Local package imports
 from lhrhost.dashboard import DocumentLayout, DocumentModel
@@ -28,15 +29,25 @@ logging.config.dictConfig(LOGGING_CONFIG)
 class LinearActuatorControlPanel(DocumentLayout):
     """Linear actuator controller."""
 
-    def __init__(self, plotter, feedback_controller):
+    def __init__(self, plotter, feedback_controller, title):
         """Initialize member variables."""
         super().__init__()
 
         self.plotter = plotter.make_document_layout()
         self.feedback_controller = feedback_controller.make_document_layout()
 
+        self._init_panel_widgets(title)
+
         self.column_layout = layouts.column([
-            self.plotter.layout, self.feedback_controller.layout
+            self.panel_widgets,
+            self.plotter.layout,
+            self.feedback_controller.layout
+        ])
+
+    def _init_panel_widgets(self, title):
+        """Initialize the linear actuator state plot panel."""
+        self.panel_widgets = layouts.widgetbox([
+            widgets.Div(text='<h1>{}</h1>'.format(title))
         ])
 
     # Implement DocumentLayout
@@ -58,10 +69,13 @@ class LinearActuatorControlModel(DocumentModel):
 
     def __init__(self, linear_actuator_protocol, *args, **kwargs):
         """Initialize member variables."""
-        self.plotter = Plotter(linear_actuator_protocol)
-        self.feedback_controller = FeedbackControllerModel(linear_actuator_protocol)
+        self.plotter = Plotter(linear_actuator_protocol, nest_level=1)
+        self.feedback_controller = FeedbackControllerModel(
+            linear_actuator_protocol, nest_level=1
+        )
         super().__init__(
-            LinearActuatorControlPanel, self.plotter, self.feedback_controller
+            LinearActuatorControlPanel, self.plotter, self.feedback_controller,
+            linear_actuator_protocol.channel_path
         )
 
 
