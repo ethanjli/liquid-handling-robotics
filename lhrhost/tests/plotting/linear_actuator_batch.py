@@ -26,11 +26,8 @@ class Batch(Batch):
     def __init__(self, transport_loop):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.protocol_plotter = Plotter('Z-Axis State')
-        self.protocol = Protocol(
-            'Z-Axis', 'z',
-            response_receivers=[self.protocol_plotter]
-        )
+        self.protocol = Protocol('Z-Axis', 'z')
+        self.protocol_plotter = Plotter(self.protocol)
         self.translator = BasicTranslator(
             message_receivers=[self.protocol]
         )
@@ -84,10 +81,10 @@ class Batch(Batch):
 
     async def go_to_position(self, position):
         """Send the actuator to the specified position."""
-        self.protocol_plotter.add_position_arrow(position, slope=2)
-        self.protocol_plotter.start_duty_region()
+        self.protocol_plotter.position_plotter.add_arrow(position, slope=2)
+        self.protocol_plotter.duty_plotter.start_region()
         await self.protocol.feedback_controller.request_complete(position)
-        self.protocol_plotter.add_duty_region(
+        self.protocol_plotter.duty_plotter.add_region(
             self.colors[self.protocol.last_response_payload]
         )
 

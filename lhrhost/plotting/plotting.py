@@ -79,13 +79,14 @@ class DocumentModel(object):
 
     def make_document_layout(self):
         """Return a new document layout instance."""
-        return self.document_layout_class(*self.args, **self.kwargs)
+        new_layout = self.document_layout_class(*self.args, **self.kwargs)
+        self.doc_layouts.append(new_layout)
+        return new_layout
 
     def initialize_doc(self, doc):
-        """Initialize the provided document."""
+        """Initialize the provided empty document with a new layout instance."""
         doc_layout = self.make_document_layout()
         doc_layout.initialize_doc(doc)
-        self.doc_layouts.append(doc_layout)
 
     def show(self, route='/', address='localhost', port=5006):
         """Create a standalone document for each connection.

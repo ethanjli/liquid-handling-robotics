@@ -61,12 +61,9 @@ class WebcamController(DocumentLayout):
         super().__init__()
 
         self.capture_button = button_model.make_document_layout()
-        self._init_controller_widgets()
-        button_model.doc_layouts.append(self.capture_button)
-
         self.image_plot = image_model.make_document_layout()
-        image_model.doc_layouts.append(self.image_plot)
 
+        self._init_controller_widgets()
         self.column_layout = layouts.column([
             self.controller_widgets, self.image_plot.layout
         ])
