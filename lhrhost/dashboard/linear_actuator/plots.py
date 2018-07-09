@@ -61,6 +61,8 @@ class PositionPlot(DocumentLayout):
 
     def clear(self):
         """Clear plot data."""
+        for arrow in self.position_fig.select(name='arrow'):
+            self.position_fig.renderers.remove(arrow)
         self.position_source.data = {'time': [], 'position': []}
 
     def add_arrow(self, next_position, slope=1, line_width=2):
@@ -76,7 +78,8 @@ class PositionPlot(DocumentLayout):
             ),
             y_end=next_position,
             end=arrow_heads.VeeHead(size=10),
-            line_width=line_width
+            line_width=line_width,
+            name='arrow'
         ))
 
     # Implement DocumentLayout
@@ -152,6 +155,8 @@ class DutyPlot(DocumentLayout):
 
     def clear(self):
         """Clear plot data."""
+        for region in self.duty_fig.select(name='region'):
+            self.duty_fig.renderers.remove(region)
         self.duty_source.data = {'time': [], 'duty': []}
 
     def add_region(self, fill_color, start_time=None, end_time=None, fill_alpha=0.25):
@@ -165,7 +170,8 @@ class DutyPlot(DocumentLayout):
             end_time = datetime.datetime.now()
         self.duty_fig.add_layout(annotations.BoxAnnotation(
             left=start_time, right=end_time,
-            fill_alpha=fill_alpha, fill_color=fill_color
+            fill_alpha=fill_alpha, fill_color=fill_color,
+            name='region'
         ))
 
     def start_region(self):
