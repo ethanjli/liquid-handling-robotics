@@ -2,6 +2,7 @@
 # Standard imports
 import asyncio
 import logging
+from abc import abstractmethod
 
 # External imports
 from bokeh import layouts
@@ -12,25 +13,37 @@ from lhrhost.dashboard import DocumentLayout, DocumentModel
 from lhrhost.dashboard.widgets import Slider
 from lhrhost.protocol.linear_actuator.linear_actuator \
     import Receiver as LinearActuatorReceiver
+from lhrhost.util.interfaces import InterfaceClass
 
 # Logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-class PositionLimitsSlider(Slider, LinearActuatorReceiver):
-    """Position limits range slider, synchronized across documnts."""
+class LimitsRangeSlider(Slider, metaclass=InterfaceClass):
+    """Limits range slider, synchronized across documents."""
 
-    def __init__(self, linear_actuator_protocol, low=0, high=1023):
+    def __init__(self, limits_protocol, name, low, high):
         """Initialize member variables."""
         super().__init__(
-            'Initializing position limits...',
+            'Initializing {} limits...'.format(name),
             slider_widget_class=widgets.RangeSlider,
             start=low, end=high, step=1, value=(low, high)
         )
-        self.protocol = linear_actuator_protocol.feedback_controller.limits.position
+        self.name = name
+        self.protocol = limits_protocol
         self.low = low
         self.high = high
+
+    @abstractmethod
+    async def update_low_limit(self, limit):
+        """Issue a request to update the lower limit of the range."""
+        pass
+
+    @abstractmethod
+    async def update_high_limit(self, limit):
+        """Issue a request to update the higher limit of the range."""
+        pass
 
     # Implement Slider
 
@@ -55,14 +68,35 @@ class PositionLimitsSlider(Slider, LinearActuatorReceiver):
         loop = asyncio.get_event_loop()
         if update_high_before_low:
             if update_high:
-                loop.create_task(self.protocol.high.request(self.high))
+                loop.create_task(self.update_high_limit(self.high))
             if update_low:
-                loop.create_task(self.protocol.low.request(self.low))
+                loop.create_task(self.update_low_limit(self.low))
         else:
             if update_low:
-                loop.create_task(self.protocol.low.request(self.low))
+                loop.create_task(self.update_low_limit(self.low))
             if update_high:
-                loop.create_task(self.protocol.high.request(self.high))
+                loop.create_task(self.update_high_limit(self.high))
+
+
+class PositionLimitsSlider(LimitsRangeSlider, LinearActuatorReceiver):
+    """Position limits range slider, synchronized across documents."""
+
+    def __init__(self, linear_actuator_protocol, low=0, high=1023):
+        """Initialize member variables."""
+        super().__init__(
+            linear_actuator_protocol.feedback_controller.limits.position,
+            'position', low, high
+        )
+
+    # Implement RangeSlider
+
+    async def update_low_limit(self, limit):
+        """Issue a request to update the lower limit of the range."""
+        await self.protocol.low.request(limit)
+
+    async def update_high_limit(self, limit):
+        """Issue a request to update the higher limit of the range."""
+        await self.protocol.high.request(limit)
 
     # Implement LinearActuatorReceiver
 
@@ -81,17 +115,108 @@ class PositionLimitsSlider(Slider, LinearActuatorReceiver):
         self.enable_slider('Position limits', (self.low, self.high))
 
 
+class MotorForwardsLimitsSlider(LimitsRangeSlider, LinearActuatorReceiver):
+    """Motor forwards duty limits range slider, synchronized across documents."""
+
+    def __init__(self, linear_actuator_protocol):
+        """Initialize member variables."""
+        super().__init__(
+            linear_actuator_protocol.feedback_controller.limits.motor.forwards,
+            'motor forwards duty cycle magnitude', 0, 255
+        )
+
+    # Implement RangeSlider
+
+    async def update_low_limit(self, limit):
+        """Issue a request to update the lower limit of the range."""
+        await self.protocol.low.request(limit)
+
+    async def update_high_limit(self, limit):
+        """Issue a request to update the higher limit of the range."""
+        await self.protocol.high.request(limit)
+
+    # Implement LinearActuatorReceiver
+
+    async def on_linear_actuator_feedback_controller_limits_motor_forwards_low(
+        self, position: int
+    ) -> None:
+        """Receive and handle a LA/FC/Limits/Motor/Forwards/Low response."""
+        self.low = position
+        self.enable_slider(
+            'Motor forwards duty cycle magnitude limits', (self.low, self.high)
+        )
+
+    async def on_linear_actuator_feedback_controller_limits_motor_forwards_high(
+        self, position: int
+    ) -> None:
+        """Receive and handle a LA/FC/Limits/Motor/Forwards/High response."""
+        self.high = position
+        self.enable_slider(
+            'Motor forwards duty cycle magnitude limits', (self.low, self.high)
+        )
+
+
+class MotorBackwardsLimitsSlider(LimitsRangeSlider, LinearActuatorReceiver):
+    """Motor backwards duty limits range slider, synchronized across documents."""
+
+    def __init__(self, linear_actuator_protocol):
+        """Initialize member variables."""
+        super().__init__(
+            linear_actuator_protocol.feedback_controller.limits.motor.backwards,
+            'motor backwards duty cycle magnitude', 0, 255
+        )
+
+    # Implement RangeSlider
+
+    async def update_low_limit(self, limit):
+        """Issue a request to update the lower limit of the range."""
+        await self.protocol.low.request(-1 * limit)
+
+    async def update_high_limit(self, limit):
+        """Issue a request to update the higher limit of the range."""
+        await self.protocol.high.request(-1 * limit)
+
+    # Implement LinearActuatorReceiver
+
+    async def on_linear_actuator_feedback_controller_limits_motor_backwards_low(
+        self, position: int
+    ) -> None:
+        """Receive and handle a LA/FC/Limits/Motor/Backwards/Low response."""
+        self.low = -1 * position
+        self.enable_slider(
+            'Motor backwards duty cycle magnitude limits', (self.low, self.high)
+        )
+
+    async def on_linear_actuator_feedback_controller_limits_motor_backwards_high(
+        self, position: int
+    ) -> None:
+        """Receive and handle a LA/FC/Limits/Motor/Backwards/High response."""
+        self.high = -1 * position
+        self.enable_slider(
+            'Motor backwards duty cycle magnitude limits', (self.low, self.high)
+        )
+
+
 class LimitsPanel(DocumentLayout):
     """Panel for the feedback controller's limits."""
 
-    def __init__(self, position_limits_slider):
+    def __init__(
+        self, position_limits_slider,
+        motor_forwards_limits_slider, motor_backwards_limits_slider
+    ):
         """Initialize member variables."""
         super().__init__()
 
         self.position_limits_slider = position_limits_slider.make_document_layout()
+        self.motor_forwards_limits_slider = \
+            motor_forwards_limits_slider.make_document_layout()
+        self.motor_backwards_limits_slider = \
+            motor_backwards_limits_slider.make_document_layout()
 
         self.controller_widgets = layouts.widgetbox([
-            self.position_limits_slider
+            self.position_limits_slider,
+            self.motor_forwards_limits_slider,
+            self.motor_backwards_limits_slider
         ])
 
     # Implement DocumentLayout
@@ -111,8 +236,19 @@ class LimitsModel(DocumentModel):
             linear_actuator_protocol, *args, **kwargs
         )
         linear_actuator_protocol.response_receivers.append(self.position_limits_model)
+        self.motor_forwards_limits_model = MotorForwardsLimitsSlider(
+            linear_actuator_protocol, *args, **kwargs
+        )
+        linear_actuator_protocol.response_receivers.append(self.motor_forwards_limits_model)
+        self.motor_backwards_limits_model = MotorBackwardsLimitsSlider(
+            linear_actuator_protocol, *args, **kwargs
+        )
+        linear_actuator_protocol.response_receivers.append(self.motor_backwards_limits_model)
         super().__init__(
-            LimitsPanel, self.position_limits_model
+            LimitsPanel,
+            self.position_limits_model,
+            self.motor_forwards_limits_model,
+            self.motor_backwards_limits_model
         )
 
 
