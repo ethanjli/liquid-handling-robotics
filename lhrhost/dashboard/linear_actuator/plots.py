@@ -33,6 +33,7 @@ class PositionPlot(DocumentLayout):
         self._init_position_plot(title, plot_width, plot_height, line_width)
         self.last_position_time = None
         self.last_position = None
+        self.last_region = None
 
     def _init_position_plot(self, title, plot_width, plot_height, line_width):
         """Initialize member variables for position plotting."""
@@ -63,7 +64,16 @@ class PositionPlot(DocumentLayout):
         """Clear plot data."""
         for arrow in self.position_fig.select(name='arrow'):
             self.position_fig.renderers.remove(arrow)
+        for region in self.position_fig.select(name='region'):
+            self.position_fig.renderers.remove(region)
         self.position_source.data = {'time': [], 'position': []}
+        if self.last_region is not None:
+            self.start_region(
+                self.last_region.bottom, self.last_region.top,
+                start_time=self.last_region.left,
+                fill_color=self.last_region.fill_color,
+                fill_alpha=self.last_region.fill_alpha
+            )
 
     def add_arrow(self, next_position, slope=1, line_width=2):
         """Add an arrow from the last position point to the next position point."""
@@ -82,6 +92,27 @@ class PositionPlot(DocumentLayout):
             name='arrow'
         ))
 
+    def start_region(
+        self, low, high, start_time=None, fill_color='gray', fill_alpha=0.25
+    ):
+        """Start a position region."""
+        if start_time is None:
+            start_time = datetime.datetime.now()
+        self.last_region = annotations.BoxAnnotation(
+            left=start_time, bottom=low, top=high,
+            fill_color=fill_color, fill_alpha=fill_alpha,
+            name='region'
+        )
+        self.position_fig.add_layout(self.last_region)
+
+    def end_region(self, end_time=None):
+        """End  position region."""
+        if self.last_region is None:
+            return
+        if end_time is None:
+            end_time = datetime.datetime.now()
+        self.last_region.right = end_time
+
     # Implement DocumentLayout
 
     @property
@@ -98,6 +129,8 @@ class PositionPlotter(DocumentModel, LinearActuatorReceiver):
         super().__init__(PositionPlot, *args, **kwargs)
         self.last_position_time = None
         self.last_position = None
+        self.position_limit_low = None
+        self.position_limit_high = None
 
     def clear(self):
         """Clear plot data."""
@@ -114,6 +147,30 @@ class PositionPlotter(DocumentModel, LinearActuatorReceiver):
         self.last_position_time = datetime.datetime.now()
         self.last_position = position
         self.update_docs(lambda plot: plot.add_position(position))
+
+    async def on_linear_actuator_feedback_controller_limits_position_low(
+        self, position: int
+    ) -> None:
+        """Receive and handle a LA/FC/Limits/Position/Low response."""
+        self.position_limit_low = position
+        if self.position_limit_low is None or self.position_limit_high is None:
+            return
+        self.update_docs(lambda plot: plot.end_region())
+        self.update_docs(lambda plot: plot.start_region(
+            self.position_limit_low, self.position_limit_high
+        ))
+
+    async def on_linear_actuator_feedback_controller_limits_position_high(
+        self, position: int
+    ) -> None:
+        """Receive and handle a LA/FC/Limits/Position/High response."""
+        self.position_limit_high = position
+        if self.position_limit_low is None or self.position_limit_high is None:
+            return
+        self.update_docs(lambda plot: plot.end_region())
+        self.update_docs(lambda plot: plot.start_region(
+            self.position_limit_low, self.position_limit_high
+        ))
 
 
 class DutyPlot(DocumentLayout):
