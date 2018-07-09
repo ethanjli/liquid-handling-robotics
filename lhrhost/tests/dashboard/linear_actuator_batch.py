@@ -4,9 +4,9 @@ import asyncio
 import logging
 
 # Local package imports
+from lhrhost.dashboard.linear_actuator import LinearActuatorPlotter as Plotter
 from lhrhost.messaging.presentation import BasicTranslator
 from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
-from lhrhost.plotting.linear_actuator import LinearActuatorPlotter as Plotter
 from lhrhost.protocol.linear_actuator import Protocol
 from lhrhost.tests.messaging.transport.batch import (
     Batch, BatchExecutionManager, LOGGING_CONFIG, main

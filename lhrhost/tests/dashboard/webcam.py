@@ -9,10 +9,9 @@ from bokeh import layouts
 from bokeh.models import widgets
 
 # Local package imports
+from lhrhost.dashboard import DocumentLayout, DocumentModel
 from lhrhost.imaging.plotter import ImagePlotter
 from lhrhost.imaging.webcam import Camera, ImageReceiver
-from lhrhost.plotting import DocumentLayout, DocumentModel
-from lhrhost.util.cli import Prompt
 
 # Logging
 logging.basicConfig(level=logging.INFO)

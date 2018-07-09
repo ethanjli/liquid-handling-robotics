@@ -11,7 +11,7 @@ from bokeh.models import (
 from bokeh.plotting import figure
 
 # Local package imports
-from lhrhost.plotting import DocumentLayout, DocumentModel
+from lhrhost.dashboard import DocumentLayout, DocumentModel
 from lhrhost.protocol.linear_actuator.linear_actuator \
     import Receiver as LinearActuatorReceiver
 

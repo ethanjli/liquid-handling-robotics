@@ -6,7 +6,7 @@ from bokeh.plotting import figure
 
 # Local package imports
 from lhrhost.imaging.webcam import ImageReceiver
-from lhrhost.plotting import DocumentLayout, DocumentModel
+from lhrhost.dashboard import DocumentLayout, DocumentModel
 
 # External imports
 import numpy as np
