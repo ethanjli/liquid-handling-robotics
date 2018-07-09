@@ -130,7 +130,7 @@ class Batch(Batch):
             while True:
                 await self.protocol.position.notify.request(2)
                 await self.protocol.motor.notify.request(2)
-                for i in range(5):
+                for i in range(10):
                     await self.go_to_position(100)
                     await asyncio.sleep(0.5)
                     await self.go_to_position(700)

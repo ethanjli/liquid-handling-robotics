@@ -50,7 +50,8 @@ class PositionLimitsSlider(Slider, LinearActuatorReceiver):
         if self.low >= old_high:
             update_high_before_low = True
         # Apply the updates
-        self.disable_slider('Updating position limits...')
+        if update_low or update_high:
+            self.disable_slider('Updating position limits...')
         loop = asyncio.get_event_loop()
         if update_high_before_low:
             if update_high:
@@ -115,14 +116,155 @@ class LimitsModel(DocumentModel):
         )
 
 
+class PIDKSlider(Slider):
+    """PID gain coefficient slider, synchronized across documnts."""
+
+    def __init__(self, pid_gain_protocol, name, high):
+        """Initialize member variables.
+
+        high should be no larger than 32767 / 100.
+        """
+        super().__init__(
+            'Initializing {} gain...'.format(name),
+            start=0, end=high, step=0.01, value=0
+        )
+        self.protocol = pid_gain_protocol
+        self.name = name
+        self.value = 0
+
+    # Implement Slider
+
+    def on_value_change(self, attr, old, new):
+        """Set actuator limits."""
+        old_value = self.value
+        self.value = new['value'][0]
+        # Apply the updates
+        loop = asyncio.get_event_loop()
+        if old_value != self.value:
+            self.disable_slider('Updating {} gain...'.format(self.name))
+            loop.create_task(self.protocol.request(int(self.value * 100)))
+
+
+class PIDKpSlider(PIDKSlider, LinearActuatorReceiver):
+    """PID Kp slider, synchronized across documnts."""
+
+    def __init__(self, linear_actuator_protocol, high=40):
+        """Initialize member variables.
+
+        high should be no larger than 32767 / 100.
+        """
+        super().__init__(
+            linear_actuator_protocol.feedback_controller.pid.kp,
+            'proportional', high
+        )
+        self.value = 0
+
+    # Implement LinearActuatorReceiver
+
+    async def on_linear_actuator_feedback_controller_pid_kp(
+        self, coefficient: int
+    ) -> None:
+        """Receive and handle a LA/FC/PID/Kp response."""
+        self.value = coefficient / 100
+        self.enable_slider('Proportional gain', self.value)
+
+
+class PIDKdSlider(PIDKSlider, LinearActuatorReceiver):
+    """PID Kd slider, synchronized across documnts."""
+
+    def __init__(self, linear_actuator_protocol, high=10):
+        """Initialize member variables.
+
+        high should be no larger than 32767 / 100.
+        """
+        super().__init__(
+            linear_actuator_protocol.feedback_controller.pid.kd,
+            'derivative', high
+        )
+        self.value = 0
+
+    # Implement LinearActuatorReceiver
+
+    async def on_linear_actuator_feedback_controller_pid_kd(
+        self, coefficient: int
+    ) -> None:
+        """Receive and handle a LA/FC/PID/Kd response."""
+        self.value = coefficient / 100
+        self.enable_slider('Derivative gain', self.value)
+
+
+class PIDKiSlider(PIDKSlider, LinearActuatorReceiver):
+    """PID Ki slider, synchronized across documnts."""
+
+    def __init__(self, linear_actuator_protocol, high=10):
+        """Initialize member variables.
+
+        high should be no larger than 32767 / 100.
+        """
+        super().__init__(
+            linear_actuator_protocol.feedback_controller.pid.ki,
+            'integral', high
+        )
+        self.value = 0
+
+    # Implement LinearActuatorReceiver
+
+    async def on_linear_actuator_feedback_controller_pid_ki(
+        self, coefficient: int
+    ) -> None:
+        """Receive and handle a LA/FC/PID/Ki response."""
+        self.value = coefficient / 100
+        self.enable_slider('Integral gain', self.value)
+
+
+class PIDPanel(DocumentLayout):
+    """Panel for the feedback controller's PID controller."""
+
+    def __init__(self, pid_kp_slider, pid_kd_slider, pid_ki_slider):
+        """Initialize member variables."""
+        super().__init__()
+
+        self.pid_kp_slider = pid_kp_slider.make_document_layout()
+        self.pid_kd_slider = pid_kd_slider.make_document_layout()
+        self.pid_ki_slider = pid_ki_slider.make_document_layout()
+
+        self.controller_widgets = layouts.widgetbox([
+            self.pid_kp_slider, self.pid_kd_slider, self.pid_ki_slider
+        ])
+
+    # Implement DocumentLayout
+
+    @property
+    def layout(self):
+        """Return a document layout element."""
+        return self.controller_widgets
+
+
+class PIDModel(DocumentModel):
+    """Panel for the feedback controller's limits, synchronized across documents."""
+
+    def __init__(self, linear_actuator_protocol, *args, **kwargs):
+        """Initialize member variables."""
+        self.pid_kp_model = PIDKpSlider(linear_actuator_protocol, *args, **kwargs)
+        self.pid_kd_model = PIDKdSlider(linear_actuator_protocol, *args, **kwargs)
+        self.pid_ki_model = PIDKiSlider(linear_actuator_protocol, *args, **kwargs)
+        linear_actuator_protocol.response_receivers.append(self.pid_kp_model)
+        linear_actuator_protocol.response_receivers.append(self.pid_kd_model)
+        linear_actuator_protocol.response_receivers.append(self.pid_ki_model)
+        super().__init__(
+            PIDPanel, self.pid_kp_model, self.pid_kd_model, self.pid_ki_model
+        )
+
+
 class FeedbackControllerPanel(DocumentLayout):
     """Parameters panel for the feedback controller."""
 
-    def __init__(self, limits_panel, nest_level):
+    def __init__(self, limits_panel, pid_panel, nest_level):
         """Initialize member variables."""
         super().__init__()
 
         self.limits_panel = limits_panel.make_document_layout()
+        self.pid_panel = pid_panel.make_document_layout()
 
         heading_level = 1 + nest_level
         self.column_layout = layouts.column([
@@ -131,7 +273,7 @@ class FeedbackControllerPanel(DocumentLayout):
             )),
             widgets.Tabs(tabs=[
                 widgets.Panel(title='Limits', child=self.limits_panel.layout),
-                widgets.Panel(title='PID', child=layouts.column([]))
+                widgets.Panel(title='PID', child=self.pid_panel.layout)
             ])
         ])
 
@@ -148,9 +290,8 @@ class FeedbackControllerModel(DocumentModel):
 
     def __init__(self, linear_actuator_protocol, *args, nest_level=0, **kwargs):
         """Initialize member variables."""
-        self.limits_model = LimitsModel(
-            linear_actuator_protocol, *args, **kwargs
-        )
+        self.limits_model = LimitsModel(linear_actuator_protocol, *args, **kwargs)
+        self.pid_model = PIDModel(linear_actuator_protocol, *args, **kwargs)
         super().__init__(
-            FeedbackControllerPanel, self.limits_model, nest_level
+            FeedbackControllerPanel, self.limits_model, self.pid_model, nest_level
         )
