@@ -266,7 +266,10 @@ bool LinearActuatorAxis<LinearActuator, Messager>::converged() const {
       convergenceTimeout > 0 &&
       state.settledAt(State::positionFeedbackControl, convergenceTimeout) &&
       actuator.pid.setpoint.settled(convergenceTimeout) &&
-      actuator.speedAdjuster.output.settledAt(0, convergenceTimeout)
+      actuator.speedAdjuster.state.settledAt(
+        LinearPositionControl::Components::States::MotorSpeedAdjuster::braking,
+        convergenceTimeout
+      )
   );
 }
 
@@ -279,7 +282,10 @@ bool LinearActuatorAxis<LinearActuator, Messager>::stalled() const {
        (state.at(State::directMotorDutyControl) && actuator.motor.speed != 0) ||
        (state.at(State::positionFeedbackControl) &&
         actuator.pid.setpoint.settled(stallTimeout) &&
-        !actuator.speedAdjuster.output.settledAt(0, stallTimeout)
+        actuator.speedAdjuster.state.settledAt(
+          LinearPositionControl::Components::States::MotorSpeedAdjuster::moving,
+          stallTimeout
+        )
        )
       ) &&
       smoother.output.settled(stallTimeout)
