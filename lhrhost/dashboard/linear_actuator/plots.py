@@ -45,14 +45,12 @@ class PositionPlot(DocumentLayout):
     """Plot of received linear actuator position data."""
 
     def __init__(
-        self, title, rollover=750,
-        plot_width=960, plot_height=320, line_width=2
+        self, title, rollover=750, width=960, height=320, line_width=2
     ):
         """Initialize member variables."""
         super().__init__()
         self.rollover = rollover
-        self.plot_height = plot_height
-        self._init_position_plot(title, plot_width, plot_height, line_width)
+        self._init_position_plot(title, width, height, line_width)
         self.plotting = True
         self.last_position_time = None
         self.last_position = None
@@ -223,14 +221,12 @@ class DutyPlot(DocumentLayout):
     """Plot of received linear actuator motor duty cycle data."""
 
     def __init__(
-        self, title, rollover=750,
-        plot_width=960, plot_height=320, line_width=2
+        self, title, rollover=750, width=960, height=320, line_width=2
     ):
         """Initialize member variables."""
         super().__init__()
         self.rollover = rollover
-        self.plot_height = plot_height
-        self._init_duty_plot(title, plot_width, plot_height, line_width)
+        self._init_duty_plot(title, width, height, line_width)
         self.plotting = True
         self.duty_state_region_start_time = None
         self.last_limits_regions = {
@@ -553,11 +549,11 @@ class LinearActuatorPlotter(DocumentModel):
 class ErrorsPlot(DocumentLayout):
     """Plot of errors in converged positions from setpoints."""
 
-    def __init__(self, plot_width=960, plot_height=320, line_width=2):
+    def __init__(self, width=960, height=320, line_width=2):
         """Initialize member variables."""
         super().__init__()
         self.line_width = line_width
-        self._init_errors_plot(plot_width, plot_height)
+        self._init_errors_plot(width, height)
         self.summary_n = widgets.markups.Paragraph(width=100)
         self.summary_mean = widgets.markups.Paragraph(width=100)
         self.summary_stdev = widgets.markups.Paragraph(width=100)
@@ -584,18 +580,22 @@ class ErrorsPlot(DocumentLayout):
     def add_error(self, target_position, converged_position):
         """Add an error measurement to the histogram."""
         self.errors.append(target_position - converged_position)
-        (self.hist, self.edges) = np.histogram(self.errors, density=True)
+        (self.hist, self.edges) = np.histogram(self.errors, density=True, bins='auto')
         if self.errors_hist is not None:
             self.errors_fig.renderers.remove(self.errors_hist)
+        self._update_summary()
+        self.errors_hist = self.errors_fig.quad(
+            top=self.hist, bottom=0, left=self.edges[:-1], right=self.edges[1:],
+            line_width=self.line_width
+        )
+
+    def _update_summary(self):
+        """Update data summary display."""
         self.summary_n.text = '{} samples'.format(len(self.errors))
         self.summary_mean.text = 'Mean: {:.2f}'.format(np.mean(self.errors))
         self.summary_stdev.text = 'Stdev: {:.2f}'.format(np.std(self.errors))
         self.summary_rmse.text = 'RMSE: {:.2f}'\
             .format(np.sqrt(np.mean(np.square(self.errors))))
-        self.errors_hist = self.errors_fig.quad(
-            top=self.hist, bottom=0, left=self.edges[:-1], right=self.edges[1:],
-            line_width=self.line_width
-        )
 
     def clear(self):
         """Remove all data from the histogram plot."""

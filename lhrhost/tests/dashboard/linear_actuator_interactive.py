@@ -36,15 +36,17 @@ class LinearActuatorControlPanel(DocumentLayout):
         self.plotter = plotter.make_document_layout()
         self.feedback_controller = feedback_controller.make_document_layout()
 
+        self.main_panel = layouts.column([
+            self.plotter.layout,
+            self.feedback_controller.layout
+        ])
         self.column_layout = layouts.column([
-            widgets.Div(text='<h1>{}</h1>'.format(title)),
-            widgets.Tabs(tabs=[
-                widgets.Panel(title='Unitless', child=layouts.column([
-                    self.plotter.layout,
-                    self.feedback_controller.layout
-                ])),
-                widgets.Panel(title='Calibrated', child=layouts.column([]))
-            ], width=960)
+            layouts.widgetbox([widgets.Div(text='<h1>{}</h1>'.format(title))]),
+            self.main_panel
+            # widgets.Tabs(tabs=[
+            #     widgets.Panel(title='Unitless', child=self.main_panel),
+            #     widgets.Panel(title='Calibrated', child=layouts.column([]))
+            # ], width=900)
         ])
 
     # Implement DocumentLayout
@@ -66,9 +68,11 @@ class LinearActuatorControlModel(DocumentModel):
 
     def __init__(self, linear_actuator_protocol, *args, **kwargs):
         """Initialize member variables."""
-        self.plotter = Plotter(linear_actuator_protocol, plot_height=320, nest_level=1)
+        self.plotter = Plotter(
+            linear_actuator_protocol, width=900, height=240, nest_level=1
+        )
         self.feedback_controller = FeedbackControllerModel(
-            linear_actuator_protocol, nest_level=1
+            linear_actuator_protocol, nest_level=1, width=900
         )
         super().__init__(
             LinearActuatorControlPanel, self.plotter, self.feedback_controller,
