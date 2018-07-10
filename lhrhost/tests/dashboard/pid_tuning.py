@@ -36,17 +36,10 @@ class LinearActuatorControlPanel(DocumentLayout):
         self.plotter = plotter.make_document_layout()
         self.feedback_controller = feedback_controller.make_document_layout()
 
-        self.main_panel = layouts.column([
-            self.plotter.layout,
-            self.feedback_controller.layout
-        ])
         self.column_layout = layouts.column([
             layouts.widgetbox([widgets.Div(text='<h1>{}</h1>'.format(title))]),
-            self.main_panel
-            # widgets.Tabs(tabs=[
-            #     widgets.Panel(title='Unitless', child=self.main_panel),
-            #     widgets.Panel(title='Calibrated', child=layouts.column([]))
-            # ], width=900)
+            self.plotter.layout,
+            self.feedback_controller.layout
         ])
 
     # Implement DocumentLayout
