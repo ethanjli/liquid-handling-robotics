@@ -1,5 +1,6 @@
 """Support for real-time plotting of LinearActuator state."""
 # Standard imports
+import asyncio
 import datetime
 import logging
 
@@ -27,16 +28,17 @@ logger.addHandler(logging.NullHandler())
 class ClearButton(Button):
     """Plotter clear button, synchronized across documents."""
 
-    def __init__(self, plotter):
+    def __init__(self, *plotters):
         """Initialize member variables."""
         super().__init__(label='Clear plot')
-        self.plotter = plotter
+        self.plotters = plotters
 
     # Implement Button
 
     def on_click(self):
         """Handle a button click event."""
-        self.plotter.clear()
+        for plotter in self.plotters:
+            plotter.clear()
 
 
 class PositionPlot(DocumentLayout):
@@ -49,7 +51,9 @@ class PositionPlot(DocumentLayout):
         """Initialize member variables."""
         super().__init__()
         self.rollover = rollover
+        self.plot_height = plot_height
         self._init_position_plot(title, plot_width, plot_height, line_width)
+        self.plotting = True
         self.last_position_time = None
         self.last_position = None
         self.last_region = None
@@ -72,6 +76,8 @@ class PositionPlot(DocumentLayout):
 
     def add_position(self, position):
         """Add a point to the plot."""
+        if not self.plotting:
+            return
         self.last_position_time = datetime.datetime.now()
         self.last_position = position
         self.position_source.stream({
@@ -94,8 +100,18 @@ class PositionPlot(DocumentLayout):
                 fill_alpha=self.last_region.fill_alpha
             )
 
+    def start_plotting(self):
+        """Start plotting data."""
+        self.plotting = True
+
+    def stop_plotting(self):
+        """Stop plotting data."""
+        self.plotting = False
+
     def add_arrow(self, next_position, slope=1, line_width=2):
         """Add an arrow from the last position point to the next position point."""
+        if not self.plotting:
+            return
         if self.last_position_time is None or self.last_position is None:
             logger.warn('Could not add position arrow from unknown last position!')
             return
@@ -115,6 +131,8 @@ class PositionPlot(DocumentLayout):
         self, low, high, start_time=None, fill_color='gray', fill_alpha=0.25
     ):
         """Start a position region."""
+        if not self.plotting:
+            return
         if start_time is None:
             start_time = datetime.datetime.now()
         self.last_region = annotations.BoxAnnotation(
@@ -126,6 +144,8 @@ class PositionPlot(DocumentLayout):
 
     def end_limits_region(self, end_time=None):
         """End position region."""
+        if not self.plotting:
+            return
         if self.last_region is None:
             return
         if end_time is None:
@@ -154,6 +174,14 @@ class PositionPlotter(DocumentModel, LinearActuatorReceiver):
     def clear(self):
         """Clear plot data."""
         self.update_docs(lambda plot: plot.clear())
+
+    def start_plotting(self):
+        """Start plotting data."""
+        self.update_docs(lambda plot: plot.start_plotting())
+
+    def stop_plotting(self):
+        """Stop plotting data."""
+        self.update_docs(lambda plot: plot.stop_plotting())
 
     def add_arrow(self, *args, **kwargs):
         """Add an arrow from the most recent position point to the next position point."""
@@ -201,7 +229,9 @@ class DutyPlot(DocumentLayout):
         """Initialize member variables."""
         super().__init__()
         self.rollover = rollover
+        self.plot_height = plot_height
         self._init_duty_plot(title, plot_width, plot_height, line_width)
+        self.plotting = True
         self.duty_state_region_start_time = None
         self.last_limits_regions = {
             'forwards': None,
@@ -227,6 +257,8 @@ class DutyPlot(DocumentLayout):
 
     def add_duty(self, duty):
         """Add a point to the plot."""
+        if not self.plotting:
+            return
         self.duty_source.stream({
             'time': [datetime.datetime.now()],
             'duty': [duty]
@@ -244,8 +276,18 @@ class DutyPlot(DocumentLayout):
                     fill_color=region.fill_color, fill_alpha=region.fill_alpha
                 )
 
+    def start_plotting(self):
+        """Start plotting data."""
+        self.plotting = True
+
+    def stop_plotting(self):
+        """Stop plotting data."""
+        self.plotting = False
+
     def add_state_region(self, fill_color, start_time=None, end_time=None, fill_alpha=0.25):
         """Add a shaded region between the two duty cycle times."""
+        if not self.plotting:
+            return
         if start_time is None:
             start_time = self.duty_state_region_start_time
         if start_time is None:
@@ -261,6 +303,8 @@ class DutyPlot(DocumentLayout):
 
     def start_state_region(self):
         """Start a duty cycle region."""
+        if not self.plotting:
+            return
         self.duty_state_region_start_time = datetime.datetime.now()
 
     def start_limits_region(
@@ -268,6 +312,8 @@ class DutyPlot(DocumentLayout):
         fill_color='gray', fill_alpha=0.25
     ):
         """Start a duty cycle lmits region."""
+        if not self.plotting:
+            return
         if start_time is None:
             start_time = datetime.datetime.now()
         self.last_limits_regions[direction] = annotations.BoxAnnotation(
@@ -279,6 +325,8 @@ class DutyPlot(DocumentLayout):
 
     def end_limits_region(self, direction, end_time=None):
         """End duty cycle limits region."""
+        if not self.plotting:
+            return
         if self.last_limits_regions[direction] is None:
             return
         if end_time is None:
@@ -313,6 +361,14 @@ class DutyPlotter(DocumentModel, LinearActuatorReceiver):
     def clear(self):
         """Clear plot data."""
         self.update_docs(lambda plot: plot.clear())
+
+    def start_plotting(self):
+        """Start plotting data."""
+        self.update_docs(lambda plot: plot.start_plotting())
+
+    def stop_plotting(self):
+        """Stop plotting data."""
+        self.update_docs(lambda plot: plot.stop_plotting())
 
     def add_state_region(self, *args, **kwargs):
         """Add an arrow from the last position point to the next position point."""
@@ -373,31 +429,88 @@ class DutyPlotter(DocumentModel, LinearActuatorReceiver):
         self.update_limits_region('backwards')
 
 
+class ToggleStatePlottingButton(Button):
+    """Linear actuator plotter functionality toggle, synchronized across documents."""
+
+    def __init__(self, linear_actuator_protocol, plotters, plotting_interval=20):
+        """Initialize member variables."""
+        super().__init__(label='Start Plotting')
+        self.protocol = linear_actuator_protocol
+        self.plotters = plotters
+        self.plotting = False
+        self.interval = plotting_interval
+
+    async def toggle_plotting(self):
+        """Toggle plotting."""
+        if self.plotting:
+            await self.stop_plotting()
+        else:
+            await self.start_plotting()
+
+    async def start_plotting(self):
+        """Start plotting if it hasn't already started."""
+        if self.plotting:
+            return
+        await self.protocol.position.notify.change_only.request(0)
+        await self.protocol.position.notify.interval.request(self.interval)
+        await self.protocol.motor.notify.change_only.request(0)
+        await self.protocol.motor.notify.interval.request(self.interval)
+        await self.protocol.position.notify.request(2)
+        await self.protocol.motor.notify.request(2)
+        self.plotting = True
+        for plotter in self.plotters:
+            plotter.start_plotting()
+        self.enable_button('Stop plotting')
+
+    async def stop_plotting(self):
+        """Stop plotting if it hasn't already stopped."""
+        if not self.plotting:
+            return
+        await self.protocol.position.notify.request(0)
+        await self.protocol.motor.notify.request(0)
+        self.plotting = False
+        for plotter in self.plotters:
+            plotter.stop_plotting()
+        self.enable_button('Start plotting')
+
+    # Implement Button
+
+    def on_click(self):
+        """Handle a button click event."""
+        label = 'Stopping plotting...' if self.plotting else 'Stopping plotting'
+        self.disable_button(label)
+        asyncio.get_event_loop().create_task(self.toggle_plotting())
+
+
 class LinearActuatorPlot(DocumentLayout):
     """Plot of received linear actuator state data."""
 
-    def __init__(self, position_plotter, duty_plotter, title, nest_level):
+    def __init__(
+        self, position_plotter, duty_plotter, clear_button, toggle_button,
+        title, nest_level
+    ):
         """Initialize member variables."""
         super().__init__()
 
         self.position_plot = position_plotter.make_document_layout()
         self.duty_plot = duty_plotter.make_document_layout()
         self.duty_plot.duty_fig.x_range = self.position_plot.position_fig.x_range
+        self.clear_button = clear_button.make_document_layout()
+        self.toggle_button = toggle_button.make_document_layout()
 
-        self._init_controller_widgets(title, nest_level)
+        heading_level = 1 + nest_level
         self.column_layout = layouts.column([
-            self.controller_widgets,
+            layouts.widgetbox([
+                widgets.Div(text='<h{}>{}</h{}>'.format(
+                    heading_level, title, heading_level
+                ))
+            ]),
+            layouts.row([
+                layouts.widgetbox([self.clear_button]),
+                layouts.widgetbox([self.toggle_button])
+            ]),
             self.position_plot.layout,
             self.duty_plot.layout
-        ])
-
-    def _init_controller_widgets(self, title, nest_level):
-        """Initialize the linear actuator state plot panel."""
-        heading_level = 1 + nest_level
-        self.controller_widgets = layouts.widgetbox([
-            widgets.Div(text='<h{}>{}</h{}>'.format(
-                heading_level, title, heading_level
-            ))
         ])
 
     # Implement DocumentLayout
@@ -421,6 +534,10 @@ class LinearActuatorPlotter(DocumentModel):
         """Initialize member variables."""
         self.position_plotter = PositionPlotter('Actuator Position', *args, **kwargs)
         self.duty_plotter = DutyPlotter('Actuator Effort', *args, **kwargs)
+        self.clear_button = ClearButton(self.position_plotter, self.duty_plotter)
+        self.toggler = ToggleStatePlottingButton(
+            linear_actuator_protocol, [self.position_plotter, self.duty_plotter]
+        )
         linear_actuator_protocol.response_receivers.append(self.position_plotter)
         linear_actuator_protocol.response_receivers.append(self.duty_plotter)
         if nest_level == 0:
@@ -429,7 +546,7 @@ class LinearActuatorPlotter(DocumentModel):
             title = 'State Plots'
         super().__init__(
             LinearActuatorPlot, self.position_plotter, self.duty_plotter,
-            title, nest_level=nest_level
+            self.clear_button, self.toggler, title, nest_level=nest_level
         )
 
 

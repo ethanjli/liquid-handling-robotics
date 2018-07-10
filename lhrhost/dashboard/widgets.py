@@ -32,6 +32,12 @@ class Button(DocumentModel, metaclass=InterfaceClass):
             button.disabled = False
         self.update_docs(update)
 
+    def change_label(self, label):
+        """Change the button label."""
+        def update(button):
+            button.label = label
+        self.update_docs(update)
+
     @abstractmethod
     def on_click(self):
         """Handle a button click event."""

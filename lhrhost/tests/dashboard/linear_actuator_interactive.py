@@ -123,29 +123,22 @@ class Batch(Batch):
         print('Requesting all feedback controller parameter values...')
         await self.protocol.feedback_controller.request_all()
 
-        print('Motor position feedback control with position and motor duty notification')
-        await self.protocol.position.notify.change_only.request(0)
-        await self.protocol.position.notify.interval.request(20)
-        await self.protocol.motor.notify.change_only.request(0)
-        await self.protocol.motor.notify.interval.request(20)
+        print('Motor position feedback control')
+        await self.protocol_dashboard.plotter.toggler.start_plotting()
 
         try:
             while True:
-                await self.protocol.position.notify.request(2)
-                await self.protocol.motor.notify.request(2)
                 for i in range(5):
                     await self.go_to_position(100)
                     await asyncio.sleep(0.5)
                     await self.go_to_position(700)
                     await asyncio.sleep(0.5)
-                await self.protocol.position.notify.request(0)
-                await self.protocol.motor.notify.request(0)
+                await self.protocol_dashboard.plotter.toggler.stop_plotting()
                 await prompt('Press enter to restart: ')
                 self.protocol_dashboard.plotter.position_plotter.clear()
                 self.protocol_dashboard.plotter.duty_plotter.clear()
         except KeyboardInterrupt:
-            await self.protocol.position.notify.request(0)
-            await self.protocol.motor.notify.request(0)
+            await self.protocol_dashboard.plotter.toggler.stop_plotting()
 
         print('Idling...')
         self.protocol_dashboard.plotter.server.run_until_shutdown()
