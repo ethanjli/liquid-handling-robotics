@@ -23,12 +23,12 @@ logger.addHandler(logging.NullHandler())
 class LimitsRangeSlider(Slider, metaclass=InterfaceClass):
     """Limits range slider, synchronized across documents."""
 
-    def __init__(self, limits_protocol, name, low, high):
+    def __init__(self, limits_protocol, name, low, high, step=1):
         """Initialize member variables."""
         super().__init__(
             'Initializing {} limits...'.format(name),
             slider_widget_class=widgets.RangeSlider,
-            start=low, end=high, step=1, value=(low, high)
+            start=low, end=high, step=step, value=(low, high)
         )
         self.name = name
         self.protocol = limits_protocol
@@ -122,7 +122,7 @@ class MotorForwardsLimitsSlider(LimitsRangeSlider, LinearActuatorReceiver):
         """Initialize member variables."""
         super().__init__(
             linear_actuator_protocol.feedback_controller.limits.motor.forwards,
-            'motor forwards duty cycle magnitude', 0, 255
+            'motor forwards duty cycle magnitude', 0, 255, step=5
         )
 
     # Implement RangeSlider
@@ -163,7 +163,7 @@ class MotorBackwardsLimitsSlider(LimitsRangeSlider, LinearActuatorReceiver):
         """Initialize member variables."""
         super().__init__(
             linear_actuator_protocol.feedback_controller.limits.motor.backwards,
-            'motor backwards duty cycle magnitude', 0, 255
+            'motor backwards duty cycle magnitude', 0, 255, step=5
         )
 
     # Implement RangeSlider

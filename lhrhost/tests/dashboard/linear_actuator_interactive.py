@@ -150,9 +150,9 @@ class Batch(Batch):
     async def go_to_position(self, position):
         """Send the actuator to the specified position."""
         self.protocol_dashboard.plotter.position_plotter.add_arrow(position, slope=2)
-        self.protocol_dashboard.plotter.duty_plotter.start_region()
+        self.protocol_dashboard.plotter.duty_plotter.start_state_region()
         await self.protocol.feedback_controller.request_complete(position)
-        self.protocol_dashboard.plotter.duty_plotter.add_region(
+        self.protocol_dashboard.plotter.duty_plotter.add_state_region(
             self.colors[self.protocol.last_response_payload]
         )
 
