@@ -118,7 +118,7 @@ class Receiver(object, metaclass=InterfaceClass):
     async def on_linear_actuator_motor_stall_protector_timeout(
         self, timeout: int
     ) -> None:
-        """Receive and handle a LinearActuator/Motor/StallProtectoTimeout response."""
+        """Receive and handle a LinearActuator/Motor/StallProtectorTimeout response."""
         pass
 
     async def on_linear_actuator_motor_timer_timeout(self, timeout: int) -> None:

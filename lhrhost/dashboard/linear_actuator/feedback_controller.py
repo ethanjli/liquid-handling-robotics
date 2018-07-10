@@ -28,7 +28,7 @@ class LimitsRangeSlider(Slider, metaclass=InterfaceClass):
         super().__init__(
             'Initializing {} limits...'.format(name),
             slider_widget_class=widgets.RangeSlider,
-            start=low, end=high, step=step, value=(low, high)
+            start=low, end=high, step=step, value=(low, high), width=960
         )
         self.name = name
         self.protocol = limits_protocol
@@ -252,17 +252,168 @@ class LimitsModel(DocumentModel):
         )
 
 
+class TimeoutSlider(Slider):
+    """Timeout slider, synchronized across documnts."""
+
+    def __init__(self, timeout_protocol, name, low=0, high=2000, step=10):
+        """Initialize member variables.
+
+        high should be no larger than 32767.
+        """
+        super().__init__(
+            'Initializing {} timeout...'.format(name),
+            start=0, end=high, step=step, value=0, width=960
+        )
+        self.protocol = timeout_protocol
+        self.name = name
+        self.value = 0
+
+    # Implement Slider
+
+    def on_value_change(self, attr, old, new):
+        """Set actuator limits."""
+        old_value = self.value
+        self.value = new['value'][0]
+        # Apply the updates
+        if old_value != self.value:
+            self.disable_slider('Updating {} timeout...'.format(self.name))
+            loop = asyncio.get_event_loop()
+            loop.create_task(self.protocol.request(int(self.value)))
+
+
+class StallProtectorTimeoutSlider(TimeoutSlider, LinearActuatorReceiver):
+    """Stall protector timeout slider, synchronized across documnts."""
+
+    def __init__(self, linear_actuator_protocol, low=0, high=500):
+        """Initialize member variables.
+
+        high should be no larger than 32767.
+        """
+        super().__init__(
+            linear_actuator_protocol.motor.stall_protector_timeout,
+            'motor stall protector', low=low, high=high
+        )
+
+    # Implement LinearActuatorReceiver
+
+    async def on_linear_actuator_motor_stall_protector_timeout(
+        self, timeout: int
+    ) -> None:
+        """Receive and handle a LA/Motor/StallProtectorTimeout response."""
+        self.value = timeout
+        self.enable_slider('Motor stall protector timeout (ms)', self.value)
+
+
+class TimerTimeoutSlider(TimeoutSlider, LinearActuatorReceiver):
+    """Timer timeout slider, synchronized across documnts."""
+
+    def __init__(self, linear_actuator_protocol, high=10000):
+        """Initialize member variables.
+
+        high should be no larger than 32767.
+        """
+        super().__init__(
+            linear_actuator_protocol.motor.timer_timeout,
+            'motion timer', high=high, step=50
+        )
+
+    # Implement LinearActuatorReceiver
+
+    async def on_linear_actuator_motor_timer_timeout(
+        self, timeout: int
+    ) -> None:
+        """Receive and handle a LA/Motor/TimerTimeout response."""
+        self.value = timeout
+        self.enable_slider('Motion timer timeout (ms)', self.value)
+
+
+class ConvergenceTimeoutSlider(TimeoutSlider, LinearActuatorReceiver):
+    """Convergence timeout slider, synchronized across documnts."""
+
+    def __init__(self, linear_actuator_protocol, high=500):
+        """Initialize member variables.
+
+        high should be no larger than 32767.
+        """
+        super().__init__(
+            linear_actuator_protocol.feedback_controller.convergence_timeout,
+            'convergence detector', high=high, step=10
+        )
+
+    # Implement LinearActuatorReceiver
+
+    async def on_linear_actuator_feedback_controller_convergence_timeout(
+        self, timeout: int
+    ) -> None:
+        """Receive and handle a LA/FeedbackController/ConvergenceTimeout response."""
+        self.value = timeout
+        self.enable_slider('Convergence detector timeout (ms)', self.value)
+
+
+class TimeoutsPanel(DocumentLayout):
+    """Panel for the feedback controller's timeouts."""
+
+    def __init__(
+        self, stall_timeout_slider, timer_timeout_slider, convegence_timeout_slider
+    ):
+        """Initialize member variables."""
+        super().__init__()
+
+        self.stall_timeout_slider = stall_timeout_slider.make_document_layout()
+        self.timer_timeout_slider = timer_timeout_slider.make_document_layout()
+        self.convegence_timeout_slider = \
+            convegence_timeout_slider.make_document_layout()
+
+        self.controller_widgets = layouts.widgetbox([
+            self.stall_timeout_slider, self.timer_timeout_slider,
+            self.convegence_timeout_slider
+        ])
+
+    # Implement DocumentLayout
+
+    @property
+    def layout(self):
+        """Return a document layout element."""
+        return self.controller_widgets
+
+
+class TimeoutsModel(DocumentModel):
+    """Panel for the feedback controller's limits, synchronized across documents."""
+
+    def __init__(self, linear_actuator_protocol, *args, **kwargs):
+        """Initialize member variables."""
+        self.stall_timeout_model = StallProtectorTimeoutSlider(
+            linear_actuator_protocol, *args, **kwargs
+        )
+        self.timer_timeout_model = TimerTimeoutSlider(
+            linear_actuator_protocol, *args, **kwargs
+        )
+        self.convergence_timeout_model = ConvergenceTimeoutSlider(
+            linear_actuator_protocol, *args, **kwargs
+        )
+        linear_actuator_protocol.response_receivers.append(self.stall_timeout_model)
+        linear_actuator_protocol.response_receivers.append(self.timer_timeout_model)
+        linear_actuator_protocol.response_receivers.append(
+            self.convergence_timeout_model
+        )
+        super().__init__(
+            TimeoutsPanel,
+            self.stall_timeout_model, self.timer_timeout_model,
+            self.convergence_timeout_model
+        )
+
+
 class PIDKSlider(Slider):
     """PID gain coefficient slider, synchronized across documnts."""
 
-    def __init__(self, pid_gain_protocol, name, high, step=0.05):
+    def __init__(self, pid_gain_protocol, name, high, step=0.01):
         """Initialize member variables.
 
         high should be no larger than 32767 / 100.
         """
         super().__init__(
             'Initializing {} gain...'.format(name),
-            start=0, end=high, step=step, value=0
+            start=0, end=high, step=step, value=0, width=960
         )
         self.protocol = pid_gain_protocol
         self.name = name
@@ -284,14 +435,14 @@ class PIDKSlider(Slider):
 class PIDKpSlider(PIDKSlider, LinearActuatorReceiver):
     """PID Kp slider, synchronized across documnts."""
 
-    def __init__(self, linear_actuator_protocol, high=40):
+    def __init__(self, linear_actuator_protocol, high=20):
         """Initialize member variables.
 
         high should be no larger than 32767 / 100.
         """
         super().__init__(
             linear_actuator_protocol.feedback_controller.pid.kp,
-            'proportional', high
+            'proportional', high, step=0.05
         )
 
     # Implement LinearActuatorReceiver
@@ -307,7 +458,7 @@ class PIDKpSlider(PIDKSlider, LinearActuatorReceiver):
 class PIDKdSlider(PIDKSlider, LinearActuatorReceiver):
     """PID Kd slider, synchronized across documnts."""
 
-    def __init__(self, linear_actuator_protocol, high=10):
+    def __init__(self, linear_actuator_protocol, high=1):
         """Initialize member variables.
 
         high should be no larger than 32767 / 100.
@@ -330,7 +481,7 @@ class PIDKdSlider(PIDKSlider, LinearActuatorReceiver):
 class PIDKiSlider(PIDKSlider, LinearActuatorReceiver):
     """PID Ki slider, synchronized across documnts."""
 
-    def __init__(self, linear_actuator_protocol, high=10):
+    def __init__(self, linear_actuator_protocol, high=5):
         """Initialize member variables.
 
         high should be no larger than 32767 / 100.
@@ -364,7 +515,7 @@ class PIDSampleIntervalSlider(Slider, LinearActuatorReceiver):
         """
         super().__init__(
             'Initializing PID sampling interval...',
-            start=1, end=high, step=1, value=1
+            start=1, end=high, step=1, value=1, width=960
         )
         self.protocol = \
             linear_actuator_protocol.feedback_controller.pid.sample_interval
@@ -447,11 +598,12 @@ class PIDModel(DocumentModel):
 class FeedbackControllerPanel(DocumentLayout):
     """Parameters panel for the feedback controller."""
 
-    def __init__(self, limits_panel, pid_panel, nest_level):
+    def __init__(self, limits_panel, timeouts_panel, pid_panel, nest_level):
         """Initialize member variables."""
         super().__init__()
 
         self.limits_panel = limits_panel.make_document_layout()
+        self.timeouts_panel = timeouts_panel.make_document_layout()
         self.pid_panel = pid_panel.make_document_layout()
 
         heading_level = 1 + nest_level
@@ -461,6 +613,7 @@ class FeedbackControllerPanel(DocumentLayout):
             )),
             widgets.Tabs(tabs=[
                 widgets.Panel(title='Limits', child=self.limits_panel.layout),
+                widgets.Panel(title='Timeouts', child=self.timeouts_panel.layout),
                 widgets.Panel(title='PID', child=self.pid_panel.layout)
             ])
         ])
@@ -479,7 +632,9 @@ class FeedbackControllerModel(DocumentModel):
     def __init__(self, linear_actuator_protocol, *args, nest_level=0, **kwargs):
         """Initialize member variables."""
         self.limits_model = LimitsModel(linear_actuator_protocol, *args, **kwargs)
+        self.timeouts_model = TimeoutsModel(linear_actuator_protocol, *args, **kwargs)
         self.pid_model = PIDModel(linear_actuator_protocol, *args, **kwargs)
         super().__init__(
-            FeedbackControllerPanel, self.limits_model, self.pid_model, nest_level
+            FeedbackControllerPanel, self.limits_model, self.timeouts_model,
+            self.pid_model, nest_level
         )

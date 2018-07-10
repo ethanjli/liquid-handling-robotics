@@ -117,6 +117,9 @@ class Batch(Batch):
             -3: 'red',  # timer
         }
 
+        print('Requesting all motor parameter values...')
+        await self.protocol.motor.request_all()
+
         print('Requesting all feedback controller parameter values...')
         await self.protocol.feedback_controller.request_all()
 
