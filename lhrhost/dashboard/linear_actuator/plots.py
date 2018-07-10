@@ -12,12 +12,31 @@ from bokeh.plotting import figure
 
 # Local package imports
 from lhrhost.dashboard import DocumentLayout, DocumentModel
+from lhrhost.dashboard.widgets import Button
 from lhrhost.protocol.linear_actuator.linear_actuator \
     import Receiver as LinearActuatorReceiver
+
+# External imports
+import numpy as np
 
 # Logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+
+class ClearButton(Button):
+    """Plotter clear button, synchronized across documents."""
+
+    def __init__(self, plotter):
+        """Initialize member variables."""
+        super().__init__(label='Clear plot')
+        self.plotter = plotter
+
+    # Implement Button
+
+    def on_click(self):
+        """Handle a button click event."""
+        self.plotter.clear()
 
 
 class PositionPlot(DocumentLayout):
@@ -396,7 +415,7 @@ class LinearActuatorPlot(DocumentLayout):
 
 
 class LinearActuatorPlotter(DocumentModel):
-    """Simple class which prints received serialized messages."""
+    """Plot of received linear actuator state data, synchronized across documents."""
 
     def __init__(self, linear_actuator_protocol, *args, nest_level=0, **kwargs):
         """Initialize member variables."""
@@ -412,3 +431,87 @@ class LinearActuatorPlotter(DocumentModel):
             LinearActuatorPlot, self.position_plotter, self.duty_plotter,
             title, nest_level=nest_level
         )
+
+
+class ErrorsPlot(DocumentLayout):
+    """Plot of errors in converged positions from setpoints."""
+
+    def __init__(self, plot_width=960, plot_height=320, line_width=2):
+        """Initialize member variables."""
+        super().__init__()
+        self.line_width = line_width
+        self._init_errors_plot(plot_width, plot_height)
+        self.summary_n = widgets.markups.Paragraph(width=100)
+        self.summary_mean = widgets.markups.Paragraph(width=100)
+        self.summary_stdev = widgets.markups.Paragraph(width=100)
+        self.summary_rmse = widgets.markups.Paragraph(width=100)
+        self.column_layout = layouts.column([
+            self.errors_fig,
+            layouts.row([
+                self.summary_n, self.summary_mean,
+                self.summary_stdev, self.summary_rmse
+            ])
+        ])
+
+    def _init_errors_plot(self, plot_width, plot_height):
+        """Initialize member variables for error plotting."""
+        self.errors = []
+        self.errors_fig = figure(
+            title='Converged Position Errors',
+            plot_width=plot_width, plot_height=plot_height
+        )
+        self.errors_fig.xaxis.axis_label = 'Error from Target Position'
+        self.errors_fig.yaxis.axis_label = 'Relative Frequency'
+        self.errors_hist = None
+
+    def add_error(self, target_position, converged_position):
+        """Add an error measurement to the histogram."""
+        self.errors.append(target_position - converged_position)
+        (self.hist, self.edges) = np.histogram(self.errors, density=True)
+        if self.errors_hist is not None:
+            self.errors_fig.renderers.remove(self.errors_hist)
+        self.summary_n.text = '{} samples'.format(len(self.errors))
+        self.summary_mean.text = 'Mean: {:.2f}'.format(np.mean(self.errors))
+        self.summary_stdev.text = 'Stdev: {:.2f}'.format(np.std(self.errors))
+        self.summary_rmse.text = 'RMSE: {:.2f}'\
+            .format(np.sqrt(np.mean(np.square(self.errors))))
+        self.errors_hist = self.errors_fig.quad(
+            top=self.hist, bottom=0, left=self.edges[:-1], right=self.edges[1:],
+            line_width=self.line_width
+        )
+
+    def clear(self):
+        """Remove all data from the histogram plot."""
+        if self.errors_hist is not None:
+            self.errors_fig.renderers.remove(self.errors_hist)
+            self.errors_hist = None
+            self.summary_n.text = ''
+            self.summary_mean.text = ''
+            self.summary_stdev.text = ''
+            self.summary_rmse.text = ''
+        self.errors = []
+
+    # Implement DocumentLayout
+
+    @property
+    def layout(self):
+        """Return a document layout element."""
+        return self.column_layout
+
+
+class ErrorsPlotter(DocumentModel):
+    """Plot of errors in final converged position, synchronized across documents."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize member variables."""
+        super().__init__(ErrorsPlot, *args, **kwargs)
+
+    def add_error(self, target_position, converged_position):
+        """Add an error measurement to the histogram."""
+        self.update_docs(lambda plot: plot.add_error(
+            target_position, converged_position
+        ))
+
+    def clear(self):
+        """Remove all data from the histogram."""
+        self.update_docs(lambda plot: plot.clear())

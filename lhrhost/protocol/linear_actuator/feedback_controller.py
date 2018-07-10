@@ -7,7 +7,6 @@ from typing import Optional
 # Local package imports
 from lhrhost.messaging.presentation import Message
 from lhrhost.protocol import Command, ProtocolHandlerNode
-from lhrhost.protocol.linear_actuator.notify import Protocol as NotifyProtocol
 
 # Logging
 logger = logging.getLogger(__name__)

@@ -44,7 +44,7 @@ class LinearActuatorControlPanel(DocumentLayout):
                     self.feedback_controller.layout
                 ])),
                 widgets.Panel(title='Calibrated', child=layouts.column([]))
-            ])
+            ], width=960)
         ])
 
     # Implement DocumentLayout
@@ -66,7 +66,7 @@ class LinearActuatorControlModel(DocumentModel):
 
     def __init__(self, linear_actuator_protocol, *args, **kwargs):
         """Initialize member variables."""
-        self.plotter = Plotter(linear_actuator_protocol, plot_height=240, nest_level=1)
+        self.plotter = Plotter(linear_actuator_protocol, plot_height=320, nest_level=1)
         self.feedback_controller = FeedbackControllerModel(
             linear_actuator_protocol, nest_level=1
         )
@@ -133,7 +133,7 @@ class Batch(Batch):
             while True:
                 await self.protocol.position.notify.request(2)
                 await self.protocol.motor.notify.request(2)
-                for i in range(10):
+                for i in range(5):
                     await self.go_to_position(100)
                     await asyncio.sleep(0.5)
                     await self.go_to_position(700)
@@ -157,6 +157,9 @@ class Batch(Batch):
         await self.protocol.feedback_controller.request_complete(position)
         self.protocol_dashboard.plotter.duty_plotter.add_state_region(
             self.colors[self.protocol.last_response_payload]
+        )
+        self.protocol_dashboard.feedback_controller.errors_plotter.add_error(
+            position, self.protocol.position.last_response_payload
         )
 
 

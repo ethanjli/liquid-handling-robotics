@@ -10,6 +10,7 @@ from bokeh.models import widgets
 
 # Local package imports
 from lhrhost.dashboard import DocumentLayout, DocumentModel
+from lhrhost.dashboard.linear_actuator.plots import ErrorsPlotter, ClearButton
 from lhrhost.dashboard.widgets import Slider
 from lhrhost.protocol.linear_actuator.linear_actuator \
     import Receiver as LinearActuatorReceiver
@@ -598,13 +599,19 @@ class PIDModel(DocumentModel):
 class FeedbackControllerPanel(DocumentLayout):
     """Parameters panel for the feedback controller."""
 
-    def __init__(self, limits_panel, timeouts_panel, pid_panel, nest_level):
+    def __init__(
+        self, limits_panel, timeouts_panel, pid_panel,
+        errors_plotter, errors_plotter_clear_button, nest_level
+    ):
         """Initialize member variables."""
         super().__init__()
 
         self.limits_panel = limits_panel.make_document_layout()
         self.timeouts_panel = timeouts_panel.make_document_layout()
         self.pid_panel = pid_panel.make_document_layout()
+        self.errors_plotter = errors_plotter.make_document_layout()
+        self.errors_plotter_clear_button = \
+            errors_plotter_clear_button.make_document_layout()
 
         heading_level = 1 + nest_level
         self.column_layout = layouts.column([
@@ -614,8 +621,12 @@ class FeedbackControllerPanel(DocumentLayout):
             widgets.Tabs(tabs=[
                 widgets.Panel(title='Limits', child=self.limits_panel.layout),
                 widgets.Panel(title='Timeouts', child=self.timeouts_panel.layout),
-                widgets.Panel(title='PID', child=self.pid_panel.layout)
-            ])
+                widgets.Panel(title='PID', child=self.pid_panel.layout),
+                widgets.Panel(title='Errors', child=layouts.column([
+                    self.errors_plotter.layout,
+                    self.errors_plotter_clear_button
+                ]))
+            ], width=960)
         ])
 
     # Implement DocumentLayout
@@ -624,6 +635,11 @@ class FeedbackControllerPanel(DocumentLayout):
     def layout(self):
         """Return a document layout element."""
         return self.column_layout
+
+    def initialize_doc(self, doc, as_root=False):
+        """Initialize the provided document."""
+        super().initialize_doc(doc, as_root)
+        self.errors_plotter.initialize_doc(self.document)
 
 
 class FeedbackControllerModel(DocumentModel):
@@ -634,7 +650,10 @@ class FeedbackControllerModel(DocumentModel):
         self.limits_model = LimitsModel(linear_actuator_protocol, *args, **kwargs)
         self.timeouts_model = TimeoutsModel(linear_actuator_protocol, *args, **kwargs)
         self.pid_model = PIDModel(linear_actuator_protocol, *args, **kwargs)
+        self.errors_plotter = ErrorsPlotter(*args, **kwargs)
+        self.errors_plotter_clear_button = ClearButton(self.errors_plotter)
         super().__init__(
             FeedbackControllerPanel, self.limits_model, self.timeouts_model,
-            self.pid_model, nest_level
+            self.pid_model, self.errors_plotter, self.errors_plotter_clear_button,
+            nest_level
         )
