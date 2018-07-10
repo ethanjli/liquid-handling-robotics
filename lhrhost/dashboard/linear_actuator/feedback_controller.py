@@ -601,7 +601,7 @@ class FeedbackControllerPanel(DocumentLayout):
 
     def __init__(
         self, limits_panel, timeouts_panel, pid_panel,
-        errors_plotter, errors_plotter_clear_button, nest_level, width=960
+        errors_plotter, errors_plotter_clear_button, title, nest_level, width=960
     ):
         """Initialize member variables."""
         super().__init__()
@@ -614,10 +614,16 @@ class FeedbackControllerPanel(DocumentLayout):
             errors_plotter_clear_button.make_document_layout()
 
         heading_level = 1 + nest_level
-        self.column_layout = layouts.column([
-            widgets.Div(text='<h{}>Feedback Controller</h{}>'.format(
-                heading_level, heading_level
-            )),
+        column = []
+        if title:
+            column += [
+                layouts.widgetbox([
+                    widgets.Div(text='<h{}>Feedback Controller</h{}>'.format(
+                        heading_level, heading_level
+                    ))
+                ])
+            ]
+        column += [
             widgets.Tabs(tabs=[
                 widgets.Panel(title='Limits', child=self.limits_panel.layout),
                 widgets.Panel(title='Timeouts', child=self.timeouts_panel.layout),
@@ -627,7 +633,8 @@ class FeedbackControllerPanel(DocumentLayout):
                     self.errors_plotter_clear_button
                 ]))
             ], width=width)
-        ])
+        ]
+        self.column_layout = layouts.column(column)
 
     # Implement DocumentLayout
 
@@ -645,15 +652,17 @@ class FeedbackControllerPanel(DocumentLayout):
 class FeedbackControllerModel(DocumentModel):
     """Parameters panel for the feedback controller, synchronized across documents."""
 
-    def __init__(self, linear_actuator_protocol, *args, nest_level=0, **kwargs):
+    def __init__(self, linear_actuator_protocol, *args, nest_level=0, title=None, **kwargs):
         """Initialize member variables."""
         self.limits_model = LimitsModel(linear_actuator_protocol, *args, **kwargs)
         self.timeouts_model = TimeoutsModel(linear_actuator_protocol, *args, **kwargs)
         self.pid_model = PIDModel(linear_actuator_protocol, *args, **kwargs)
         self.errors_plotter = ErrorsPlotter(*args, **kwargs)
         self.errors_plotter_clear_button = ClearButton(self.errors_plotter)
+        if title is None:
+            title = 'Feedback Controller'
         super().__init__(
             FeedbackControllerPanel, self.limits_model, self.timeouts_model,
             self.pid_model, self.errors_plotter, self.errors_plotter_clear_button,
-            nest_level, **kwargs
+            title, nest_level, **kwargs
         )

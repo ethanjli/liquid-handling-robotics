@@ -69,10 +69,10 @@ class LinearActuatorControlModel(DocumentModel):
     def __init__(self, linear_actuator_protocol, *args, **kwargs):
         """Initialize member variables."""
         self.plotter = Plotter(
-            linear_actuator_protocol, width=900, height=240, nest_level=1
+            linear_actuator_protocol, width=900, height=240, nest_level=1, title=''
         )
         self.feedback_controller = FeedbackControllerModel(
-            linear_actuator_protocol, nest_level=1, width=900
+            linear_actuator_protocol, nest_level=1, width=900, title=''
         )
         super().__init__(
             LinearActuatorControlPanel, self.plotter, self.feedback_controller,
