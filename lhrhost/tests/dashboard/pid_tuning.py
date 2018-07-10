@@ -103,7 +103,7 @@ class Batch(Batch):
 
     async def test_routine(self):
         """Run the batch execution test routine."""
-        prompt = Prompt(end='', flush=True)
+        self.prompt = Prompt(end='', flush=True)
 
         print('Running test routine...')
         await self.protocol.initialized.wait()
@@ -121,24 +121,67 @@ class Batch(Batch):
         await self.protocol.feedback_controller.request_all()
 
         print('Motor position feedback control')
-        await self.protocol_dashboard.plotter.toggler.start_plotting()
 
+        self.num_cycles = 5
+        self.low_position = 100
+        self.high_position = 700
+        await self.set_test_parameters()
+        await self.prompt('Press enter to begin: ')
+        await self.protocol_dashboard.plotter.toggler.start_plotting()
         try:
             while True:
-                for i in range(5):
-                    await self.go_to_position(100)
+                for i in range(self.num_cycles):
+                    await self.go_to_position(self.low_position)
                     await asyncio.sleep(0.5)
-                    await self.go_to_position(700)
+                    await self.go_to_position(self.high_position)
                     await asyncio.sleep(0.5)
-                await self.protocol_dashboard.plotter.toggler.stop_plotting()
-                await prompt('Press enter to restart: ')
+                print('Finished test cycles!')
+                self.protocol_dashboard.plotter.position_plotter.stop_plotting()
+                self.protocol_dashboard.plotter.duty_plotter.stop_plotting()
+                await self.set_test_parameters()
+                await self.prompt('Press enter to restart: ')
                 self.protocol_dashboard.plotter.position_plotter.clear()
                 self.protocol_dashboard.plotter.duty_plotter.clear()
+                if self.protocol_dashboard.plotter.toggler.plotting:
+                    self.protocol_dashboard.plotter.position_plotter.start_plotting()
+                    self.protocol_dashboard.plotter.duty_plotter.start_plotting()
         except KeyboardInterrupt:
             await self.protocol_dashboard.plotter.toggler.stop_plotting()
 
         print('Idling...')
         self.protocol_dashboard.plotter.server.run_until_shutdown()
+
+    async def get_number(self, prompt_question, default_value=None):
+        """Get a number from the user."""
+        while True:
+            number = await self.prompt(
+                '{} {}'.format(
+                    prompt_question,
+                    (
+                        '[Default: {}] '.format(default_value)
+                        if default_value is not None else ''
+                    )
+                )
+            )
+            if not number:
+                return None
+            try:
+                number = int(number)
+                return number
+            except ValueError:
+                print('Invalid input!')
+
+    async def set_test_parameters(self):
+        """Set the test motion parameters."""
+        num_cycles = await self.get_number('How many test cycles to run?', self.num_cycles)
+        if num_cycles is not None:
+            self.num_cycles = num_cycles
+        low_position = await self.get_number('Low target position?', self.low_position)
+        if low_position is not None:
+            self.low_position = low_position
+        high_position = await self.get_number('High target position?', self.high_position)
+        if high_position is not None:
+            self.high_position = high_position
 
     async def go_to_position(self, position):
         """Send the actuator to the specified position."""
