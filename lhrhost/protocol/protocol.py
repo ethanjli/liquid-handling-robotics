@@ -264,10 +264,8 @@ class ProtocolHandlerNode(ChannelHandlerTreeNode, CommandIssuer):
         """Recursively attempt to call the request method with an empty payload."""
         if callable(getattr(self, 'request', None)):
             await self.request()
-        await asyncio.gather(*[
-            child.request_all()
-            for child in self.children_list
-        ])
+        for child in self.children_list:
+            await child.request_all()
 
     # Implement ChannelTreeNode
 
