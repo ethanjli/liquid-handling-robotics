@@ -14,8 +14,7 @@ from bokeh.plotting import figure
 # Local package imports
 from lhrhost.dashboard import DocumentLayout, DocumentModel
 from lhrhost.dashboard.widgets import Button
-from lhrhost.protocol.linear_actuator.linear_actuator \
-    import Receiver as LinearActuatorReceiver
+from lhrhost.protocol.linear_actuator import Receiver as LinearActuatorReceiver
 
 # External imports
 import numpy as np

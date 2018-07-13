@@ -2,4 +2,6 @@
 
 This implements the set of commands and responses the host will handle.
 """
-from lhrhost.protocol.linear_actuator.linear_actuator import Printer, Protocol
+from lhrhost.protocol.linear_actuator.linear_actuator import (
+    Receiver, Printer, Protocol
+)

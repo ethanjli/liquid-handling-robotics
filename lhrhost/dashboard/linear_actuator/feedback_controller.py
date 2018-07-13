@@ -12,8 +12,7 @@ from bokeh.models import widgets
 from lhrhost.dashboard import DocumentLayout, DocumentModel
 from lhrhost.dashboard.linear_actuator.plots import ClearButton, ErrorsPlotter
 from lhrhost.dashboard.widgets import Slider
-from lhrhost.protocol.linear_actuator.linear_actuator \
-    import Receiver as LinearActuatorReceiver
+from lhrhost.protocol.linear_actuator import Receiver as LinearActuatorReceiver
 from lhrhost.util.interfaces import InterfaceClass
 
 # Logging

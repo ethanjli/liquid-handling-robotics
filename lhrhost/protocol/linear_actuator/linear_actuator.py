@@ -3,7 +3,6 @@
 # Standard imports
 import asyncio
 import logging
-from abc import abstractmethod
 from typing import Iterable, List, Optional
 
 # Local package imports
