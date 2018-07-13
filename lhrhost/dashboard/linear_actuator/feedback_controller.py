@@ -436,14 +436,14 @@ class PIDKSlider(Slider):
 class PIDKpSlider(PIDKSlider, LinearActuatorReceiver):
     """PID Kp slider, synchronized across documnts."""
 
-    def __init__(self, linear_actuator_protocol, high=20, **kwargs):
+    def __init__(self, linear_actuator_protocol, high=50, **kwargs):
         """Initialize member variables.
 
         high should be no larger than 32767 / 100.
         """
         super().__init__(
             linear_actuator_protocol.feedback_controller.pid.kp,
-            'proportional', high, step=0.05, **kwargs
+            'proportional', high, step=0.5, **kwargs
         )
 
     # Implement LinearActuatorReceiver
@@ -459,14 +459,14 @@ class PIDKpSlider(PIDKSlider, LinearActuatorReceiver):
 class PIDKdSlider(PIDKSlider, LinearActuatorReceiver):
     """PID Kd slider, synchronized across documnts."""
 
-    def __init__(self, linear_actuator_protocol, high=1, **kwargs):
+    def __init__(self, linear_actuator_protocol, high=2, **kwargs):
         """Initialize member variables.
 
         high should be no larger than 32767 / 100.
         """
         super().__init__(
             linear_actuator_protocol.feedback_controller.pid.kd,
-            'derivative', high, **kwargs
+            'derivative', high, step=0.05, **kwargs
         )
 
     # Implement LinearActuatorReceiver
@@ -482,7 +482,7 @@ class PIDKdSlider(PIDKSlider, LinearActuatorReceiver):
 class PIDKiSlider(PIDKSlider, LinearActuatorReceiver):
     """PID Ki slider, synchronized across documnts."""
 
-    def __init__(self, linear_actuator_protocol, high=5, **kwargs):
+    def __init__(self, linear_actuator_protocol, high=4, **kwargs):
         """Initialize member variables.
 
         high should be no larger than 32767 / 100.

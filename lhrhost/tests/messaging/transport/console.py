@@ -61,7 +61,7 @@ class Console:
         self.console_manager.stop()
 
 
-def main(Console):
+def main(console_class):
     """Run a serial console using the selected transport-layer implementation."""
     parser = argparse.ArgumentParser(
         description='Send and receive transport-layer data with a command-line console.'
@@ -79,7 +79,7 @@ def main(Console):
         raise NotImplementedError(
             'Unknown transport layer implementation: {}'.format(transport_loop)
         )
-    console = Console(transport_loop)
+    console = console_class(transport_loop)
     console.run()
 
 

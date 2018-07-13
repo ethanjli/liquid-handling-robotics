@@ -1,5 +1,6 @@
 """Test LinearActuator state plotting functionality."""
 # Standard imports
+import argparse
 import asyncio
 import logging
 
@@ -15,7 +16,7 @@ from lhrhost.messaging.presentation import BasicTranslator
 from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
 from lhrhost.protocol.linear_actuator import Protocol
 from lhrhost.tests.messaging.transport.batch import (
-    Batch, BatchExecutionManager, LOGGING_CONFIG, main
+    Batch, BatchExecutionManager, LOGGING_CONFIG
 )
 from lhrhost.util.cli import Prompt
 
@@ -76,11 +77,11 @@ class LinearActuatorControlModel(DocumentModel):
 class Batch(Batch):
     """Actor-based batch execution."""
 
-    def __init__(self, transport_loop):
+    def __init__(self, transport_loop, axis):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.protocol = Protocol('Z-Axis', 'z')
-        self.protocol_dashboard = LinearActuatorControlModel(self.protocol)
+        self.protocol = Protocol('{}-Axis'.format(axis.upper()), axis)
+        self.dashboard = LinearActuatorControlModel(self.protocol)
         self.translator = BasicTranslator(
             message_receivers=[self.protocol]
         )
@@ -98,14 +99,14 @@ class Batch(Batch):
             self.arbiter, self.transport_manager.command_sender, self.test_routine,
             ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
         )
-        print('Showing plot...')
-        self.protocol_dashboard.show()
+        print('Showing dashboard...')
+        self.dashboard.show()
 
     async def test_routine(self):
         """Run the batch execution test routine."""
         self.prompt = Prompt(end='', flush=True)
 
-        print('Running test routine...')
+        print('Waiting for {} to initialize...'.format(self.protocol.channel_path))
         await self.protocol.initialized.wait()
         self.colors = {
             0: 'gray',  # braking
@@ -120,14 +121,12 @@ class Batch(Batch):
         print('Requesting all feedback controller parameter values...')
         await self.protocol.feedback_controller.request_all()
 
-        print('Motor position feedback control')
-
         self.num_cycles = 5
         self.low_position = 100
         self.high_position = 700
         await self.set_test_parameters()
         await self.prompt('Press enter to begin: ')
-        await self.protocol_dashboard.plotter.toggler.start_plotting()
+        await self.dashboard.plotter.toggler.start_plotting()
         try:
             while True:
                 for i in range(self.num_cycles):
@@ -136,64 +135,70 @@ class Batch(Batch):
                     await self.go_to_position(self.high_position)
                     await asyncio.sleep(0.5)
                 print('Finished test cycles!')
-                self.protocol_dashboard.plotter.position_plotter.stop_plotting()
-                self.protocol_dashboard.plotter.duty_plotter.stop_plotting()
+                self.dashboard.plotter.position_plotter.stop_plotting()
+                self.dashboard.plotter.duty_plotter.stop_plotting()
                 await self.set_test_parameters()
                 await self.prompt('Press enter to restart: ')
-                self.protocol_dashboard.plotter.position_plotter.clear()
-                self.protocol_dashboard.plotter.duty_plotter.clear()
-                if self.protocol_dashboard.plotter.toggler.plotting:
-                    self.protocol_dashboard.plotter.position_plotter.start_plotting()
-                    self.protocol_dashboard.plotter.duty_plotter.start_plotting()
+                self.dashboard.plotter.position_plotter.clear()
+                self.dashboard.plotter.duty_plotter.clear()
+                if self.dashboard.plotter.toggler.plotting:
+                    self.dashboard.plotter.position_plotter.start_plotting()
+                    self.dashboard.plotter.duty_plotter.start_plotting()
         except KeyboardInterrupt:
-            await self.protocol_dashboard.plotter.toggler.stop_plotting()
+            await self.dashboard.plotter.toggler.stop_plotting()
 
         print('Idling...')
-        self.protocol_dashboard.plotter.server.run_until_shutdown()
-
-    async def get_number(self, prompt_question, default_value=None):
-        """Get a number from the user."""
-        while True:
-            number = await self.prompt(
-                '{} {}'.format(
-                    prompt_question,
-                    (
-                        '[Default: {}] '.format(default_value)
-                        if default_value is not None else ''
-                    )
-                )
-            )
-            if not number:
-                return None
-            try:
-                number = int(number)
-                return number
-            except ValueError:
-                print('Invalid input!')
+        self.dashboard.plotter.server.run_until_shutdown()
 
     async def set_test_parameters(self):
         """Set the test motion parameters."""
-        num_cycles = await self.get_number('How many test cycles to run?', self.num_cycles)
-        if num_cycles is not None:
-            self.num_cycles = num_cycles
-        low_position = await self.get_number('Low target position?', self.low_position)
-        if low_position is not None:
-            self.low_position = low_position
-        high_position = await self.get_number('High target position?', self.high_position)
-        if high_position is not None:
-            self.high_position = high_position
+        self.num_cycles = await self.prompt.number(
+            'How many test cycles to run?', self.num_cycles
+        )
+        self.low_position = await self.prompt.number(
+            'Low target position?', self.low_position
+        )
+        self.high_position = await self.prompt.number(
+            'High target position?', self.high_position
+        )
 
     async def go_to_position(self, position):
         """Send the actuator to the specified position."""
-        self.protocol_dashboard.plotter.position_plotter.add_arrow(position, slope=2)
-        self.protocol_dashboard.plotter.duty_plotter.start_state_region()
+        self.dashboard.plotter.position_plotter.add_arrow(position, slope=2)
+        self.dashboard.plotter.duty_plotter.start_state_region()
         await self.protocol.feedback_controller.request_complete(position)
-        self.protocol_dashboard.plotter.duty_plotter.add_state_region(
+        self.dashboard.plotter.duty_plotter.add_state_region(
             self.colors[self.protocol.last_response_payload]
         )
-        self.protocol_dashboard.feedback_controller.errors_plotter.add_error(
+        self.dashboard.feedback_controller.errors_plotter.add_error(
             position, self.protocol.position.last_response_payload
         )
+
+
+def main(console_class):
+    """Run a dashboard using the selected transport-layer implementation and actuator."""
+    parser = argparse.ArgumentParser(
+        description='Perform PID tuning for the selected transport and actuator axis.'
+    )
+    parser.add_argument(
+        'transport', choices=['ascii', 'firmata'],
+        help='Transport-layer implementation.'
+    )
+    parser.add_argument(
+        'axis', choices=['p', 'z', 'y', 'x'],
+        help='Linear actuator axis.'
+    )
+    args = parser.parse_args()
+    if args.transport == 'ascii':
+        from lhrhost.messaging.transport.ascii import transport_loop
+    elif args.transport == 'firmata':
+        from lhrhost.messaging.transport.firmata import transport_loop
+    else:
+        raise NotImplementedError(
+            'Unknown transport layer implementation: {}'.format(transport_loop)
+        )
+    console = console_class(transport_loop, args.axis)
+    console.run()
 
 
 if __name__ == '__main__':

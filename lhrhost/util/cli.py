@@ -60,6 +60,26 @@ class Prompt:
         input_line = await self.input_queue.get()
         return input_line.rstrip('\n')
 
+    async def number(self, prompt_question, default_value=None):
+        """Get an integer from the user."""
+        while True:
+            number = await self.__call__(
+                '{} {}'.format(
+                    prompt_question,
+                    (
+                        '[Default: {}] '.format(default_value)
+                        if default_value is not None else ''
+                    )
+                )
+            )
+            if not number:
+                return default_value
+            try:
+                number = int(number)
+                return number
+            except ValueError:
+                print('Invalid input!')
+
 
 class ConsoleManager(Concurrent):
     """Abstract class to manage console input asynchronously.
