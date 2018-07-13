@@ -18,12 +18,12 @@
 #define LHR_kPipettorParams\
   /* actuatorChannelPrefix */ 'p',\
   /* motorPort, potentiometerPin */ M1, A0,\
-  /* minPosition, maxPosition */ 20, 975,\
+  /* minPosition, maxPosition */ 35, 1005,\
   /* minDuty, maxDuty */ -255, 255,\
   /* pidKp, pidKd, pidKi, pidSampleTime */ 32.5, 0.4, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -150, 150,\
-  /* swapSensorDirection, swapMotorPolarity */ false, false,\
+  /* swapSensorDirection, swapMotorPolarity */ true, true,\
   /* convergenceTimeout, stallTimeout, timerTimeout */ 250, 150, 10000,\
   /* smootherSnapMultiplier, smootherMax */ 0.01, 1023,\
   /* smootherEnableSleep, smootherActivityThreshold */ true, 4.0

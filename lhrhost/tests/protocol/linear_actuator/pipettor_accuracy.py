@@ -65,10 +65,10 @@ class Batch(Batch):
             self.z.initialized.wait(),
             self.y.initialized.wait()
         )
-        await self.p.motor.request_complete(255)
+        await self.p.motor.request_complete(-255)
 
         print('Moving to cuvette...')
-        await self.y.feedback_controller.request_complete(30)
+        await self.y.feedback_controller.request_complete(720 - 30)
         print('  Y-Axis now at {}'.format(self.y.position.last_response_payload))
 
         while True:
@@ -78,7 +78,7 @@ class Batch(Batch):
             )
             print('Preparing pipettor for intake...')
             await self.p.feedback_controller.pid.kd.request(int(0.4 * 100))
-            await self.p.feedback_controller.request_complete(int(650 + fluid_amount / 2))
+            await self.p.feedback_controller.request_complete(int(1023 - 650 + fluid_amount / 2))
             await asyncio.sleep(0.5)
             print('Performing intake...')
             await self.z.feedback_controller.request_complete(400)
@@ -94,7 +94,7 @@ class Batch(Batch):
             await self.prompt('Move sample platform to the weigh boat...')
             await self.z.feedback_controller.request_complete(200)
             await asyncio.sleep(0.5)
-            await self.p.motor.request_complete(255)
+            await self.p.motor.request_complete(-255)
             await asyncio.sleep(0.5)
             await self.z.feedback_controller.request_complete(970)
 
@@ -117,7 +117,7 @@ class Batch(Batch):
             self.p.position.last_response_payload
         ))
         await self.p.feedback_controller.request_complete(
-            self.p.position.last_response_payload - fluid_amount
+            1023 - (self.p.position.last_response_payload - fluid_amount)
         )
 
 
