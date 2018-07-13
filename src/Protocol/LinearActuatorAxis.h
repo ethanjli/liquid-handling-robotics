@@ -142,7 +142,7 @@ class LinearActuatorAxis {
         double pidKp, double pidKd, double pidKi, int pidSampleTime,
         int feedforward,
         int brakeLowerThreshold, int brakeUpperThreshold,
-        bool swapMotorPolarity,
+        bool swapSensorDirection, bool swapMotorPolarity,
         int convergenceTimeout, int stallTimeout, int timerTimeout,
         float smootherSnapMultiplier, int smootherMax,
         bool smootherEnableSleep, float smootherActivityThreshold

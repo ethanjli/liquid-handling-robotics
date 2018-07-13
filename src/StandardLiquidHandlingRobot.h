@@ -23,7 +23,7 @@
   /* pidKp, pidKd, pidKi, pidSampleTime */ 32.5, 0.4, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -150, 150,\
-  /* swapMotorPolarity */ false,\
+  /* swapSensorDirection, swapMotorPolarity */ false, false,\
   /* convergenceTimeout, stallTimeout, timerTimeout */ 250, 150, 10000,\
   /* smootherSnapMultiplier, smootherMax */ 0.01, 1023,\
   /* smootherEnableSleep, smootherActivityThreshold */ true, 4.0
@@ -35,19 +35,19 @@
   /* pidKp, pidKd, pidKi, pidSampleTime */ 14, 0.15, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -50, 110,\
-  /* swapMotorPolarity */ false,\
+  /* swapSensorDirectionswapMotorPolarity */ false, false,\
   /* convergenceTimeout, stallTimeout, timerTimeout */ 250, 150, 10000,\
   /* smootherSnapMultiplier, smootherMax */ 0.01, 1023,\
   /* smootherEnableSleep, smootherActivityThreshold */ true, 4.0
 #define LHR_kYPositionerParams\
   /* actuatorChannelPrefix */ 'y',\
   /* motorPort, angleSensorId */ M3, 0,\
-  /* minPosition, maxPosition */ 0, 700,\
+  /* minPosition, maxPosition */ 0, 720,\
   /* minDuty, maxDuty */ -120, 120,\
   /* pidKp, pidKd, pidKi, pidSampleTime */ 50, 1, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -110, 110,\
-  /* swapMotorPolarity */ false,\
+  /* swapSensorDirection, swapMotorPolarity */ true, true,\
   /* convergenceTimeout, stallTimeout, timerTimeout */ 250, 150, 10000,\
   /* smootherSnapMultiplier, smootherMax */ 0.01, 800,\
   /* smootherEnableSleep, smootherActivityThreshold */ true, 2.0
