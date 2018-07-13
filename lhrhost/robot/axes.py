@@ -5,6 +5,7 @@ from abc import abstractmethod
 
 # Local package imiports
 from lhrhost.protocol.linear_actuator import Receiver as LinearActuatorReceiver
+from lhrhost.protocol.linear_actuator import Protocol as LinearActuatorProtocol
 from lhrhost.util.containers import add_to_tree, get_from_tree
 from lhrhost.util.interfaces import InterfaceClass
 
@@ -15,6 +16,7 @@ import scipy.stats as stats
 class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
     """High-level controller mixin interface for axes with physical position units."""
 
+    @property
     @abstractmethod
     def protocol(self):
         """Return the associated linear actuator protocol."""
@@ -30,6 +32,7 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
         """Convert a unitless sensor position to a position in physical units."""
         pass
 
+    @property
     @abstractmethod
     def physical_unit(self):
         """Return a string representation of the physical units."""
@@ -64,6 +67,38 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
         sensor_position = await self.go_to_sensor_position(sensor_position)
         return self.sensor_to_physical(sensor_position)
 
+    async def wait_until_initialized(self):
+        """Wait until the axis is ready to control."""
+        await self.protocol.initialized.wait()
+
+    async def synchronize_values(self):
+        """Request the values of all channels."""
+        await self.protocol.request_all()
+
+    @property
+    def name(self):
+        """Return the name of the axis."""
+        return self.protocol.node_name
+
+    @property
+    def last_position_limits(self):
+        """Get the last received position limits of the axis."""
+        return (
+            self.protocol.feedback_controller.limits.position.low.last_response_payload,
+            self.protocol.feedback_controller.limits.position.high.last_response_payload
+        )
+
+    @property
+    async def position(self):
+        """Get the current position of the axis."""
+        await self.protocol.position.request()
+        return self.last_position
+
+    @property
+    def last_position(self):
+        """Get the last received position of the axis."""
+        return self.protocol.position.last_response_payload
+
 
 class ContinuousRobotAxis(RobotAxis):
     """High-level controller mixin interface for axes with continuous positions.
@@ -73,6 +108,7 @@ class ContinuousRobotAxis(RobotAxis):
 
     def __init__(self):
         """Initialize member variables."""
+        super().__init__()
         self._calibration_data = []
         self._linear_regression = None
 
@@ -83,7 +119,7 @@ class ContinuousRobotAxis(RobotAxis):
 
     def add_calibration_sample(self, sensor_position, physical_position):
         """Add a (sensor, physical) position pair for calibration."""
-        self._regression = None
+        self._linear_regression = None
         self._calibration_data.append((sensor_position, physical_position))
 
     def fit_calibration_linear(self):
@@ -91,13 +127,12 @@ class ContinuousRobotAxis(RobotAxis):
 
         Returns the regression slope, intercept, R-value, and standard error.
         """
-        self._linear_regression = stats.linregress(self._calibration_data)
-        return (
-            self._linear_regression[0],
-            self._linear_regression[1],
-            self._linear_regression[2],
-            self._linear_regression[4],
+        linear_regression = stats.linregress(self._calibration_data)
+        self._linear_regression = (
+            linear_regression[0], linear_regression[1],
+            linear_regression[2], linear_regression[4]
         )
+        return self._linear_regression
 
     @property
     def sensor_to_physical_scaling(self):
@@ -135,6 +170,7 @@ class DiscreteRobotAxis(RobotAxis):
 
     def __init__(self):
         """Initialize member variables."""
+        super().__init__()
         self.discrete_sensor_position_tree = {}
         self.discrete_physical_position_tree = {}
 
@@ -220,12 +256,19 @@ class DiscreteRobotAxis(RobotAxis):
 class PAxis(ContinuousRobotAxis, DiscreteRobotAxis):
     """High-level controller for pipettor axis."""
 
+    def __init__(self):
+        """Initialize member variables.."""
+        super().__init__()
+        self._protocol = LinearActuatorProtocol('PAxis', 'p')
+
     # Implement RobotAxis
 
+    @property
     def protocol(self):
         """Return the associated linear actuator protocol."""
         return self._protocol
 
+    @property
     def physical_unit(self):
         """Return a string representation of the physical units."""
         return 'mL mark'
@@ -234,12 +277,19 @@ class PAxis(ContinuousRobotAxis, DiscreteRobotAxis):
 class ZAxis(ContinuousRobotAxis, DiscreteRobotAxis):
     """High-level controller for z-axis."""
 
+    def __init__(self):
+        """Initialize member variables.."""
+        super().__init__()
+        self._protocol = LinearActuatorProtocol('ZAxis', 'z')
+
     # Implement RobotAxis
 
+    @property
     def protocol(self):
         """Return the associated linear actuator protocol."""
         return self._protocol
 
+    @property
     def physical_unit(self):
         """Return a string representation of the physical units."""
         return 'cm'
@@ -248,12 +298,19 @@ class ZAxis(ContinuousRobotAxis, DiscreteRobotAxis):
 class YAxis(ContinuousRobotAxis, DiscreteRobotAxis):
     """High-level controller for y-axis."""
 
+    def __init__(self):
+        """Initialize member variables.."""
+        super().__init__()
+        self._protocol = LinearActuatorProtocol('YAxis', 'y')
+
     # Implement RobotAxis
 
+    @property
     def protocol(self):
         """Return the associated linear actuator protocol."""
         return self._protocol
 
+    @property
     def physical_unit(self):
         """Return a string representation of the physical units."""
         return 'cm'
@@ -269,6 +326,7 @@ class ManualXAxis(DiscreteRobotAxis):
 
     # Implement RobotAxis
 
+    @property
     def protocol(self):
         """Return the associated linear actuator protocol."""
         return None
@@ -281,6 +339,7 @@ class ManualXAxis(DiscreteRobotAxis):
         """Convert a unitless sensor position to a position in physical units."""
         return 0
 
+    @property
     def physical_unit(self):
         """Return a string representation of the physical units."""
         return None

@@ -60,25 +60,30 @@ class Prompt:
         input_line = await self.input_queue.get()
         return input_line.rstrip('\n')
 
-    async def number(self, prompt_question, default_value=None):
+    async def string(self, prompt_question, default_value=None):
+        """Get an integer from the user."""
+        value = await self.__call__('{} {}'.format(prompt_question, (
+            '[Default: \'{}\'] '.format(default_value)
+            if default_value is not None else ''
+        )))
+        if not value:
+            return default_value
+        return value
+
+    async def number(self, prompt_question, default_value=None, number_type=int):
         """Get an integer from the user."""
         while True:
-            number = await self.__call__(
-                '{} {}'.format(
-                    prompt_question,
-                    (
-                        '[Default: {}] '.format(default_value)
-                        if default_value is not None else ''
-                    )
-                )
-            )
-            if not number:
+            number = await self.__call__('{} {}'.format(prompt_question, (
+                '[Default: {}] '.format(default_value)
+                if default_value is not None else ''
+            )))
+            if number.strip() == '':
                 return default_value
             try:
-                number = int(number)
+                number = number_type(number.strip())
                 return number
             except ValueError:
-                print('Invalid input!')
+                print('Invalid input \'{}\' is not a number!'.format(number))
 
 
 class ConsoleManager(Concurrent):

@@ -33,11 +33,11 @@ class TestDiscreteRobotAxis(DiscreteRobotAxis):
 
     def physical_to_sensor(self, physical_position):
         """Convert a position in physical units to a unitless sensor position."""
-        return physical_position
+        return physical_position * 10
 
     def sensor_to_physical(self, sensor_position):
         """Convert a unitless sensor position to a position in physical units."""
-        return sensor_position
+        return sensor_position / 10
 
 
 def test_continuous():
@@ -59,18 +59,28 @@ def test_continuous():
 def test_discrete():
     """Test the DiscreteRobotAxis class."""
     discrete = TestDiscreteRobotAxis()
-    discrete.set_discrete_position(('cuvette', 1), 10)
-    discrete.set_discrete_position(('cuvette', 2), 20)
-    discrete.set_discrete_position(('96-well plate row', 'a'), 123)
-    discrete.set_discrete_position(('96-well plate row', 'b'), 456)
-    discrete.set_discrete_position(('96-well plate row', 'c'), 789)
-    discrete.set_discrete_position('foobar', 42)
-    assert discrete.discrete_to_physical(('cuvette', 1)) == 10
-    assert discrete.discrete_to_physical(('cuvette', 2)) == 20
-    assert discrete.discrete_to_physical(('96-well plate row', 'a')) == 123
-    assert discrete.discrete_to_physical(('96-well plate row', 'b')) == 456
-    assert discrete.discrete_to_physical(('96-well plate row', 'c')) == 789
-    assert discrete.discrete_to_physical('foobar') == 42
+    discrete.set_discrete_sensor_position(('cuvette', 1), 10)
+    discrete.set_discrete_sensor_position(('cuvette', 2), 20)
+    discrete.set_discrete_sensor_position(('96-well plate row', 'a'), 123)
+    discrete.set_discrete_sensor_position(('96-well plate row', 'b'), 456)
+    discrete.set_discrete_sensor_position(('96-well plate row', 'c'), 789)
+    discrete.set_discrete_sensor_position('foobar', 42)
+    try:
+        discrete.set_discrete_physical_position(('cuvette', 1), 20)
+        assert False
+    except KeyError:
+        assert True
+    discrete.set_discrete_physical_position(('cuvette', 3), 3)
+    assert discrete.discrete_to_sensor(('cuvette', 1)) == 10
+    assert discrete.discrete_to_physical(('cuvette', 1)) == 1
+    assert discrete.discrete_to_sensor(('cuvette', 2)) == 20
+    assert discrete.discrete_to_physical(('cuvette', 2)) == 2
+    assert discrete.discrete_to_sensor(('cuvette', 3)) == 30
+    assert discrete.discrete_to_physical(('cuvette', 3)) == 3
+    assert discrete.discrete_to_sensor(('96-well plate row', 'a')) == 123
+    assert discrete.discrete_to_sensor(('96-well plate row', 'b')) == 456
+    assert discrete.discrete_to_sensor(('96-well plate row', 'c')) == 789
+    assert discrete.discrete_to_sensor('foobar') == 42
 
 
 def main():
