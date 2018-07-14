@@ -91,11 +91,11 @@ class Batch(Batch):
         await self.axis.go_to_low_end_position()
         await self.prompt('Testing cuvette positioning: ')
         for cuvette_row in ['a', 'b', 'c', 'd', 'e', 'f', 'g']:
-            await self.axis.move_cuvette(cuvette_row)
+            await self.axis.go_to_cuvette(cuvette_row)
             await self.prompt('Press enter to continue: ')
         await self.prompt('Testing 96-well plate positioning: ')
         for plate_row in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
-            await self.axis.move_96_well_plate(plate_row)
+            await self.axis.go_to_96_well_plate(plate_row)
             await self.prompt('Press enter to continue: ')
 
         print(batch.OUTPUT_FOOTER)

@@ -65,16 +65,16 @@ class Batch(Batch):
         await self.prompt('Testing cuvette positioning: ')
         for height in relative_heights:
             print('Moving to {}...'.format(height))
-            await self.axis.move_cuvette(height)
+            await self.axis.go_to_cuvette(height)
             await self.prompt('Press enter to continue: ')
-            await self.axis.move_cuvette('far above')
+            await self.axis.go_to_cuvette('far above')
         await self.axis.go_to_high_end_position()
         await self.prompt('Testing 96-well plate positioning: ')
         for height in relative_heights:
             print('Moving to {}...'.format(height))
-            await self.axis.move_96_well_plate(height)
+            await self.axis.go_to_96_well_plate(height)
             await self.prompt('Press enter to continue: ')
-            await self.axis.move_96_well_plate('far above')
+            await self.axis.go_to_96_well_plate('far above')
 
         print(batch.OUTPUT_FOOTER)
         print('Quitting...')

@@ -48,30 +48,20 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
         )
         return self.protocol.position.last_response_payload
 
-    async def go_to_low_end_position(self):
+    async def go_to_low_end_position(self, speed=-255):
         """Go to the lowest possible sensor position at the maximum allowed speed.
 
         Speed must be given as a signed motor duty cycle.
         """
-        protocol = self.protocol.feedback_controller.limits.motor.backwards.high
-        speed = protocol.last_response_payload
-        if speed is None:
-            await self.protocol.request()
-            speed = protocol.last_response_payload
         await self.protocol.motor.request_complete(speed)
         await self.protocol.position.request()
         return self.protocol.position.last_response_payload
 
-    async def go_to_high_end_position(self, speed=None):
+    async def go_to_high_end_position(self, speed=255):
         """Go to the highest possible sensor position at the maximum allowed speed.
 
         Speed must be given as a signed motor duty cycle.
         """
-        protocol = self.protocol.feedback_controller.limits.motor.forwards.high
-        speed = protocol.last_response_payload
-        if speed is None:
-            await self.protocol.request()
-            speed = protocol.last_response_payload
         await self.protocol.motor.request_complete(speed)
         await self.protocol.position.request()
         return self.protocol.position.last_response_payload
@@ -288,6 +278,7 @@ class DiscreteRobotAxis(RobotAxis):
         super().__init__()
         self.discrete_sensor_position_tree = {}
         self.discrete_physical_position_tree = {}
+        self.current_discrete_position = None
 
     def set_discrete_sensor_position(self, discrete_position, sensor_position):
         """Associate a discrete position with a sensor position."""
@@ -295,7 +286,7 @@ class DiscreteRobotAxis(RobotAxis):
             physical_position = self.discrete_to_physical(
                 discrete_position, use_sensor_if_needed=False
             )
-        except KeyError:
+        except (AttributeError, KeyError):
             physical_position = None
         if physical_position is not None:
             raise KeyError(
@@ -365,6 +356,7 @@ class DiscreteRobotAxis(RobotAxis):
         sensor_position = self.discrete_to_sensor(discrete_position)
         final_sensor_position = await self.go_to_sensor_position(sensor_position)
         final_physical_position = self.sensor_to_physical(final_sensor_position)
+        self.current_discrete_position = discrete_position
         return physical_position - final_physical_position
 
     def load_discrete_json(self, json_path=None):
@@ -391,3 +383,13 @@ class DiscreteRobotAxis(RobotAxis):
             'physical': self.discrete_physical_position_tree,
             'sensor': self.discrete_sensor_position_tree
         }, json_path)
+
+    # Implement RobotAxis
+
+    async def go_to_sensor_position(self, sensor_position):
+        """Go to the specified sensor position.
+
+        Returns the final sensor position.
+        """
+        self.current_discrete_position = None
+        return await super().go_to_sensor_position(sensor_position)

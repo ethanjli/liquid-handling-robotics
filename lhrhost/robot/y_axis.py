@@ -25,10 +25,20 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
         """Return a string representation of the physical units."""
         return 'cm'
 
-    async def move_cuvette(self, cuvette_row):
-        """Move to the row position for the specified cuvette."""
-        await self.go_to_discrete_position(('cuvette', cuvette_row))
+    def at_cuvette(self, cuvette_row):
+        """Return whether the axis is already at the row for the cuvette rack."""
+        return self.current_discrete_position == ('cuvette', cuvette_row)
 
-    async def move_96_well_plate(self, plate_row):
-        """Move to the speified row position for the 96-well plate."""
-        await self.go_to_discrete_position(('96-well plate', plate_row))
+    async def go_to_cuvette(self, cuvette_row):
+        """Move to the row position for the specified cuvette."""
+        if not self.at_cuvette(cuvette_row):
+            await self.go_to_discrete_position(('cuvette', cuvette_row))
+
+    def at_96_well_plate(self, plate_row):
+        """Return whether the axis is already at the row for the cuvette rack."""
+        return self.current_discrete_position == ('96-well plate', plate_row)
+
+    async def go_to_96_well_plate(self, plate_row):
+        """Move to the specified row position for the 96-well plate."""
+        if not self.at_96_well_plate(plate_row):
+            await self.go_to_discrete_position(('96-well plate', plate_row))

@@ -17,7 +17,8 @@
       "mid": 0.5,
       "low": 0.25,
       "bottom": 0.1
-    }
+    },
+    "alignment hole": 0.1
   },
   "sensor": {
   }

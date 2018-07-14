@@ -89,7 +89,7 @@ class Batch(Batch):
         await asyncio.sleep(0.5)
         for volume in [0.02, 0.03, 0.04, 0.05, 0.1]:
             print('Preparing for intake...')
-            await self.axis.move_pre_intake(volume)
+            await self.axis.go_to_pre_intake(volume)
             await asyncio.sleep(1.0)
             print('Executing intake of {} mL...'.format(volume))
             actual_intake = await self.axis.intake(volume)

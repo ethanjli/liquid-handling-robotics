@@ -1,6 +1,6 @@
 """Abstractions for the pipettor axis of a liquid-handling robot."""
 
-# Local package imiports
+# Local package imports
 from lhrhost.protocol.linear_actuator import Protocol as LinearActuatorProtocol
 from lhrhost.robot.axes import ContinuousRobotAxis, DiscreteRobotAxis
 from lhrhost.util.files import load_from_json, save_to_json
@@ -76,7 +76,7 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
             'volumes': self.volume_pid_params
         }, json_path)
 
-    async def move_pre_intake(self, volume):
+    async def go_to_pre_intake(self, volume):
         """Move to the pre-intake position for dispensing precise volumes."""
         await self.go_to_discrete_position(('pre-intake', int(volume * 1000)))
 
