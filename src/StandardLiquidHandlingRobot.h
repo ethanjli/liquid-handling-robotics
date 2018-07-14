@@ -24,7 +24,7 @@
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -150, 150,\
   /* swapSensorDirection, swapMotorPolarity */ true, true,\
-  /* convergenceTimeout, stallTimeout, timerTimeout */ 250, 150, 10000,\
+  /* convergenceTimeout, stallTimeout, timerTimeout */ 250, 150, 4000,\
   /* smootherSnapMultiplier, smootherMax */ 0.01, 1023,\
   /* smootherEnableSleep, smootherActivityThreshold */ true, 4.0
 #define LHR_kVerticalPositionerParams\
@@ -36,7 +36,7 @@
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -50, 110,\
   /* swapSensorDirectionswapMotorPolarity */ false, false,\
-  /* convergenceTimeout, stallTimeout, timerTimeout */ 250, 150, 10000,\
+  /* convergenceTimeout, stallTimeout, timerTimeout */ 250, 150, 4000,\
   /* smootherSnapMultiplier, smootherMax */ 0.01, 1023,\
   /* smootherEnableSleep, smootherActivityThreshold */ true, 4.0
 #define LHR_kYPositionerParams\
