@@ -3,13 +3,19 @@
 
 #include "Messages.h"
 
+#ifdef ARDUINO_AVR_LEONARDO
+  #define SerialGlobal Serial1
+#else
+  #define SerialGlobal Serial
+#endif
+
 namespace LiquidHandlingRobotics { namespace Messaging {
 
 namespace ASCIIIO {
   const long kDataRate = 115200;
   const char kHandshakeChar = '~';
 
-  void waitForHandshake(HardwareSerial& serial = Serial, unsigned long waitDelay = 500);
+  void waitForHandshake(HardwareSerial& serial = SerialGlobal, unsigned long waitDelay = 500);
 }
 
 using ASCIIMessageSender = MessageSender<HardwareSerial>;

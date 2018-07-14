@@ -41,7 +41,7 @@ void waitForHandshake(HardwareSerial &serial, unsigned long waitDelay) {
 
 template<>
 MessageSender<HardwareSerial>::MessageSender() :
-  transport(Serial)
+  transport(SerialGlobal)
 {}
 
 template<>
@@ -59,14 +59,14 @@ void MessageSender<HardwareSerial>::sendMessageEnd() {
 
 template<>
 MessageParser<HardwareSerial>::MessageParser() :
-  MessageParser(Serial)
+  MessageParser(SerialGlobal)
 {}
 
 // ASCIIMessager
 
 template<>
 Messager<HardwareSerial>::Messager() :
-  sender(Serial), parser(Serial), transport(Serial)
+  sender(SerialGlobal), parser(SerialGlobal), transport(SerialGlobal)
 {}
 
 template<>
