@@ -6,3 +6,5 @@ pulsar~=2.0
 pymata-aio~=2.21
 bokeh~=0.13
 opencv-python~=3.4
+scipy~=1.1
+numpy~=1.14

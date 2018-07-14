@@ -90,6 +90,6 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
         By default, dispenses all contents.
         """
         if volume is None:
-            await self.go_to_end_position(speed=-255)
+            await self.go_to_low_end_position()
         else:
             await self.move_by_physical_delta(-volume)

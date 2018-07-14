@@ -76,7 +76,7 @@ class Batch(Batch):
             await self.prompt('Press enter to continue: ')
 
         print('Testing physical position displacements...')
-        await self.axis.go_to_end_position(speed=-255)
+        await self.axis.go_to_low_end_position()
         await asyncio.sleep(0.5)
         for i in range(0, 18):
             print('Moving up by a 0.05 mL marking...')
@@ -85,7 +85,7 @@ class Batch(Batch):
             await self.prompt('Press enter to continue: ')
 
         print('Testing precise volume intake/dispense...')
-        await self.axis.go_to_end_position(speed=-255)
+        await self.axis.go_to_low_end_position()
         await asyncio.sleep(0.5)
         for volume in [0.02, 0.03, 0.04, 0.05, 0.1]:
             print('Preparing for intake...')

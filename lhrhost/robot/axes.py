@@ -48,11 +48,30 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
         )
         return self.protocol.position.last_response_payload
 
-    async def go_to_end_position(self, speed=255):
-        """Go to the farthest allowed sensor position at the specified speed.
+    async def go_to_low_end_position(self):
+        """Go to the lowest possible sensor position at the maximum allowed speed.
 
         Speed must be given as a signed motor duty cycle.
         """
+        protocol = self.protocol.feedback_controller.limits.motor.backwards.high
+        speed = protocol.last_response_payload
+        if speed is None:
+            await self.protocol.request()
+            speed = protocol.last_response_payload
+        await self.protocol.motor.request_complete(speed)
+        await self.protocol.position.request()
+        return self.protocol.position.last_response_payload
+
+    async def go_to_high_end_position(self, speed=None):
+        """Go to the highest possible sensor position at the maximum allowed speed.
+
+        Speed must be given as a signed motor duty cycle.
+        """
+        protocol = self.protocol.feedback_controller.limits.motor.forwards.high
+        speed = protocol.last_response_payload
+        if speed is None:
+            await self.protocol.request()
+            speed = protocol.last_response_payload
         await self.protocol.motor.request_complete(speed)
         await self.protocol.position.request()
         return self.protocol.position.last_response_payload

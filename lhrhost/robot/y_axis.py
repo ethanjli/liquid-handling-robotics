@@ -26,9 +26,9 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
         return 'cm'
 
     async def move_cuvette(self, cuvette_row):
-        """Move to the pre-intake position for dispensing precise volumes."""
+        """Move to the row position for the specified cuvette."""
         await self.go_to_discrete_position(('cuvette', cuvette_row))
 
     async def move_96_well_plate(self, plate_row):
-        """Move to the pre-intake position for dispensing precise volumes."""
+        """Move to the speified row position for the 96-well plate."""
         await self.go_to_discrete_position(('96-well plate', plate_row))
