@@ -1,5 +1,5 @@
 async_generator~=1.9
-multidict~4.1
+multidict~=4.1
 pyserial~=3.4
 pyserial-asyncio~=0.4
 pulsar~=2.0
