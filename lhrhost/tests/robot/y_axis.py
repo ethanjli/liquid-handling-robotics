@@ -8,7 +8,7 @@ import random
 # Local package imports
 from lhrhost.messaging.presentation import BasicTranslator
 from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
-from lhrhost.robot.p_axis import Axis
+from lhrhost.robot.y_axis import Axis
 from lhrhost.tests.messaging.transport.batch import (
     Batch, BatchExecutionManager, LOGGING_CONFIG, main
 )
@@ -58,45 +58,44 @@ class Batch(Batch):
         await self.axis.synchronize_values()
         self.axis.load_calibration_json()
         self.axis.load_discrete_json()
-        self.axis.load_pid_json()
         print('Physical calibration:', self.axis.calibration_data['parameters'])
 
+        print('Moving to alignment hole...')
+        await self.axis.go_to_physical_position(0)
+        await self.prompt('Press enter to continue: ')
+
         print('Testing physical position targeting...')
-        positions = list(range(0, 910, 50))
+        positions = list(range(0, 100, 10))
         random.shuffle(positions)
         for position in positions:
-            print('Moving to the {} mL mark...'.format(position / 1000))
+            print('Moving to {} cm from the alignment hole...'.format(position / 10))
             try:
-                await self.axis.go_to_physical_position(position / 1000)
+                await self.axis.go_to_physical_position(position / 10)
             except Exception as e:
                 print(e)
             await asyncio.sleep(0.5)
             converged_position = await self.axis.physical_position
-            print('Converged at the {:.3f} mL mark!'.format(converged_position))
+            print('Converged at {:.3f} cm!'.format(converged_position))
             await self.prompt('Press enter to continue: ')
 
         print('Testing physical position displacements...')
         await self.axis.go_to_end_position(speed=-255)
         await asyncio.sleep(0.5)
-        for i in range(0, 18):
-            print('Moving up by a 0.05 mL marking...')
-            actual_displacement = await self.axis.move_by_physical_delta(0.05)
-            print('Moved up by {:.3f} mL markings!'.format(actual_displacement))
+        for i in range(0, 10):
+            print('Moving away from the alignment hole by 1 cm...')
+            actual_displacement = await self.axis.move_by_physical_delta(1)
+            print('Moved away {:.3f} cm!'.format(actual_displacement))
             await self.prompt('Press enter to continue: ')
 
-        print('Testing precise volume intake/dispense...')
+        print('Testing discrete position targeting...')
         await self.axis.go_to_end_position(speed=-255)
-        await asyncio.sleep(0.5)
-        for volume in [0.02, 0.03, 0.04, 0.05, 0.1]:
-            print('Preparing for intake...')
-            await self.axis.move_pre_intake(volume)
-            await asyncio.sleep(1.0)
-            print('Executing intake of {} mL...'.format(volume))
-            actual_intake = await self.axis.intake(volume)
-            print('Completed intake of {:.3f} mL!'.format(actual_intake))
-            await asyncio.sleep(1.0)
-            print('Executing dispense...')
-            await self.axis.dispense()
+        await self.prompt('Testing cuvette positioning: ')
+        for cuvette_row in ['a', 'b', 'c', 'd', 'e', 'f', 'g']:
+            await self.axis.move_cuvette(cuvette_row)
+            await self.prompt('Press enter to continue: ')
+        await self.prompt('Testing 96-well plate positioning: ')
+        for plate_row in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
+            await self.axis.move_96_well_plate(plate_row)
             await self.prompt('Press enter to continue: ')
 
         print(batch.OUTPUT_FOOTER)
