@@ -8,7 +8,6 @@ import random
 # Local package imports
 from lhrhost.messaging.presentation import BasicTranslator
 from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
-from lhrhost.robot import axes
 from lhrhost.tests.dashboard.pid_tuning import main
 from lhrhost.tests.messaging.transport.batch import (
     Batch, BatchExecutionManager, LOGGING_CONFIG
@@ -31,13 +30,14 @@ class Batch(Batch):
         """Initialize member variables."""
         self.arbiter = arbiter(start=self._start, stopping=self._stop)
         if axis == 'p':
-            self.axis = axes.PAxis()
+            from lhrhost.robot.p_axis import Axis
         elif axis == 'z':
-            self.axis = axes.ZAxis()
+            from lhrhost.robot.z_axis import Axis
         elif axis == 'y':
-            self.axis = axes.YAxis()
+            from lhrhost.robot.y_axis import Axis
         else:
             raise NotImplementedError('Axis {} is not supported!'.format(axis))
+        self.axis = Axis()
         self.translator = BasicTranslator(
             message_receivers=[self.axis.protocol]
         )
