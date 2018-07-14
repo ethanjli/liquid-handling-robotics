@@ -75,7 +75,7 @@ class Batch(Batch):
                 )
                 await self.axis.go_to_sensor_position(sensor_position)
                 await asyncio.sleep(0.5)
-                sensor_position = await self.axis.position
+                sensor_position = await self.axis.sensor_position
                 print('Moved to sensor position {}.'.format(sensor_position))
                 physical_position = await self.prompt.number(
                     'What is the corresponding physical position? (None to finish)',

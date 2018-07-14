@@ -46,7 +46,6 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
         await self.protocol.feedback_controller.request_complete(
             int(sensor_position)
         )
-        await self.protocol.position.request()
         return self.protocol.position.last_response_payload
 
     async def go_to_end_position(self, speed=255):
@@ -66,6 +65,26 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
         sensor_position = self.physical_to_sensor(physical_position)
         sensor_position = await self.go_to_sensor_position(sensor_position)
         return self.sensor_to_physical(sensor_position)
+
+    async def move_by_sensor_delta(self, sensor_delta):
+        """Go forwards/backwards by the specified sensor displacement.
+
+        Returns the final physical displacement.
+        """
+        position = await self.sensor_position
+        target_position = position + sensor_delta
+        final_position = await self.go_to_sensor_position(target_position)
+        return final_position - position
+
+    async def move_by_physical_delta(self, physical_delta):
+        """Go forwards/backwards by the specified physical displacement.
+
+        Returns the final physical displacement.
+        """
+        position = await self.physical_position
+        target_position = position + physical_delta
+        final_position = await self.go_to_physical_position(target_position)
+        return final_position - position
 
     async def wait_until_initialized(self):
         """Wait until the axis is ready to control."""
@@ -89,15 +108,43 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
         )
 
     @property
-    async def position(self):
-        """Get the current position of the axis."""
+    async def sensor_position(self):
+        """Get the current sensor position of the axis."""
         await self.protocol.position.request()
         return self.last_position
 
     @property
-    def last_position(self):
-        """Get the last received position of the axis."""
+    def last_sensor_position(self):
+        """Get the last received sensor position of the axis."""
         return self.protocol.position.last_response_payload
+
+    @property
+    async def physical_position(self):
+        """Get the current physical position of the axis."""
+        await self.protocol.position.request()
+        return self.last_physical_position
+
+    @property
+    def last_physical_position(self):
+        """Get the last received physical position of the axis."""
+        return self.sensor_to_physical(self.last_sensor_position)
+
+    async def set_pid_gains(self, kp=None, kd=None, ki=None):
+        """Set values for the PID gains whose values are specified.
+
+        Returns the previous values of the gains.
+        """
+        pid_protocol = self.protocol.feedback_controller.pid
+        prev_kp = pid_protocol.kp.last_response_payload
+        prev_kd = pid_protocol.kd.last_response_payload
+        prev_ki = pid_protocol.ki.last_response_payload
+        if kp is not None:
+            await pid_protocol.kp.request(int(kp * 100))
+        if kd is not None:
+            await pid_protocol.kd.request(int(kd * 100))
+        if ki is not None:
+            await pid_protocol.ki.request(int(ki * 100))
+        return (prev_kp, prev_kd, prev_ki)
 
 
 class ContinuousRobotAxis(RobotAxis):
@@ -174,7 +221,7 @@ class ContinuousRobotAxis(RobotAxis):
         self.load_calibration(load_from_json(json_path))
 
     def save_calibration_json(self, json_path=None):
-        """Load a calibration from a provided JSON file path.
+        """Save the calibration to the provided JSON file path.
 
         Default path: 'calibrations/{}_physical.json' where {} is replaced with the
         axis name.
@@ -300,3 +347,28 @@ class DiscreteRobotAxis(RobotAxis):
         final_sensor_position = await self.go_to_sensor_position(sensor_position)
         final_physical_position = self.sensor_to_physical(final_sensor_position)
         return physical_position - final_physical_position
+
+    def load_discrete_json(self, json_path=None):
+        """Load a discrete positions tree from the provided JSON file path.
+
+        Default path: 'calibrations/{}_discrete.json' where {} is replaced with the
+        axis name.
+        """
+        if json_path is None:
+            json_path = 'calibrations/{}_discrete.json'.format(self.name)
+        trees = load_from_json(json_path)
+        self.discrete_physical_position_tree = trees['physical']
+        self.discrete_sensor_position_tree = trees['sensor']
+
+    def save_discrete_json(self, json_path=None):
+        """Save a discrete positions tree to the provided JSON file path.
+
+        Default path: 'calibrations/{}_physical.json' where {} is replaced with the
+        axis name.
+        """
+        if json_path is None:
+            json_path = 'calibrations/{}_discrete.json'.format(self.name)
+        save_to_json({
+            'physical': self.discrete_physical_position_tree,
+            'sensor': self.discrete_sensor_position_tree
+        }, json_path)

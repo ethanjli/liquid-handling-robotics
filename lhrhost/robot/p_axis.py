@@ -3,6 +3,7 @@
 # Local package imiports
 from lhrhost.protocol.linear_actuator import Protocol as LinearActuatorProtocol
 from lhrhost.robot.axes import ContinuousRobotAxis, DiscreteRobotAxis
+from lhrhost.util.files import load_from_json, save_to_json
 
 
 class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
@@ -11,6 +12,8 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
     def __init__(self):
         """Initialize member variables.."""
         super().__init__()
+        self.position_pid_params = []
+        self.volume_pid_params = []
         self._protocol = LinearActuatorProtocol('PAxis', 'p')
 
     # Implement RobotAxis
@@ -24,3 +27,69 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
     def physical_unit(self):
         """Return a string representation of the physical units."""
         return 'mL mark'
+
+    async def go_to_sensor_position(self, sensor_position):
+        """Go to the specified sensor position.
+
+        Adjusts Kp and Kd. Returns the final sensor position.
+        """
+        for pid_tuning in self.position_pid_params:
+            if (
+                sensor_position >= pid_tuning['min'] and
+                sensor_position < pid_tuning['max']
+            ):
+                kp = pid_tuning['kp']
+                kd = pid_tuning['kd']
+                break
+        else:
+            raise NotImplementedError(
+                'PID tunings for sensor position {} unspecified!'
+                .format(sensor_position)
+            )
+        (prev_kp, prev_kd, _) = await self.set_pid_gains(kp=kp, kd=kd)
+        sensor_position = await super().go_to_sensor_position(sensor_position)
+        await self.set_pid_gains(kp=prev_kp, kd=prev_kd)
+        return sensor_position
+
+    def load_pid_json(self, json_path=None):
+        """Load a discrete positions tree from the provided JSON file path.
+
+        Default path: 'calibrations/{}_discrete.json' where {} is replaced with the
+        axis name.
+        """
+        if json_path is None:
+            json_path = 'calibrations/{}_pid.json'.format(self.name)
+        trees = load_from_json(json_path)
+        self.position_pid_params = trees['positions']
+        self.volume_pid_params = trees['volumes']
+
+    def save_pid_json(self, json_path=None):
+        """Save a discrete positions tree to the provided JSON file path.
+
+        Default path: 'calibrations/{}_physical.json' where {} is replaced with the
+        axis name.
+        """
+        if json_path is None:
+            json_path = 'calibrations/{}_pid.json'.format(self.name)
+        save_to_json({
+            'positions': self.position_pid_params,
+            'volumes': self.volume_pid_params
+        }, json_path)
+
+    async def move_pre_intake(self, volume):
+        """Move to the pre-intake position for dispensing precise volumes."""
+        await self.go_to_discrete_position(('pre-intake', int(volume * 1000)))
+
+    async def intake(self, volume):
+        """Intake the specified volume."""
+        return await self.move_by_physical_delta(volume)
+
+    async def dispense(self, volume=None):
+        """Dispense by the specified volume.
+
+        By default, dispenses all contents.
+        """
+        if volume is None:
+            await self.go_to_end_position(speed=-255)
+        else:
+            await self.move_by_physical_delta(-volume)
