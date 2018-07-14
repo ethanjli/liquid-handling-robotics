@@ -1,7 +1,7 @@
-"""Test LinearActuator RPC command functionality."""
+"""Calibrate a linear actuator's sensor positions to physical positions."""
+
 # Standard imports
 import asyncio
-import json
 import logging
 import random
 
@@ -99,32 +99,11 @@ class Batch(Batch):
             .format(*linear_regression)
         )
 
-        calibration_data = {
-            'parameters': {
-                'slope': linear_regression[0],
-                'intercept': linear_regression[1],
-                'rsquared': linear_regression[2],
-                'stderr': linear_regression[3]
-            },
-            'physical unit': self.axis.physical_unit,
-            'samples': [
-                {
-                    'sensor': calibration_sample[0],
-                    'physical': calibration_sample[1]
-                }
-                for calibration_sample in calibration_samples
-            ]
-        }
-
         output_path = await self.prompt.string(
             'Save calibration data to path:',
             'calibrations/{}_physical.json'.format(self.axis.name)
         )
-        try:
-            with open(output_path, 'w') as f:
-                json.dump(calibration_data, f, sort_keys=True, indent=2)
-        except Exception as e:
-            print(e)
+        self.axis.save_calibration_json(output_path)
 
         print(batch.OUTPUT_FOOTER)
         print('Quitting...')

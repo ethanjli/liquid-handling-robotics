@@ -6,6 +6,7 @@ from abc import abstractmethod
 # Local package imiports
 from lhrhost.protocol.linear_actuator import Receiver as LinearActuatorReceiver
 from lhrhost.util.containers import add_to_tree, get_from_tree
+from lhrhost.util.files import load_from_json, save_to_json
 from lhrhost.util.interfaces import InterfaceClass
 
 # External imports
@@ -108,30 +109,79 @@ class ContinuousRobotAxis(RobotAxis):
     def __init__(self):
         """Initialize member variables."""
         super().__init__()
-        self._calibration_data = []
+        self._calibration_samples = []
         self._linear_regression = None
 
     def clear_calibration_samples(self):
         """Discard the stored calibration data."""
-        self._calibration_data = []
+        self._calibration_samples = []
         self._linear_regression = None
 
     def add_calibration_sample(self, sensor_position, physical_position):
         """Add a (sensor, physical) position pair for calibration."""
         self._linear_regression = None
-        self._calibration_data.append((sensor_position, physical_position))
+        self._calibration_samples.append((sensor_position, physical_position))
 
     def fit_calibration_linear(self):
         """Perform a linear regression on the calibration data and store results.
 
         Returns the regression slope, intercept, R-value, and standard error.
         """
-        linear_regression = stats.linregress(self._calibration_data)
+        linear_regression = stats.linregress(self._calibration_samples)
         self._linear_regression = (
             linear_regression[0], linear_regression[1],
             linear_regression[2], linear_regression[4]
         )
         return self._linear_regression
+
+    @property
+    def calibration_data(self):
+        """Return a JSON-exportable structure of calibration data."""
+        calibration_data = {
+            'parameters': {
+                'slope': self._linear_regression[0],
+                'intercept': self._linear_regression[1],
+                'rsquared': self._linear_regression[2],
+                'stderr': self._linear_regression[3]
+            },
+            'physical unit': self.physical_unit,
+            'samples': [
+                {
+                    'sensor': calibration_sample[0],
+                    'physical': calibration_sample[1]
+                }
+                for calibration_sample in self._calibration_samples
+            ]
+        }
+        return calibration_data
+
+    def load_calibration(self, calibration_data):
+        """Load a calibration from the provided calibration data structure."""
+        self._calibration_samples = [
+            (calibration_sample['sensor'], calibration_sample['physical'])
+            for calibration_sample in calibration_data['samples']
+        ]
+        self.fit_calibration_linear()
+
+    def load_calibration_json(self, json_path=None):
+        """Load a calibration from a provided JSON file path.
+
+        Default path: 'calibrations/{}_physical.json' where {} is replaced with the
+        axis name.
+        """
+        if json_path is None:
+            json_path = 'calibrations/{}_physical.json'.format(self.name)
+        self.load_calibration(load_from_json(json_path))
+
+    def save_calibration_json(self, json_path=None):
+        """Load a calibration from a provided JSON file path.
+
+        Default path: 'calibrations/{}_physical.json' where {} is replaced with the
+        axis name.
+        """
+        if json_path is None:
+            json_path = 'calibrations/{}_physical.json'.format(self.name)
+        save_to_json(self.calibration_data, json_path)
 
     @property
     def sensor_to_physical_scaling(self):
