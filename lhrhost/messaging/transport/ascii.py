@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Device communication over USB serial.
 
 This module implements event-driven communication protocols with devices
@@ -17,6 +16,7 @@ import lhrhost.messaging.transport as transport
 
 # External imports
 from serial import SerialException
+from serial.tools.list_ports import comports
 
 import serial_asyncio
 
@@ -108,8 +108,8 @@ class TransportConnectionManager(transport.TransportConnectionManager):
     receive lines from the device.
 
     Args:
-        port: if `ser` is `None`, specifies which serial port to open.
-            Otherwise, it's ignored. Default: `/dev/ttyACM0`.
+        port: Specifies which serial port to open. Default: the first availble
+            serial port.
         baudrate: if `ser` is `None`, the serial connection baud rate.
             Otherwise, it's ignored. Default: 115200.
         handshake_attempt_interval: interval in milliseconds to wait after
@@ -124,12 +124,18 @@ class TransportConnectionManager(transport.TransportConnectionManager):
 
     def __init__(
         self, handshake_attempt_interval: float=0.2,
-        port: str='/dev/ttyACM0', baudrate: int=115200,
+        port: Optional[str]=None, baudrate: int=115200,
         transport_kwargs: Optional[_Kwargs]=None
     ):
         """Initialize member variables."""
         super().__init__(transport_kwargs=transport_kwargs)
         # Serial port
+        if port is None:
+            try:
+                port = comports()[0].device
+            except IndexError:
+                logger.error('Could not find any available serial ports!')
+                raise
         self._port: str = port
         self._baudrate: int = baudrate
         self._ser_reader: Optional[StreamReader] = None
