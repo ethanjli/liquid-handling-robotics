@@ -132,7 +132,13 @@ class TransportConnectionManager(transport.TransportConnectionManager):
         # Serial port
         if port is None:
             try:
-                port = comports()[0].device
+                ports = [port.device for port in comports()]
+                if len(ports) > 1:
+                    logger.info(
+                        'Multiple ports found: {}!'.format(ports)
+                    )
+                port = ports[0]
+                logger.info('Using port {}.'.format(port))
             except IndexError:
                 logger.error('Could not find any available serial ports!')
                 raise
