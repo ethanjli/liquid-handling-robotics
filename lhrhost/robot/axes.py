@@ -120,7 +120,7 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
     async def sensor_position(self):
         """Get the current sensor position of the axis."""
         await self.protocol.position.request()
-        return self.last_position
+        return self.last_sensor_position
 
     @property
     def last_sensor_position(self):

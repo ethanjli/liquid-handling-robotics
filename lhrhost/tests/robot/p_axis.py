@@ -1,53 +1,43 @@
-"""Calibrate a linear actuator's sensor positions to physical positions."""
+"""Test the p-axis abstraction layer."""
 
 # Standard imports
+import argparse
 import asyncio
 import logging
 import random
 
 # Local package imports
-from lhrhost.messaging.presentation import BasicTranslator
-from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
+from lhrhost.messaging import (
+    MessagingStack,
+    add_argparser_transport_selector, parse_argparser_transport_selector
+)
 from lhrhost.robot.p_axis import Axis
 from lhrhost.tests.messaging.transport.batch import (
-    Batch, BatchExecutionManager, LOGGING_CONFIG, main
+    BatchExecutionManager, LOGGING_CONFIG
 )
 from lhrhost.util import batch
 from lhrhost.util.cli import Prompt
-
-# External imports
-from pulsar.api import arbiter
 
 # Logging
 # LOGGING_CONFIG['loggers']['lhrhost'] = {'level': 'DEBUG'}
 logging.config.dictConfig(LOGGING_CONFIG)
 
 
-class Batch(Batch):
+class Batch:
     """Actor-based batch execution."""
 
     def __init__(self, transport_loop):
         """Initialize member variables."""
-        self.arbiter = arbiter(start=self._start, stopping=self._stop)
+        self.messaging_stack = MessagingStack(transport_loop)
         self.axis = Axis()
-        self.translator = BasicTranslator(
-            message_receivers=[self.axis.protocol]
-        )
-        self.axis.protocol.command_receivers.append(self.translator)
-        self.response_receiver = ResponseReceiver(
-            response_receivers=[self.translator]
-        )
-        self.transport_manager = TransportManager(
-            self.arbiter, transport_loop, response_receiver=self.response_receiver
-        )
-        self.translator.serialized_message_receivers.append(
-            self.transport_manager.command_sender
-        )
+        self.messaging_stack.register_response_receivers(self.axis.protocol)
+        self.messaging_stack.register_command_senders(self.axis.protocol)
         self.batch_execution_manager = BatchExecutionManager(
-            self.arbiter, self.transport_manager.command_sender, self.test_routine,
-            header=batch.OUTPUT_HEADER,
-            ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
+            self.messaging_stack.arbiter, self.messaging_stack.command_sender,
+            self.test_routine, header=batch.OUTPUT_HEADER,
+            ready_waiter=self.messaging_stack.connection_synchronizer.wait_connected
         )
+        self.messaging_stack.register_execution_manager(self.batch_execution_manager)
 
     async def test_routine(self):
         """Run the batch execution test routine."""
@@ -103,5 +93,17 @@ class Batch(Batch):
         print('Quitting...')
 
 
+def main():
+    """Test the p-axis abstraction layer."""
+    parser = argparse.ArgumentParser(
+        description='Test the p-axis abstraction layer.'
+    )
+    add_argparser_transport_selector(parser)
+    args = parser.parse_args()
+    transport_loop = parse_argparser_transport_selector(args)
+    batch = Batch(transport_loop)
+    batch.messaging_stack.run()
+
+
 if __name__ == '__main__':
-    main(Batch)
+    main()

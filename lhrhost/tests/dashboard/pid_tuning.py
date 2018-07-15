@@ -12,16 +12,15 @@ from bokeh.models import widgets
 from lhrhost.dashboard import DocumentLayout, DocumentModel
 from lhrhost.dashboard.linear_actuator.feedback_controller import FeedbackControllerModel
 from lhrhost.dashboard.linear_actuator.plots import LinearActuatorPlotter as Plotter
-from lhrhost.messaging.presentation import BasicTranslator
-from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
+from lhrhost.messaging import (
+    MessagingStack,
+    add_argparser_transport_selector, parse_argparser_transport_selector
+)
 from lhrhost.protocol.linear_actuator import Protocol
 from lhrhost.tests.messaging.transport.batch import (
-    Batch, BatchExecutionManager, LOGGING_CONFIG
+    BatchExecutionManager, LOGGING_CONFIG
 )
 from lhrhost.util.cli import Prompt
-
-# External imports
-from pulsar.api import arbiter
 
 # Logging
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -74,31 +73,22 @@ class LinearActuatorControlModel(DocumentModel):
         )
 
 
-class Batch(Batch):
+class Batch:
     """Actor-based batch execution."""
 
     def __init__(self, transport_loop, axis):
         """Initialize member variables."""
-        self.arbiter = arbiter(start=self._start, stopping=self._stop)
+        self.messaging_stack = MessagingStack(transport_loop)
         self.protocol = Protocol('{}-Axis'.format(axis.upper()), axis)
         self.dashboard = LinearActuatorControlModel(self.protocol)
-        self.translator = BasicTranslator(
-            message_receivers=[self.protocol]
-        )
-        self.protocol.command_receivers.append(self.translator)
-        self.response_receiver = ResponseReceiver(
-            response_receivers=[self.translator]
-        )
-        self.transport_manager = TransportManager(
-            self.arbiter, transport_loop, response_receiver=self.response_receiver
-        )
-        self.translator.serialized_message_receivers.append(
-            self.transport_manager.command_sender
-        )
+        self.messaging_stack.register_response_receivers(self.protocol)
+        self.messaging_stack.register_command_senders(self.protocol)
         self.batch_execution_manager = BatchExecutionManager(
-            self.arbiter, self.transport_manager.command_sender, self.test_routine,
-            ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
+            self.messaging_stack.arbiter, self.messaging_stack.command_sender,
+            self.test_routine,
+            ready_waiter=self.messaging_stack.connection_synchronizer.wait_connected
         )
+        self.messaging_stack.register_execution_manager(self.batch_execution_manager)
         print('Showing dashboard...')
         self.dashboard.show()
 
@@ -175,31 +165,21 @@ class Batch(Batch):
         )
 
 
-def main(console_class):
+def main():
     """Run a dashboard using the selected transport-layer implementation and actuator."""
     parser = argparse.ArgumentParser(
         description='Perform PID tuning for the selected transport and actuator axis.'
     )
-    parser.add_argument(
-        'transport', choices=['ascii', 'firmata'],
-        help='Transport-layer implementation.'
-    )
+    add_argparser_transport_selector(parser)
     parser.add_argument(
         'axis', choices=['p', 'z', 'y', 'x'],
         help='Linear actuator axis.'
     )
     args = parser.parse_args()
-    if args.transport == 'ascii':
-        from lhrhost.messaging.transport.ascii import transport_loop
-    elif args.transport == 'firmata':
-        from lhrhost.messaging.transport.firmata import transport_loop
-    else:
-        raise NotImplementedError(
-            'Unknown transport layer implementation: {}'.format(transport_loop)
-        )
-    console = console_class(transport_loop, args.axis)
-    console.run()
+    transport_loop = parse_argparser_transport_selector(args)
+    batch = Batch(transport_loop, args.axis)
+    batch.messaging_stack.run()
 
 
 if __name__ == '__main__':
-    main(Batch)
+    main()

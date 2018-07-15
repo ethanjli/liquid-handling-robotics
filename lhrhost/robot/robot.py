@@ -24,6 +24,18 @@ class Robot(object):
         self.x = XAxis()
         self.prompt = None
 
+    def register_messaging_stack(self, messaging_stack):
+        """Associate a messaging stack with the robot.
+
+        The messaging stack is used for host-peripheral communication.
+        """
+        messaging_stack.register_response_receivers(
+            self.p.protocol, self.z.protocol, self.y.protocol
+        )
+        messaging_stack.register_command_senders(
+            self.p.protocol, self.z.protocol, self.y.protocol
+        )
+
     async def wait_until_initialized(self):
         """Wait until all axes are initialized."""
         await asyncio.gather(

@@ -4,7 +4,7 @@ import logging
 
 # Local package imports
 from lhrhost.messaging.presentation import (
-    BasicTranslator, MessagePrinter, Message
+    BasicTranslator, Message, MessagePrinter
 )
 from lhrhost.messaging.transport import SerializedMessagePrinter
 

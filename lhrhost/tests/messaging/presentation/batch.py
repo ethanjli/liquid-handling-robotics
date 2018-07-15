@@ -1,48 +1,39 @@
-"""Test batch execution functionality."""
+"""Test the presentation layer."""
 # Standard imports
+import argparse
 import asyncio
 import logging
 
 # Local package imports
-from lhrhost.messaging.presentation import BasicTranslator, Message, MessagePrinter
-from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
+from lhrhost.messaging import (
+    MessagingStack,
+    add_argparser_transport_selector, parse_argparser_transport_selector
+)
+from lhrhost.messaging.presentation import Message, MessagePrinter
 from lhrhost.tests.messaging.transport.batch import (
-    Batch, BatchExecutionManager, LOGGING_CONFIG, main
+    BatchExecutionManager, LOGGING_CONFIG
 )
 from lhrhost.util import batch
-
-# External imports
-from pulsar.api import arbiter
 
 # Logging
 logging.config.dictConfig(LOGGING_CONFIG)
 
 
-class Batch(Batch):
+class Batch:
     """Actor-based batch execution."""
 
     def __init__(self, transport_loop):
         """Initialize member variables."""
-        self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
+        self.messaging_stack = MessagingStack(transport_loop)
         self.command_printer = MessagePrinter(prefix='  Sending: ')
-        self.translator = BasicTranslator(
-            message_receivers=[self.response_printer]
-        )
-        self.response_receiver = ResponseReceiver(
-            response_receivers=[self.translator]
-        )
-        self.transport_manager = TransportManager(
-            self.arbiter, transport_loop, response_receiver=self.response_receiver
-        )
-        self.translator.serialized_message_receivers.append(
-            self.transport_manager.command_sender
-        )
+        self.response_printer = MessagePrinter(prefix=batch.RESPONSE_PREFIX)
+        self.messaging_stack.register_response_receivers(self.response_printer)
         self.batch_execution_manager = BatchExecutionManager(
-            self.arbiter, self.transport_manager.command_sender, self.test_routine,
-            header=batch.OUTPUT_HEADER,
-            ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
+            self.messaging_stack.arbiter, self.messaging_stack.command_sender,
+            self.test_routine, header=batch.OUTPUT_HEADER,
+            ready_waiter=self.messaging_stack.connection_synchronizer.wait_connected
         )
+        self.messaging_stack.register_execution_manager(self.batch_execution_manager)
 
     async def test_routine(self):
         """Run the batch execution test routine."""
@@ -51,12 +42,24 @@ class Batch(Batch):
         for i in range(10):
             message = Message('e', i)
             await self.command_printer.on_message(message)
-            await self.translator.on_message(message)
+            await self.messaging_stack.translator.on_message(message)
             await asyncio.sleep(0.5)
 
         print(batch.OUTPUT_FOOTER)
         print('Quitting...')
 
 
+def main():
+    """Test the presentation layer."""
+    parser = argparse.ArgumentParser(
+        description='Test the presentation layer.'
+    )
+    add_argparser_transport_selector(parser)
+    args = parser.parse_args()
+    transport_loop = parse_argparser_transport_selector(args)
+    batch = Batch(transport_loop)
+    batch.messaging_stack.run()
+
+
 if __name__ == '__main__':
-    main(Batch)
+    main()

@@ -1,51 +1,41 @@
 """Test LinearActuator state plotting functionality."""
 # Standard imports
+import argparse
 import asyncio
 import logging
 
 # Local package imports
 from lhrhost.dashboard.linear_actuator.plots import LinearActuatorPlotter as Plotter
-from lhrhost.messaging.presentation import BasicTranslator
-from lhrhost.messaging.transport.actors import ResponseReceiver, TransportManager
+from lhrhost.messaging import (
+    MessagingStack,
+    add_argparser_transport_selector, parse_argparser_transport_selector
+)
 from lhrhost.protocol.linear_actuator import Protocol
 from lhrhost.tests.messaging.transport.batch import (
-    Batch, BatchExecutionManager, LOGGING_CONFIG, main
+    BatchExecutionManager, LOGGING_CONFIG
 )
 from lhrhost.util import batch
-
-# External imports
-from pulsar.api import arbiter
 
 # Logging
 logging.config.dictConfig(LOGGING_CONFIG)
 
 
-class Batch(Batch):
+class Batch:
     """Actor-based batch execution."""
 
-    def __init__(self, transport_loop):
+    def __init__(self, transport_loop, axis):
         """Initialize member variables."""
-        self.arbiter = arbiter(start=self._start, stopping=self._stop)
-        self.protocol = Protocol('Z-Axis', 'z')
+        self.messaging_stack = MessagingStack(transport_loop)
+        self.protocol = Protocol('{}-Axis'.format(axis.upper()), axis)
         self.protocol_plotter = Plotter(self.protocol)
-        self.translator = BasicTranslator(
-            message_receivers=[self.protocol]
-        )
-        self.protocol.command_receivers.append(self.translator)
-        self.response_receiver = ResponseReceiver(
-            response_receivers=[self.translator]
-        )
-        self.transport_manager = TransportManager(
-            self.arbiter, transport_loop, response_receiver=self.response_receiver
-        )
-        self.translator.serialized_message_receivers.append(
-            self.transport_manager.command_sender
-        )
+        self.messaging_stack.register_response_receivers(self.protocol)
+        self.messaging_stack.register_command_senders(self.protocol)
         self.batch_execution_manager = BatchExecutionManager(
-            self.arbiter, self.transport_manager.command_sender, self.test_routine,
-            header=batch.OUTPUT_HEADER,
-            ready_waiter=self.transport_manager.connection_synchronizer.wait_connected
+            self.messaging_stack.arbiter, self.messaging_stack.command_sender,
+            self.test_routine, header=batch.OUTPUT_HEADER,
+            ready_waiter=self.messaging_stack.connection_synchronizer.wait_connected
         )
+        self.messaging_stack.register_execution_manager(self.batch_execution_manager)
         print('Showing plot...')
         self.protocol_plotter.show()
 
@@ -89,5 +79,21 @@ class Batch(Batch):
         )
 
 
+def main():
+    """Test batch scripted control of a linear actuator."""
+    parser = argparse.ArgumentParser(
+        description='Test batch scripted control of a linear actuator.'
+    )
+    add_argparser_transport_selector(parser)
+    parser.add_argument(
+        'axis', choices=['p', 'z', 'y', 'x'],
+        help='Linear actuator axis.'
+    )
+    args = parser.parse_args()
+    transport_loop = parse_argparser_transport_selector(args)
+    batch = Batch(transport_loop, args.axis)
+    batch.messaging_stack.run()
+
+
 if __name__ == '__main__':
-    main(Batch)
+    main()

@@ -173,14 +173,14 @@ class BasicTranslator(
         payload_start: str='(', payload_end: str=')'
     ):
         """Initialize member variables."""
-        self.__serialized_message_receivers: List[SerializedMessageReceiver] = []
+        self.serialized_message_receivers: List[SerializedMessageReceiver] = []
         if serialized_message_receivers:
-            self.__serialized_message_receivers = [
+            self.serialized_message_receivers = [
                 receiver for receiver in serialized_message_receivers
             ]
-        self.__message_receivers: List[MessageReceiver] = []
+        self.message_receivers: List[MessageReceiver] = []
         if message_receivers:
-            self.__message_receivers = [
+            self.message_receivers = [
                 receiver for receiver in message_receivers
             ]
 
@@ -271,16 +271,6 @@ class BasicTranslator(
             return Message(groups[0], int(groups[1]) if len(groups[1]) else None)
         except AttributeError:
             raise InvalidSerializationError('Malformed message {}'.format(serialized))
-
-    @property
-    def serialized_message_receivers(self) -> _SerializedMessageReceivers:
-        """Return an iterable of objects to forward received serialized messages to."""
-        return self.__serialized_message_receivers
-
-    @property
-    def message_receivers(self) -> _MessageReceivers:
-        """Return an iterable of objects to forward received deserialized messages to."""
-        return self.__message_receivers
 
     # Implement transport.SerializedMessageReceiver
 
