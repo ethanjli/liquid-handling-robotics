@@ -9,7 +9,7 @@ protocol selected for the device board.
 import asyncio
 import logging
 from asyncio import StreamReader, StreamWriter
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional, Tuple
 
 # Local package imports
 import lhrhost.messaging.transport as transport
@@ -31,6 +31,11 @@ _SerializedMessageReceivers = Iterable[transport.SerializedMessageReceiver]
 # Protocol parameters
 MESSAGE_LINE_PREFIX = ''
 MESSAGE_LINE_SUFFIX = '\n'
+
+
+PORT_WHITELIST_PREFIXES = (
+    '/dev/ttyACM', '/dev/cu.usbmodem'
+)
 
 
 # Transport-layer implementation
@@ -125,7 +130,8 @@ class TransportConnectionManager(transport.TransportConnectionManager):
     def __init__(
         self, handshake_attempt_interval: float=0.2,
         port: Optional[str]=None, baudrate: int=115200,
-        transport_kwargs: Optional[_Kwargs]=None
+        transport_kwargs: Optional[_Kwargs]=None,
+        port_whitelist_prefixes: Tuple[str]=PORT_WHITELIST_PREFIXES
     ):
         """Initialize member variables."""
         super().__init__(transport_kwargs=transport_kwargs)
@@ -137,6 +143,14 @@ class TransportConnectionManager(transport.TransportConnectionManager):
                     logger.info(
                         'Multiple ports found: {}!'.format(ports)
                     )
+                    if port_whitelist_prefixes:
+                        ports = [
+                            port for port in ports
+                            if port.startswith(port_whitelist_prefixes)
+                        ]
+                        logger.info(
+                            'Only considering whitelisted ports: {}!'.format(ports)
+                        )
                 port = ports[0]
                 logger.info('Using port {}.'.format(port))
             except IndexError:
