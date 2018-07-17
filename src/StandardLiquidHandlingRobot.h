@@ -52,7 +52,7 @@
   /* smootherSnapMultiplier, smootherMax */ 0.01, 800,\
   /* smootherEnableSleep, smootherActivityThreshold */ true, 2.0
 #define LHR_kYPositionerCalibrationParams\
-  /* calibrationSpeed */ 200
+  /* calibrationSpeed */ 120
 
 // Define convenience macros for instantiating, setting up, connecting, and updating messaging system
 
