@@ -85,7 +85,6 @@ group Basic example with convergence termination
   ...100 ms pass...
   note over Peripheral: actuator detects convergence,\nends control,\nand sets motor duty to 0.
   Peripheral -> Host: LinearActuator/Position(245)
-  Peripheral -> Host: LinearActuator/Motor(0)
   Peripheral -> Host: LinearActuator/FeedbackController(250)
   Peripheral -> Host: LinearActuator(-2)
 end
@@ -113,7 +112,6 @@ group Example with stall protection termination
   ...100 ms pass...
   note over Peripheral: actuator detects motor stall,\ninterrupts control,\nand sets motor duty to 0.
   Peripheral -> Host: LinearActuator/Position(200)
-  Peripheral -> Host: LinearActuator/Motor(0)
   Peripheral -> Host: LinearActuator/FeedbackController(250)
   Peripheral -> Host: LinearActuator(-1)
 end
@@ -143,7 +141,6 @@ group Example with timer termination
   note over Peripheral: actuator has reached\nposition 300, and is\nstill oscillating.
   note over Peripheral: actuator detects timer timeout,\ninterrupts control,\nand sets motor duty to 0.
   Peripheral -> Host: LinearActuator/Position(300)
-  Peripheral -> Host: LinearActuator/Motor(0)
   Peripheral -> Host: LinearActuator/FeedbackController(250)
   Peripheral -> Host: LinearActuator(-3)
 end

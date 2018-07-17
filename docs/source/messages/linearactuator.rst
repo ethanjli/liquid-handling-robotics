@@ -435,16 +435,16 @@ To set the PID controller to use Kp = 10, kd = 0.1, and ki = 0.5 for position fe
 
 To make the Z-Axis actuator go to position 100, wait for 2 seconds after it finishes, then make the Pipettor Axis actuator go to position 200, wait for 2 seconds after it finishes, and then make the Z-Axis actuator go to position 900, and wait until it finishes:
 
-- Send `<zf>(100)`; wait for a `<zp>(...)` response, a `<zm>(0)` response, a `<zf>(100)`, and a `<z>(...)` response.
+- Send `<zf>(100)`; the peripheral will immediately send a `<zf>(100)` response and a `<z>(2)` response to acknowledge the command. Then wait for a `<zp>(...)` response, a `<zf>(100)`, and a `<z>(...)` response, which together indicate that the actuator has stopped moving.
 - Wait 2 seconds
-- Send `<pf>(200)`; wait for a `<pp>(...)` response, a `<pm>(0)` response, a `<pf>(200)`, and a `<p>(...)` response.
+- Send `<pf>(200)`; the peripheral will immediately send a `<pf>(200)` response and a `<p>(2)` response to acknowledge the command. Then wait for a `<pp>(...)` response, a `<pf>(200)`, and a `<p>(...)` response, which together indicate that the actuator has stopped moving.
 - Wait 2 seconds
-- Send `<zf>(300)`; wait for a `<zp>(...)` response, a `<zm>(0)` response, a `<zf>(300)`, and a `<z>(...)` response.
+- Send `<zf>(300)`; the peripheral will immediately send a `<zf>(300)` response and a `<z>(2)` response to acknowledge the command. Then wait for a `<zp>(...)` response, a `<zf>(300)`, and a `<z>(...)` response, which together indicate that the actuator has stopped moving.
 
 To simultaneously make the Z-Axis actuator go to position 100 and the Y-Axis actuator go to position 360:
 
-- Send `<zf>(100)` and `<yf>(360)`
-- Wait for a `<zp>(...)` response, a `<zm>(0)` response, a `<zf>(100)`, a `<z>(...)` response, a `<yp>(...)` response, a `<ym>(0)` response, a `<yf>(100)`, and a `<y>(...)` response (not necessarily in that order).
+- Send `<zf>(100)` and `<yf>(360)`. The peripheral will immediately send `<zf>(100)`, `<z>(2)`, `<yf>(360)`, and `<y>(2)` responses to acknowledge these commands.
+- Wait for a `<zp>(...)` response, a `<zf>(100)`, a `<z>(...)` response, a `<yp>(...)` response, a `<yf>(100)`, and a `<y>(...)` response (not necessarily in that order) to indicate that the respective actuators have stopped moving.
 
 
 Commands Cheatsheet
