@@ -5,35 +5,35 @@ skinparam monochrome true
 skinparam defaultFontName Lato
 skinparam shadowing false
 
-Host -> Peripheral: IOPins()
+Host -> Peripheral: IOPins()\n<i>()
 note over Peripheral: IOPins is an unhandled channel
-Host -> Peripheral: IOPins/Analog()
+Host -> Peripheral: IOPins/Analog()\n<ia>()
 note over Peripheral: IOPins/Analog is an unhandled channel
-Host -> Peripheral: IOPins/Digital()
+Host -> Peripheral: IOPins/Digital()\n<id>()
 note over Peripheral: IOPins/Digital is an unhandled channel
 |||
 note over Peripheral: pin A3 is connected to the 5V pin
-Host -> Peripheral: IOPins/Analog/3()
+Host -> Peripheral: IOPins/Analog/3()\n<ia3>()
 note left: READ Command
-Peripheral -> Host: IOPins/Analog/3(1023)
+Peripheral -> Host: IOPins/Analog/3(1023)\n<ia3>(1023)
 note right: READ response
 |||
 note over Peripheral: pin A3 is connected to the GND pin
-Host -> Peripheral: IOPins/Analog/3()
+Host -> Peripheral: IOPins/Analog/3()\n<ia3>()
 note left: READ Command
-Peripheral -> Host: IOPins/Analog/3(0)
+Peripheral -> Host: IOPins/Analog/3(0)\n<ia3>(0)
 note right: READ response
 |||
 note over Peripheral: pin 12 is connected to the 5V pin
-Host -> Peripheral: IOPins/Digital/12()
+Host -> Peripheral: IOPins/Digital/12()\n<id12>()
 note left: READ Command
-Peripheral -> Host: IOPins/Digital/12(1)
+Peripheral -> Host: IOPins/Digital/12(1)\n<id12>(1)
 note right: READ response
 |||
 note over Peripheral: pin 12 is connected to the GND pin
-Host -> Peripheral: IOPins/Digital/12()
+Host -> Peripheral: IOPins/Digital/12()\n<id12>()
 note left: READ Command
-Peripheral -> Host: IOPins/Digital/12(0)
+Peripheral -> Host: IOPins/Digital/12(0)\n<id12>(0)
 note right: READ response
 
 @enduml

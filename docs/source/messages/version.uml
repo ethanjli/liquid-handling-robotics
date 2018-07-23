@@ -5,28 +5,28 @@ skinparam monochrome true
 skinparam defaultFontName Lato
 skinparam shadowing false
 
-Host -> Peripheral: Version/Major()
+Host -> Peripheral: Version/Major()\n<v0>()
 note left: READ Command
-Peripheral -> Host: Version/Major(1)
+Peripheral -> Host: Version/Major(1)\n<v0>(1)
 note right: READ response
 |||
-Host -> Peripheral: Version/Minor()
+Host -> Peripheral: Version/Minor()\n<v1>()
 note left: READ command
-Peripheral -> Host: Version/Minor(0)
+Peripheral -> Host: Version/Minor(0)\n<v1>(0)
 note right: READ response
 |||
-Host -> Peripheral: Version/Patch()
+Host -> Peripheral: Version/Patch()\n<v2>()
 note left: READ command
-Peripheral -> Host: Version/Patch(0)
+Peripheral -> Host: Version/Patch(0)\n<v2>(0)
 note right: READ response
 |||
-Host -> Peripheral: Version()
+Host -> Peripheral: Version()\n<v>()
 note left: READ command
-Peripheral -> Host: Version/Major(1)
+Peripheral -> Host: Version/Major(1)\n<v0>(1)
 note right: READ response
-Peripheral -> Host: Version/Minor(0)
+Peripheral -> Host: Version/Minor(0)\n<v1>(0)
 note right: READ response
-Peripheral -> Host: Version/Patch(0)
+Peripheral -> Host: Version/Patch(0)\n<v2>(0)
 note right: READ response
 
 @enduml

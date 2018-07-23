@@ -5,35 +5,35 @@ skinparam defaultFontName Lato
 skinparam shadowing false
 
 group Basic example
-  Host -> Peripheral: Echo(1234)
+  Host -> Peripheral: Echo(1234)\n<e>(1234)
   note left: WRITE+READ Command
-  Peripheral -> Host: Echo(1234)
+  Peripheral -> Host: Echo(1234)\n<e>(1234)
   note right: READ response
   |||
-  Host -> Peripheral: Echo()
+  Host -> Peripheral: Echo()\n<e>()
   note left: READ command
-  Peripheral -> Host: Echo(1234)
+  Peripheral -> Host: Echo(1234)\n<e>(1234)
   note right: READ response
   |||
-  Host -> Peripheral: Echo(-1)
-  Peripheral -> Host: Echo(-1)
+  Host -> Peripheral: Echo(-1)\n<e>(-1)
+  Peripheral -> Host: Echo(-1)\n<e>(-1)
   |||
-  Host -> Peripheral: Echo()
-  Peripheral -> Host: Echo(-1)
+  Host -> Peripheral: Echo()\n<e>()
+  Peripheral -> Host: Echo(-1)\n<e>(-1)
 end
 |||
 group Example of testing for integer overflow
-  Host -> Peripheral: Echo(32767)
+  Host -> Peripheral: Echo(32767)\n<e>(32767)
   note left: Won't overflow
-  Peripheral -> Host: Echo(32767)
+  Peripheral -> Host: Echo(32767)\n<e>(32767)
   |||
-  Host -> Peripheral: Echo(32768)
+  Host -> Peripheral: Echo(32768)\n<e>(32768)
   note left: Will overflow
-  Peripheral -> Host: Echo(-32768)
+  Peripheral -> Host: Echo(-32768)\n<e>(-32768)
   |||
-  Host -> Peripheral: Echo(32769)
+  Host -> Peripheral: Echo(32769)\n<e>(32769)
   note left: Will overflow
-  Peripheral -> Host: Echo(-32767)
+  Peripheral -> Host: Echo(-32767)\n<e>(-32767)
 end
 
 @enduml

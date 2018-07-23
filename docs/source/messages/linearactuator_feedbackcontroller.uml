@@ -6,87 +6,87 @@ skinparam shadowing false
 
 group Basic example with convergence termination
   == Initial State ==
-  Host -> Peripheral: LinearActuator()
-  Peripheral -> Host: LinearActuator(0)
+  Host -> Peripheral: LinearActuator()\n<_>()
+  Peripheral -> Host: LinearActuator(0)\n<_>(0)
   |||
-  Host -> Peripheral: LinearActuator/FeedbackController()
+  Host -> Peripheral: LinearActuator/FeedbackController()\n<_f>()
   note left: READ Command
-  Peripheral -> Host: LinearActuator/FeedbackController(0)
+  Peripheral -> Host: LinearActuator/FeedbackController(0)\n<_f>(0)
   note right: READ response
   |||
   note over Peripheral: Linear actuator is moved to position 0.
 
   == Set Feedback Control Parameters ==
-  Host -> Peripheral: LinearActuator/FeedbackController/ConvergenceTimeout(100)
+  Host -> Peripheral: LinearActuator/FeedbackController/ConvergenceTimeout(100)\n<_fc>(100)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/FeedbackController/ConvergenceTimeout(100)
+  Peripheral -> Host: LinearActuator/FeedbackController/ConvergenceTimeout(100)\n<_fc>(100)
   note right: READ response
   |||
-  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Position/Low(0)
+  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Position/Low(0)\n<_flpl>(0)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Position/Low(0)
+  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Position/Low(0)\n<_flpl>(0)
   note right: READ response
   |||
-  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Position/High(1023)
+  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Position/High(1023)\n<_flph>(1023)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Position/High(1023)
+  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Position/High(1023)\n<_flph>(1023)
   note right: READ response
   |||
-  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Forwards/Low(60)
+  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Forwards/Low(60)\n<_flmfl>(60)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Motor/Forwards/Low(60)
+  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Motor/Forwards/Low(60)\n<_flmfl>(60)
   note right: READ response
   |||
-  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Forwards/High(255)
+  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Forwards/High(255)\n<_flmfh>(255)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Motor/Forwards/High(255)
+  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Motor/Forwards/High(255)\n<_flmfh>(255)
   note right: READ response
   |||
-  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Backwards/Low(-60)
+  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Backwards/Low(-60)\n<_flmbl>(-60)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Motor/Backwards/Low(-60)
+  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Motor/Backwards/Low(-60)\n<_flmbl>(-60)
   note right: READ response
   |||
-  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Backwards/High(-255)
+  Host -> Peripheral: LinearActuator/FeedbackController/Limits/Motor/Backwards/High(-255)\n<_flmbh>(-255)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Motor/Backwards/High(-255)
+  Peripheral -> Host: LinearActuator/FeedbackController/Limits/Motor/Backwards/High(-255)\n<_flmbh>(-255)
   note right: READ response
   |||
-  Host -> Peripheral: LinearActuator/FeedbackController/PID/Kp(1000)
+  Host -> Peripheral: LinearActuator/FeedbackController/PID/Kp(1000)\n<_fpp>(1000)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/FeedbackController/PID/Kp(1000)
+  Peripheral -> Host: LinearActuator/FeedbackController/PID/Kp(1000)\n<_fpp>(1000)
   note right: READ response
   |||
-  Host -> Peripheral: LinearActuator/FeedbackController/PID/Kd(100)
+  Host -> Peripheral: LinearActuator/FeedbackController/PID/Kd(100)\n<_fpd>(100)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/FeedbackController/PID/Kd(100)
+  Peripheral -> Host: LinearActuator/FeedbackController/PID/Kd(100)\n<_fpd>(100)
   note right: READ response
   |||
-  Host -> Peripheral: LinearActuator/FeedbackController/PID/Ki(100)
+  Host -> Peripheral: LinearActuator/FeedbackController/PID/Ki(100)\n<_fpi>(100)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/FeedbackController/PID/Ki(100)
+  Peripheral -> Host: LinearActuator/FeedbackController/PID/Ki(100)\n<_fpi>(100)
   note right: READ response
   |||
-  Host -> Peripheral: LinearActuator/FeedbackController/PID/SampleInterval(10)
+  Host -> Peripheral: LinearActuator/FeedbackController/PID/SampleInterval(10)\n<_fps>(10)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/FeedbackController/PID/SampleInterval(10)
+  Peripheral -> Host: LinearActuator/FeedbackController/PID/SampleInterval(10)\n<_fps>(10)
   note right: READ response
 
   == Start Feedback Control ==
-  Host -> Peripheral: LinearActuator/FeedbackController(250)
+  Host -> Peripheral: LinearActuator/FeedbackController(250)\n<_f>(250)
   note left: READ+WRITE+Actions\nCommand
   note over Peripheral: Linear actuator starts\ntargeting position 250.
-  Peripheral -> Host: LinearActuator/FeedbackController(250)
+  Peripheral -> Host: LinearActuator/FeedbackController(250)\n<_f>(250)
   note right: READ response
-  Peripheral -> Host: LinearActuator(2)
+  Peripheral -> Host: LinearActuator(2)\n<_>(2)
 
   == Controlling ==
   ...linear actuator converges onto position 245...
   ...100 ms pass...
   note over Peripheral: actuator detects convergence,\nends control,\nand sets motor duty to 0.
-  Peripheral -> Host: LinearActuator/Position(245)
-  Peripheral -> Host: LinearActuator/FeedbackController(250)
-  Peripheral -> Host: LinearActuator(-2)
+  Peripheral -> Host: LinearActuator/Position(245)\n<_p>(245)
+  Peripheral -> Host: LinearActuator/FeedbackController(250)\n<_f>(250)
+  Peripheral -> Host: LinearActuator(-2)\n<_>(-2)
 end
 
 group Example with stall protection termination
@@ -94,26 +94,26 @@ group Example with stall protection termination
   note over Peripheral: Linear actuator is moved to position 0.
 
   == Set Feedback Control Parameters ==
-  Host -> Peripheral: LinearActuator/Motor/StallProtectorTimeout(100)
+  Host -> Peripheral: LinearActuator/Motor/StallProtectorTimeout(100)\n<_ms>(100)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/Motor/StallProtectorTimeout(100)
+  Peripheral -> Host: LinearActuator/Motor/StallProtectorTimeout(100)\n<_ms>(100)
   |||
-  Host -> Peripheral: LinearActuator/Motor/TimerTimeout(0)
-  Peripheral -> Host: LinearActuator/Motor/TimerTimeout(0)
+  Host -> Peripheral: LinearActuator/Motor/TimerTimeout(0)\n<_mt>(100)
+  Peripheral -> Host: LinearActuator/Motor/TimerTimeout(0)\n<_mt>(100)
 
   == Start Feedback Control ==
-  Host -> Peripheral: LinearActuator/FeedbackController(250)
+  Host -> Peripheral: LinearActuator/FeedbackController(250)\n<_f>(250)
   note over Peripheral: Linear actuator starts\ntargeting position 250.
-  Peripheral -> Host: LinearActuator/FeedbackController(250)
-  Peripheral -> Host: LinearActuator(2)
+  Peripheral -> Host: LinearActuator/FeedbackController(250)\n<_f>(250)
+  Peripheral -> Host: LinearActuator(2)\n<_>(2)
 
   == Controlling ==
   ...motor starts stalling at position 200...
   ...100 ms pass...
   note over Peripheral: actuator detects motor stall,\ninterrupts control,\nand sets motor duty to 0.
-  Peripheral -> Host: LinearActuator/Position(200)
-  Peripheral -> Host: LinearActuator/FeedbackController(250)
-  Peripheral -> Host: LinearActuator(-1)
+  Peripheral -> Host: LinearActuator/Position(200)\n<_p>(200)
+  Peripheral -> Host: LinearActuator/FeedbackController(250)\n<_f>(250)
+  Peripheral -> Host: LinearActuator(-1)\n<_>(-1)
 end
 
 group Example with timer termination
@@ -121,18 +121,18 @@ group Example with timer termination
   note over Peripheral: Linear actuator is moved to position 0.
 
   == Set Feedback Control Parameters ==
-  Host -> Peripheral: LinearActuator/Motor/StallProtectorTimeout(100)
+  Host -> Peripheral: LinearActuator/Motor/StallProtectorTimeout(100)\n<_ms>(100)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/Motor/StallProtectorTimeout(100)
+  Peripheral -> Host: LinearActuator/Motor/StallProtectorTimeout(100)\n<_ms>(100)
   |||
-  Host -> Peripheral: LinearActuator/Motor/TimerTimeout(5000)
-  Peripheral -> Host: LinearActuator/Motor/TimerTimeout(5000)
+  Host -> Peripheral: LinearActuator/Motor/TimerTimeout(5000)\n<_mt>(5000)
+  Peripheral -> Host: LinearActuator/Motor/TimerTimeout(5000)\n<_mt>(5000)
 
   == Start Feedback Control ==
-  Host -> Peripheral: LinearActuator/FeedbackController(250)
+  Host -> Peripheral: LinearActuator/FeedbackController(250)\n<_f>(250)
   note over Peripheral: Linear actuator starts\ntargeting position 250.
-  Peripheral -> Host: LinearActuator/FeedbackController(250)
-  Peripheral -> Host: LinearActuator(2)
+  Peripheral -> Host: LinearActuator/FeedbackController(250)\n<_f>(250)
+  Peripheral -> Host: LinearActuator(2)\n<_>(2)
 
   == Controlling ==
   ...1000 ms pass...
@@ -140,24 +140,24 @@ group Example with timer termination
   ...4000 ms pass...
   note over Peripheral: actuator has reached\nposition 300, and is\nstill oscillating.
   note over Peripheral: actuator detects timer timeout,\ninterrupts control,\nand sets motor duty to 0.
-  Peripheral -> Host: LinearActuator/Position(300)
-  Peripheral -> Host: LinearActuator/FeedbackController(250)
-  Peripheral -> Host: LinearActuator(-3)
+  Peripheral -> Host: LinearActuator/Position(300)\n<_p>(300)
+  Peripheral -> Host: LinearActuator/FeedbackController(250)\n<_f>(250)
+  Peripheral -> Host: LinearActuator(-3)\n<_>(-3)
 end
 
 group Example with interruption of previous control mode
   == Initial State ==
-  Host -> Peripheral: LinearActuator/Motor(-255)
+  Host -> Peripheral: LinearActuator/Motor(-255)\n<_m>(-255)
   note over Peripheral: Linear actuator is operating in\ndirect motor duty control mode.
-  Host -> Peripheral: LinearActuator()
-  Peripheral -> Host: LinearActuator(1)
+  Host -> Peripheral: LinearActuator()\n<_>()
+  Peripheral -> Host: LinearActuator(1)\n<_>(1)
 
   == Start Feedback Control ==
   note over Peripheral: Linear actuator is still operating\nin direct motor duty control mode.
-  Host -> Peripheral: LinearActuator/FeedbackController(250)
+  Host -> Peripheral: LinearActuator/FeedbackController(250)\n<_f>(250)
   note over Peripheral: Linear actuator interrupts\ndirect motor duty control mode\nand starts targeting position 250.
-  Peripheral -> Host: LinearActuator/FeedbackController(250)
-  Peripheral -> Host: LinearActuator(2)
+  Peripheral -> Host: LinearActuator/FeedbackController(250)\n<_f>(250)
+  Peripheral -> Host: LinearActuator(2)\n<_>(2)
 end
 
 @enduml

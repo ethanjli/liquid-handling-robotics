@@ -6,42 +6,42 @@ skinparam shadowing false
 
 group Basic example with stall protection termination
   == Initial State ==
-  Host -> Peripheral: LinearActuator()
-  Peripheral -> Host: LinearActuator(0)
+  Host -> Peripheral: LinearActuator()\n<_>()
+  Peripheral -> Host: LinearActuator(0)\n<_>(0)
   |||
-  Host -> Peripheral: LinearActuator/Motor()
+  Host -> Peripheral: LinearActuator/Motor()\n<_m>()
   note left: READ Command
-  Peripheral -> Host: LinearActuator/Motor(0)
+  Peripheral -> Host: LinearActuator/Motor(0)\n<_m>(0)
   note right: READ response
   |||
   note over Peripheral: Linear actuator is moved to position 0.
 
   == Set Motor Direct Duty Control Parameters ==
-  Host -> Peripheral: LinearActuator/Motor/StallProtectorTimeout(100)
+  Host -> Peripheral: LinearActuator/Motor/StallProtectorTimeout(100)\n<_ms>(100)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/Motor/StallProtectorTimeout(100)
+  Peripheral -> Host: LinearActuator/Motor/StallProtectorTimeout(100)\n<_ms>(100)
   note right: READ response
   |||
-  Host -> Peripheral: LinearActuator/Motor/TimerTimeout(0)
+  Host -> Peripheral: LinearActuator/Motor/TimerTimeout(0)\n<_mt>(0)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/Motor/TimerTimeout(0)
+  Peripheral -> Host: LinearActuator/Motor/TimerTimeout(0)\n<_mt>(0)
   note right: READ response
 
   == Start Motor Direct Duty Control ==
-  Host -> Peripheral: LinearActuator/Motor(255)
+  Host -> Peripheral: LinearActuator/Motor(255)\n<_m>(255)
   note left: READ+WRITE+Actions\nCommand
   note over Peripheral: Linear actuator starts\nrunning motor forwards\nat full power.
-  Peripheral -> Host: LinearActuator/Motor(255)
+  Peripheral -> Host: LinearActuator/Motor(255)\n<_m>(255)
   note right: READ response
-  Peripheral -> Host: LinearActuator(1)
+  Peripheral -> Host: LinearActuator(1)\n<_>(0)
 
   == Controlling ==
   ...motor starts stalling at position 200...
   ...100 ms pass...
   note over Peripheral: actuator detects motor stall,\ninterrupts control,\nand sets motor duty to 0.
-  Peripheral -> Host: LinearActuator/Position(200)
-  Peripheral -> Host: LinearActuator/Motor(0)
-  Peripheral -> Host: LinearActuator(-1)
+  Peripheral -> Host: LinearActuator/Position(200)\n<_p>(200)
+  Peripheral -> Host: LinearActuator/Motor(0)\n<_m>(0)
+  Peripheral -> Host: LinearActuator(-1)\n<_>(-1)
 end
 
 group Basic example with timer termination
@@ -49,41 +49,41 @@ group Basic example with timer termination
   note over Peripheral: Linear actuator is moved to position 0.
 
   == Set Motor Direct Duty Control Parameters ==
-  Host -> Peripheral: LinearActuator/Motor/StallProtectorTimeout(100)
+  Host -> Peripheral: LinearActuator/Motor/StallProtectorTimeout(100)\n<_ms>(100)
   note left: READ+WRITE Command
-  Peripheral -> Host: LinearActuator/Motor/StallProtectorTimeout(100)
+  Peripheral -> Host: LinearActuator/Motor/StallProtectorTimeout(100)\n<_ms>(100)
   |||
-  Host -> Peripheral: LinearActuator/Motor/TimerTimeout(100)
-  Peripheral -> Host: LinearActuator/Motor/TimerTimeout(100)
+  Host -> Peripheral: LinearActuator/Motor/TimerTimeout(100)\n<_mt>(100)
+  Peripheral -> Host: LinearActuator/Motor/TimerTimeout(100)\n<_mt>(100)
 
   == Start Motor Direct Duty Control ==
-  Host -> Peripheral: LinearActuator/Motor(255)
+  Host -> Peripheral: LinearActuator/Motor(255)\n<_m>(255)
   note over Peripheral: Linear actuator starts\nrunning motor forwards\nat full power.
-  Peripheral -> Host: LinearActuator/Motor(255)
-  Peripheral -> Host: LinearActuator(1)
+  Peripheral -> Host: LinearActuator/Motor(255)\n<_m>(255)
+  Peripheral -> Host: LinearActuator(1)\n<_>(1)
 
   == Controlling ==
   ...100 ms pass...
   note over Peripheral: actuator has reached\nposition 150 so far,\nbut the motor has\nnot yet stalled.
   note over Peripheral: actuator detects timer timeout,\ninterrupts control,\nand sets motor duty to 0.
-  Peripheral -> Host: LinearActuator/Position(150)
-  Peripheral -> Host: LinearActuator/Motor(0)
-  Peripheral -> Host: LinearActuator(-3)
+  Peripheral -> Host: LinearActuator/Position(150)\n<_p>(150)
+  Peripheral -> Host: LinearActuator/Motor(0)\n<_m>(0)
+  Peripheral -> Host: LinearActuator(-3)\n<_>(-3)
 end
 
 group Example with interruption of previous control mode
   == Initial State ==
-  Host -> Peripheral: LinearActuator/FeedbackController(50)
+  Host -> Peripheral: LinearActuator/FeedbackController(50)\n<_f>(50)
   note over Peripheral: Linear actuator is operating\nin feedback control mode.
-  Host -> Peripheral: LinearActuator()
-  Peripheral -> Host: LinearActuator(2)
+  Host -> Peripheral: LinearActuator()\n<_>()
+  Peripheral -> Host: LinearActuator(2)\n<_>(-2)
 
   == Start Motor Direct Duty Control ==
   note over Peripheral: Linear actuator is still operating\nin feedback control mode.
-  Host -> Peripheral: LinearActuator/Motor(255)
+  Host -> Peripheral: LinearActuator/Motor(255)\n<_m>(255)
   note over Peripheral: Linear actuator interrupts\nfeedback control mode\nand starts running motor\nforwards at full power.
-  Peripheral -> Host: LinearActuator/Motor(255)
-  Peripheral -> Host: LinearActuator(1)
+  Peripheral -> Host: LinearActuator/Motor(255)\n<_m>(255)
+  Peripheral -> Host: LinearActuator(1)\n<_>(1)
 end
 
 @enduml
