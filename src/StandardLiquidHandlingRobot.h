@@ -31,7 +31,7 @@
   /* actuatorChannelPrefix */ 'z',\
   /* motorPort, potentiometerPin */ M2, A1,\
   /* minPosition, maxPosition */ 20, 970,\
-  /* minDuty, maxDuty */ -100, 180,\
+  /* minDuty, maxDuty */ -120, 180,\
   /* pidKp, pidKd, pidKi, pidSampleTime */ 10, 0.08, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -50, 110,\
