@@ -112,8 +112,10 @@ class Protocol(ProtocolHandlerNode):
             return
         message = Message(self.name_path, duty)
         wait_channels = [
+            # Initial responses
             self.name_path,
             self.parent.name_path,
+            # Responses after actuator stops
             self.parent.position.name_path,
             self.name_path,
             self.parent.name_path

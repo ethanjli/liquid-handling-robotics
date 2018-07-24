@@ -46,16 +46,14 @@ class Batch:
         await self.robot.load_calibrations()
         await self.robot.go_to_alignment_hole()
 
+        dilution_rows = ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a']
         await self.dispense_waste()
         await self.intake_water('mid', 0.85)
-        await self.distribute_water(0.2, [1], ['h', 'g', 'f', 'e'])
+        await self.distribute_water(0.1, [1], dilution_rows)
         await self.dispense_waste()
-        await self.intake_water('mid', 0.85)
-        await self.distribute_water(0.2, [1], ['d', 'c', 'b', 'a'])
-        await self.dispense_waste()
-        await self.intake_food_coloring(0.2)
-        for row in ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a']:
-            await self.dilute(1, row, 'low', 0.2, 2)
+        await self.intake_food_coloring(0.1)
+        for row in dilution_rows:
+            await self.dilute(1, row, 'low', 0.1, 2)
         await self.dispense_waste()
         await self.robot.z.go_to_high_end_position()
         await self.robot.y.go_to_low_end_position()
@@ -72,7 +70,7 @@ class Batch:
     async def intake_food_coloring(self, volume):
         """Intake food coloring to distribute to wells."""
         await self.robot.go_to_cuvette('f')
-        await self.robot.intake('cuvette', 'high', volume)
+        await self.robot.intake('cuvette', 'bottom', volume)
 
     async def distribute_water(self, volume, columns, rows):
         """Distribute water to wells."""
@@ -90,7 +88,7 @@ class Batch:
 
     async def dispense_waste(self):
         """Dispense any leftover liquid in the pipettor."""
-        await self.robot.go_to_cuvette('e')
+        await self.robot.go_to_cuvette('a')
         await self.robot.dispense('cuvette', 'top')
 
 

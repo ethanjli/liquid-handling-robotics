@@ -296,8 +296,10 @@ class Protocol(ProtocolHandlerNode):
         # TODO: validate the state
         message = Message(self.name_path, position)
         wait_channels = [
+            # Initial responses
             self.name_path,
             self.parent.name_path,
+            # Responses after actuator stops
             self.parent.position.name_path,
             self.name_path,
             self.parent.name_path
