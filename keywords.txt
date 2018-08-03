@@ -51,42 +51,42 @@ notifyFeedbackControllerSetpoint	KEYWORD2		RESERVED_WORD
 #######################################
 
 # Preprocessor defines used in LiquidHandlingRobotics.h
-LHR_Messaging_ASCIIIO	LITERAL1		RESERVED_WORD2
-LHR_Messaging_FirmataIO	LITERAL1		RESERVED_WORD2
-LHR_Protocol_Core	LITERAL1		RESERVED_WORD2
-LHR_Protocol_Board	LITERAL1		RESERVED_WORD2
-LHR_Protocol_AbsoluteLinearActuatorAxis	LITERAL1		RESERVED_WORD2
-LHR_Protocol_CumulativeLinearActuatorAxis	LITERAL1		RESERVED_WORD2
+LHR_Messaging_ASCIIIO	LITERAL1		RESERVED_WORD_2
+LHR_Messaging_FirmataIO	LITERAL1		RESERVED_WORD_2
+LHR_Protocol_Core	LITERAL1		RESERVED_WORD_2
+LHR_Protocol_Board	LITERAL1		RESERVED_WORD_2
+LHR_Protocol_AbsoluteLinearActuatorAxis	LITERAL1		RESERVED_WORD_2
+LHR_Protocol_CumulativeLinearActuatorAxis	LITERAL1		RESERVED_WORD_2
 
 # Preprocessor functions defined in Messaging/FirmataIO.h
-LHR_makeFirmataTransportResetCallback	LITERAL1		RESERVED_WORD2
-LHR_attachFirmataTransportResetCallback	LITERAL1		RESERVED_WORD2
+LHR_makeFirmataTransportResetCallback	LITERAL1		RESERVED_WORD_2
+LHR_attachFirmataTransportResetCallback	LITERAL1		RESERVED_WORD_2
 
 # Preprocessor constant expansions defined in StandardLiquidHandlingRobot.h
-LHR_kPipettorParams	LITERAL1		RESERVED_WORD2
-LHR_kVerticalPositionerParams	LITERAL1		RESERVED_WORD2
-LHR_kYPositionerParams	LITERAL1		RESERVED_WORD2
-LHR_kYPositionerCalibrationParams	LITERAL1		RESERVED_WORD2
+LHR_kPipettorParams	LITERAL1		RESERVED_WORD_2
+LHR_kVerticalPositionerParams	LITERAL1		RESERVED_WORD_2
+LHR_kYPositionerParams	LITERAL1		RESERVED_WORD_2
+LHR_kYPositionerCalibrationParams	LITERAL1		RESERVED_WORD_2
 
 # Preprocessor defines used in StandardLiquidHandlingRobot.h
-LHR_Standard_pipettorAxis	LITERAL1		RESERVED_WORD2
-LHR_Standard_zAxis	LITERAL1		RESERVED_WORD2
-LHR_Standard_yAxis	LITERAL1		RESERVED_WORD2
-LHR_Standard_xAxis	LITERAL1		RESERVED_WORD2
+LHR_Standard_pipettorAxis	LITERAL1		RESERVED_WORD_2
+LHR_Standard_zAxis	LITERAL1		RESERVED_WORD_2
+LHR_Standard_yAxis	LITERAL1		RESERVED_WORD_2
+LHR_Standard_xAxis	LITERAL1		RESERVED_WORD_2
 
 # Preprocessor functions defined in StandardLiquidHandlingRobot.h
-LHR_instantiateMessaging	LITERAL1		RESERVED_WORD2
-LHR_setupMessaging	LITERAL1		RESERVED_WORD2
-LHR_connectMessaging	LITERAL1		RESERVED_WORD2
-LHR_updateMessaging	LITERAL1		RESERVED_WORD2
-LHR_instantiateBasics	LITERAL1		RESERVED_WORD2
-LHR_setupBasics	LITERAL1		RESERVED_WORD2
-LHR_connectBasics	LITERAL1		RESERVED_WORD2
-LHR_updateBasics	LITERAL1		RESERVED_WORD2
-LHR_instantiateAxes	LITERAL1		RESERVED_WORD2
-LHR_setupAxes	LITERAL1		RESERVED_WORD2
-LHR_connect	LITERAL1		RESERVED_WORD2
-LHR_updateAxes	LITERAL1		RESERVED_WORD2
+LHR_instantiateMessaging	LITERAL1		RESERVED_WORD_2
+LHR_setupMessaging	LITERAL1		RESERVED_WORD_2
+LHR_connectMessaging	LITERAL1		RESERVED_WORD_2
+LHR_updateMessaging	LITERAL1		RESERVED_WORD_2
+LHR_instantiateBasics	LITERAL1		RESERVED_WORD_2
+LHR_setupBasics	LITERAL1		RESERVED_WORD_2
+LHR_connectBasics	LITERAL1		RESERVED_WORD_2
+LHR_updateBasics	LITERAL1		RESERVED_WORD_2
+LHR_instantiateAxes	LITERAL1		RESERVED_WORD_2
+LHR_setupAxes	LITERAL1		RESERVED_WORD_2
+LHR_connect	LITERAL1		RESERVED_WORD_2
+LHR_updateAxes	LITERAL1		RESERVED_WORD_2
 
 #######################################
 # Constants
