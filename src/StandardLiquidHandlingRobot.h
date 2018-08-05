@@ -31,7 +31,7 @@
   /* actuatorChannelPrefix */ 'z',\
   /* motorPort, potentiometerPin */ M2, A1,\
   /* minPosition, maxPosition */ 20, 970,\
-  /* minDuty, maxDuty */ -120, 180,\
+  /* minDuty, maxDuty */ -120, 200,\
   /* pidKp, pidKd, pidKi, pidSampleTime */ 10, 0.08, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -50, 110,\
@@ -113,14 +113,14 @@
 #pragma message("INFO: Basic protocol functionality can be set up with LHR_setupBasics(core, board).")
 #pragma message("INFO: Basic protocol functionality can be connected with LHR_connectBasics(core, board).")
 #pragma message("INFO: Basic protocol functionality can be updated with LHR_updateBasics(core, board).")
-#pragma message("INFO: Basic protocol functionality includes the Core protocol subset.");
+#pragma message("INFO: Basic protocol functionality includes the Core protocol subset.")
 
 #if defined(LHR_Board)// && !defined(LHR_Messaging_FirmataIO)
-#pragma message("INFO: Basic protocol functionality includes the Board protocol subset.");
+#pragma message("INFO: Basic protocol functionality includes the Board protocol subset.")
   #define LHR_instantiateBoard(board)\
     LiquidHandlingRobotics::Board board(messager);
 #else
-#pragma message("INFO: Basic protocol functionality does not include the Board protocol subset.");
+#pragma message("INFO: Basic protocol functionality does not include the Board protocol subset.")
   #define LHR_instantiateBoard(board)\
     LiquidHandlingRobotics::Protocol::Placeholder board;
 #endif
@@ -141,10 +141,10 @@
 // Define convenience macros for instantiating, setting up, connecting, and updating standard axes
 //
 #if defined(LHR_Standard_pipettorAxis) || defined(LHR_Standard_zAxis) || defined(LHR_Standard_yAxis) || defined(LHR_Standard_xAxis)
-#pragma message("INFO: Linear actuator protocol functionality can be instantiated with LHR_instantiateAxes(pipettorAxis, zAxis, yAxis, yAxisCalibrator, xAxis, xAxisCalibrator, messager, motors).");
-#pragma message("INFO: Linear actuator protocol functionality can be set up with LHR_setupAxes(pipettorAxis, zAxis, yAxis, yAxisCalibrator, xAxis, xAxisCalibrator).");
-#pragma message("INFO: Linear actuator protocol functionality can be connected with LHR_connectAxes(pipettorAxis, zAxis, yAxis, yAxisCalibrator, xAxis, xAxisCalibrator).");
-#pragma message("INFO: Linear actuator protocol functionality can be updated with LHR_updateAxes(pipettorAxis, zAxis, yAxis, xAxis).");
+#pragma message("INFO: Linear actuator protocol functionality can be instantiated with LHR_instantiateAxes(pipettorAxis, zAxis, yAxis, yAxisCalibrator, xAxis, xAxisCalibrator, messager, motors).")
+#pragma message("INFO: Linear actuator protocol functionality can be set up with LHR_setupAxes(pipettorAxis, zAxis, yAxis, yAxisCalibrator, xAxis, xAxisCalibrator).")
+#pragma message("INFO: Linear actuator protocol functionality can be connected with LHR_connectAxes(pipettorAxis, zAxis, yAxis, yAxisCalibrator, xAxis, xAxisCalibrator).")
+#pragma message("INFO: Linear actuator protocol functionality can be updated with LHR_updateAxes(pipettorAxis, zAxis, yAxis, xAxis).")
   #define LHR_Standard_motors
 #endif
 #ifdef LHR_Standard_motors
@@ -153,44 +153,44 @@
 #endif
 
 #ifdef LHR_Standard_pipettorAxis
-#pragma message("INFO: Linear actuator protocol functionality includes the pipettor axis.");
+#pragma message("INFO: Linear actuator protocol functionality includes the pipettor axis.")
   #define LHR_instantiatePipettorAxis(pipettorAxis, messager, motors);\
     LiquidHandlingRobotics::AbsoluteLinearActuatorAxis pipettorAxis(messager, motors, LHR_kPipettorParams);
 #else
-#pragma message("INFO: Linear actuator protocol functionality does not include the pipettor axis.");
+#pragma message("INFO: Linear actuator protocol functionality does not include the pipettor axis.")
   #define LHR_instantiatePipettorAxis(pipettorAxis, messager, motors);\
     LiquidHandlingRobotics::Protocol::Placeholder pipettorAxis;
 #endif
 
 #ifdef LHR_Standard_zAxis
-#pragma message("INFO: Linear actuator protocol functionality includes the z axis.");
+#pragma message("INFO: Linear actuator protocol functionality includes the z axis.")
   #define LHR_instantiateZAxis(zAxis, messager, motors);\
     LiquidHandlingRobotics::AbsoluteLinearActuatorAxis zAxis(messager, motors, LHR_kVerticalPositionerParams);
 #else
-#pragma message("INFO: Linear actuator protocol functionality does not include the z axis.");
+#pragma message("INFO: Linear actuator protocol functionality does not include the z axis.")
   #define LHR_instantiateZAxis(zAxis, messager, motors);\
     LiquidHandlingRobotics::Protocol::Placeholder zAxis;
 #endif
 
 #ifdef LHR_Standard_yAxis
-#pragma message("INFO: Linear actuator protocol functionality includes the y axis.");
+#pragma message("INFO: Linear actuator protocol functionality includes the y axis.")
   #define LHR_instantiateYAxis(yAxis, yAxisCalibrator, messager, motors);\
     LiquidHandlingRobotics::CumulativeLinearActuatorAxis yAxis(messager, motors, LHR_kYPositionerParams);\
     LinearPositionControl::Control::SmoothedCumulativePositionCalibrator yAxisCalibrator(yAxis.actuator, yAxis.smoother, LHR_kYPositionerCalibrationParams);
 #else
-#pragma message("INFO: Linear actuator protocol functionality does not include the y axis.");
+#pragma message("INFO: Linear actuator protocol functionality does not include the y axis.")
   #define LHR_instantiateYAxis(yAxis, yAxisCalibrator, messager, motors);\
     LiquidHandlingRobotics::Protocol::Placeholder yAxis;\
     LiquidHandlingRobotics::Protocol::Placeholder yAxisCalibrator;
 #endif
 
 #ifdef LHR_Standard_xAxis
-#pragma message("INFO: Linear actuator protocol functionality includes the x axis.");
+#pragma message("INFO: Linear actuator protocol functionality includes the x axis.")
   #define LHR_instantiatYAxis(xAxis, xAxisCalibrator, messager, motors);\
     LiquidHandlingRobotics::CumulativeLinearActuatorAxis xAxis(messager, motors, LHR_kXPositionerParams);\
     LinearPositionControl::Control::SmoothedCumulativePositionCalibrator xAxisCalibrator(xAxis.actuator, xAxis.smoother, LHR_kXPositionerCalibrationParams);
 #else
-#pragma message("INFO: Linear actuator protocol functionality does not include the x axis.");
+#pragma message("INFO: Linear actuator protocol functionality does not include the x axis.")
   #define LHR_instantiateXAxis(xAxis, xAxisCalibrator, messager, motors);\
     LiquidHandlingRobotics::Protocol::Placeholder xAxis;\
     LiquidHandlingRobotics::Protocol::Placeholder xAxisCalibrator;

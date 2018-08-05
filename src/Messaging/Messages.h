@@ -74,7 +74,7 @@ class StringParser {
 
     void setup();
 
-    const bool (*isValidChar)(int);
+    bool (*isValidChar)(int);
     bool onChar(char current);
     void reset();
 
