@@ -19,10 +19,13 @@ To compile this sketch, the following libraries must be installed from the Ardui
 * [elapsedMillis](https://github.com/pfeerick/elapsedMillis/wiki)
 * [ArduinoLog](https://github.com/thijse/Arduino-Log/)
 * [Arduino PID Library](http://playground.arduino.cc/Code/PIDLibrary)
-* [3D-Magnetic-Sensor-2GO](https://github.com/Infineon/TLV493D-A1B6-3DMagnetic-Sensor)
 * [ResponsiveAnalogRead](https://github.com/dxinteractive/ResponsiveAnalogRead)
 * [Linear Position Control](https://github.com/ethanjli/linear-position-control)
 * [Liquid Handling Robotics](https://github.com/ethanjli/liquid-handling-robotics)
+
+Additionally, the following Arduino libraries must be installed manually:
+
+* [TLV493D-A1B6-3DMagnetic-Sensor](https://github.com/ethanjli/TLV493D-A1B6-3DMagnetic-Sensor)
 
 ## Control
 
