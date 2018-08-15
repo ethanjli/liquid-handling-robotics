@@ -186,7 +186,7 @@
 
 #ifdef LHR_Standard_xAxis
 #pragma message("INFO: Linear actuator protocol functionality includes the x axis.")
-  #define LHR_instantiatYAxis(xAxis, xAxisCalibrator, messager, motors);\
+  #define LHR_instantiateXAxis(xAxis, xAxisCalibrator, messager, motors);\
     LiquidHandlingRobotics::CumulativeLinearActuatorAxis xAxis(messager, motors, LHR_kXPositionerParams);\
     LinearPositionControl::Control::SmoothedCumulativePositionCalibrator xAxisCalibrator(xAxis.actuator, xAxis.smoother, LHR_kXPositionerCalibrationParams);
 #else
@@ -260,7 +260,7 @@
       LHR_updateMessaging(transport, messager);\
       LHR_updateBasics(core, board);\
       LHR_updateAbsoluteAxes(pipettorAxis, zAxis);\
-      yAxis.update();\
+      xAxis.update();\
       xAxisCalibrator.update();\
     }\
     xAxis.onConnect();
@@ -272,14 +272,14 @@
   #define LHR_connectAxes(pipettorAxis, zAxis, yAxis, yAxisCalibrator, xAxis, xAxisCalibrator, transport, messager, core, board)\
     pipettorAxis.onConnect();\
     LHR_Standard_connectZAxis(zAxis, 255, transport, messager, core, board, pipettorAxis);\
-    LHR_Standard_connectYAxis(yAxis, yAxisCalibrator, transport, messager, core, board, pipettorAxis, zAxis);
+    LHR_Standard_connectYAxis(yAxis, yAxisCalibrator, transport, messager, core, board, pipettorAxis, zAxis);\
     LHR_Standard_connectXAxis(xAxis, xAxisCalibrator, transport, messager, core, board, pipettorAxis, zAxis, yAxis);
 #elif defined(LHR_Standard_pipettorAxis) || defined(LHR_Standard_zAxis) || defined(LHR_Standard_yAxis) || defined(LHR_Standard_xAxis)
   #define LHR_connectAxes(pipettorAxis, zAxis, yAxis, yAxisCalibrator, xAxis, xAxisCalibrator, transport, messager, core, board)\
     pipettorAxis.onConnect();\
     zAxis.onConnect();\
-    yAxis.onConnect();\
-    xAxis.onConnect();
+    LHR_Standard_connectYAxis(yAxis, yAxisCalibrator, transport, messager, core, board, pipettorAxis, zAxis);\
+    LHR_Standard_connectXAxis(xAxis, xAxisCalibrator, transport, messager, core, board, pipettorAxis, zAxis, yAxis);
 #endif
 
 #if defined(LHR_Standard_pipettorAxis) || defined(LHR_Standard_zAxis) || defined(LHR_Standard_yAxis) || defined(LHR_Standard_xAxis)
