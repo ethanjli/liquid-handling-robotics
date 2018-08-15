@@ -42,17 +42,17 @@
 #define LHR_kYPositionerParams\
   /* actuatorChannelPrefix */ 'y',\
   /* motorPort, angleSensorId */ M3, 0,\
-  /* minPosition, maxPosition */ 0, 720,\
+  /* minPosition, maxPosition */ 0, 1008,\
   /* minDuty, maxDuty */ -120, 120,\
   /* pidKp, pidKd, pidKi, pidSampleTime */ 45, 1.25, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -110, 110,\
   /* swapSensorDirection, swapMotorPolarity */ true, true,\
   /* convergenceTimeout, stallTimeout, timerTimeout */ 150, 150, 5000,\
-  /* smootherSnapMultiplier, smootherMax */ 0.01, 800,\
+  /* smootherSnapMultiplier, smootherMax */ 0.01, 1023,\
   /* smootherEnableSleep, smootherActivityThreshold */ true, 2.0
 #define LHR_kYPositionerCalibrationParams\
-  /* calibrationSpeed */ 120
+  /* calibrationSpeed */ 150
 
 // Define convenience macros for instantiating, setting up, connecting, and updating messaging system
 
