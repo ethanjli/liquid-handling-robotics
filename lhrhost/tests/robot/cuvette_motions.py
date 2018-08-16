@@ -51,21 +51,21 @@ class Batch:
         await self.robot.dispense('cuvette', 'far above')
         for height in ['bottom', 'low', 'mid', 'high', 'top', 'above', 'far above']:
             print('Testing with height {}...'.format(height))
-            # for (row, volume) in [('a', 20), ('b', 30), ('c', 40), ('d', 50), ('e', 100)]:
-            #     print(
-            #         '  Testing precise with row {} and volume {} mL...'
-            #         .format(row, volume)
-            #     )
-            #     await self.test_individual_precise(row, height, volume / 1000)
-            # for (row, volume) in [
-            #     ('f', 100), ('g', 200), ('a', 300), ('b', 400),
-            #     ('c', 500), ('d', 600), ('e', 700), ('f', 800), ('g', 900)
-            # ]:
-            #     print(
-            #         '  Testing rough with row {} and volume {} mL...'
-            #         .format(row, volume / 1000)
-            #     )
-            #     await self.test_individual_rough(row, height, volume / 1000)
+            for (row, volume) in [('a', 20), ('b', 30), ('c', 40), ('d', 50), ('e', 100)]:
+                print(
+                    '  Testing precise with row {} and volume {} mL...'
+                    .format(row, volume)
+                )
+                await self.test_individual_precise(row, height, volume / 1000)
+            for (row, volume) in [
+                ('f', 100), ('g', 200), ('a', 300), ('b', 400),
+                ('c', 500), ('d', 600), ('e', 700), ('f', 800), ('g', 900)
+            ]:
+                print(
+                    '  Testing rough with row {} and volume {} mL...'
+                    .format(row, volume / 1000)
+                )
+                await self.test_individual_rough(row, height, volume / 1000)
             for (row, volume) in [
                 ('g', 50), ('a', 100), ('b', 150), ('c', 200),
                 ('d', 250), ('e', 300), ('f', 350), ('g', 400)
