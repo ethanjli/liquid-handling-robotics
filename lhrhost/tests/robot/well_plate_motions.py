@@ -51,12 +51,13 @@ class Batch:
         await self.robot.dispense('96-well plate', 'far above')
         for height in ['bottom', 'low', 'mid', 'high', 'top', 'above', 'far above']:
             print('Testing with height {}...'.format(height))
-            # for (row, volume) in [('a', 20), ('b', 30), ('c', 40), ('d', 50), ('e', 100)]:
-            #     print(
-            #         '  Testing precise with row {} and volume {} mL...'
-            #         .format(row, volume)
-            #     )
-            #     await self.test_individual_precise(row, height, volume / 1000)
+            for (row, volume) in [('a', 20), ('b', 30), ('c', 40), ('d', 50), ('e', 100)]:
+                print(
+                    '  Testing precise with row {} and volume {} mL...'
+                    .format(row, volume)
+                )
+                await self.test_individual_precise(row, height, volume / 1000)
+            await self.robot.dispense('96-well plate', height)
             for (row, volume) in [
                 ('f', 100), ('g', 150), ('h', 200), ('a', 300), ('b', 400),
                 ('c', 500), ('d', 600), ('e', 700), ('g', 800), ('h', 900)
@@ -72,12 +73,12 @@ class Batch:
         print(batch.OUTPUT_FOOTER)
         print('Quitting...')
 
-    async def test_individual_precise(self, well_plate_row, height, volume, folds=4):
+    async def test_individual_precise(self, well_plate_row, height, volume, folds=2):
         """Mix precise volumes of water from a 96-well plate."""
         await self.robot.go_to_96_well_plate(1, well_plate_row)
         for i in range(folds):
             await self.robot.intake_precise('96-well plate', height, volume)
-            await self.robot.dispense('96-well plate', height)
+            await self.robot.dispense('96-well plate', height, volume * 2)
 
     async def test_individual_rough(self, well_plate_row, height, volume, folds=4):
         """Mix rough volumes of water from a 96-well plate."""
@@ -85,6 +86,7 @@ class Batch:
         for i in range(folds):
             await self.robot.intake('96-well plate', height, volume)
             await self.robot.dispense('96-well plate', height, volume)
+        await self.robot.dispense('96-well plate', height)
 
 
 def main():

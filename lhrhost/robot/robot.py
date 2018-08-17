@@ -121,11 +121,10 @@ class Robot(object):
             z_positioner = self.z.go_to_96_well_plate
         else:
             raise NotImplementedError('Unknown container \'{}\'!'.format(container))
-        await z_positioner('far above')
+        await z_positioner('above')
         await self.p.go_to_pre_intake(volume)
         await z_positioner(height)
         await self.p.intake(volume)
-        await self.z.go_to_high_end_position()
 
     async def dispense(self, container, height, volume=None):
         """Dispense fluid at the specified height.
