@@ -274,7 +274,7 @@
       LHR_updateMessaging(transport, messager);\
       LHR_updateBasics(core, board);\
       LHR_updateAbsoluteAxes(pipettorAxis, zAxis);\
-      xAxis.update();\
+      yAxis.update();\
       xAxisCalibrator.update();\
     }\
     xAxis.onConnect();
