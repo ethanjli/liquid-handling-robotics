@@ -48,20 +48,30 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
         )
         return self.protocol.position.last_response_payload
 
-    async def go_to_low_end_position(self, speed=-255):
+    async def go_to_low_end_position(self, speed=None):
         """Go to the lowest possible sensor position at the maximum allowed speed.
 
         Speed must be given as a signed motor duty cycle.
         """
+        if speed is None:
+            speed = (
+                self.protocol.feedback_controller.limits.motor
+                .backwards.high.last_response_payload
+            )
         await self.protocol.motor.request_complete(speed)
         await self.protocol.position.request()
         return self.protocol.position.last_response_payload
 
-    async def go_to_high_end_position(self, speed=255):
+    async def go_to_high_end_position(self, speed=None):
         """Go to the highest possible sensor position at the maximum allowed speed.
 
         Speed must be given as a signed motor duty cycle.
         """
+        if speed is None:
+            speed = (
+                self.protocol.feedback_controller.limits.motor
+                .forwards.high.last_response_payload
+            )
         await self.protocol.motor.request_complete(speed)
         await self.protocol.position.request()
         return self.protocol.position.last_response_payload
@@ -395,7 +405,7 @@ class DiscreteRobotAxis(RobotAxis):
         self.current_discrete_position = None
         return await super().go_to_sensor_position(sensor_position)
 
-    async def go_to_low_end_position(self, speed=-255):
+    async def go_to_low_end_position(self, speed=None):
         """Go to the lowest possible sensor position at the maximum allowed speed.
 
         Speed must be given as a signed motor duty cycle.
@@ -405,7 +415,7 @@ class DiscreteRobotAxis(RobotAxis):
         self.current_discrete_position = 'low end'
         return await super().go_to_low_end_position(speed)
 
-    async def go_to_high_end_position(self, speed=255):
+    async def go_to_high_end_position(self, speed=None):
         """Go to the highest possible sensor position at the maximum allowed speed.
 
         Speed must be given as a signed motor duty cycle.
