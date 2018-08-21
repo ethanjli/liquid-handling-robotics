@@ -132,7 +132,7 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
         await self.go_to_physical_position(
             self._get_module_position(module_name, position)
         )
-        self._current_discrete_position = (module_name, position)
+        self.current_discrete_position = (module_name, position)
 
     # Extend DiscreteRobotAxis
 

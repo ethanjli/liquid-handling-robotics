@@ -71,11 +71,7 @@ class Robot(object):
 
     async def align_manually(self):
         """Do a manual alignment of x/y positioning."""
-        await self.z.go_to_high_end_position()
-        await asyncio.gather(
-            self.y.go_to_low_end_position(), self.x.go_to_low_end_position()
-        )
-        await self.z.go_to_discrete_position('alignment hole')
+        await self.go_to_alignment_hole()
         await self.prompt(
             'Align the sample stage so that the pipette tip is in the round alignment hole: '
         )
@@ -95,7 +91,10 @@ class Robot(object):
 
     async def go_to_cuvette(self, module_name, cuvette_column, cuvette_row):
         """Move the pipettor head to the specified cuvette of the cuvette rack."""
-        if self.x.at_cuvette(module_name, cuvette_column):
+        if (
+            self.x.current_discrete_position is not None and
+            self.x.current_discrete_position[0] == module_name
+        ):
             await self.z.go_to_cuvette('far above')
         else:
             await self.z.go_to_high_end_position()
@@ -105,7 +104,10 @@ class Robot(object):
 
     async def go_to_96_well_plate(self, module_name, plate_column, plate_row):
         """Move the pipettor head to the specified well of the 96-well plate."""
-        if self.x.at_96_well_plate(module_name, plate_column):
+        if (
+            self.x.current_discrete_position is not None and
+            self.x.current_discrete_position[0] == module_name
+        ):
             await self.z.go_to_96_well_plate('far above')
         else:
             await self.z.go_to_high_end_position()

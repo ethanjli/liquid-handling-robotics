@@ -400,7 +400,9 @@ class DiscreteRobotAxis(RobotAxis):
 
         Speed must be given as a signed motor duty cycle.
         """
-        self.current_discrete_position = None
+        if self.current_discrete_position == 'low end':
+            return
+        self.current_discrete_position = 'low end'
         return await super().go_to_low_end_position(speed)
 
     async def go_to_high_end_position(self, speed=255):
@@ -408,5 +410,7 @@ class DiscreteRobotAxis(RobotAxis):
 
         Speed must be given as a signed motor duty cycle.
         """
-        self.current_discrete_position = None
+        if self.current_discrete_position == 'high end':
+            return
+        self.current_discrete_position = 'high end'
         return await super().go_to_high_end_position(speed)
