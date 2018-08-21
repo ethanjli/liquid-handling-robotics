@@ -1,55 +1,47 @@
 {
   "parameters": {
-    "intercept": -0.11061277203741504,
-    "rsquared": 0.9995604608498456,
-    "slope": 0.013826916311772965,
-    "stderr": 0.0001366976546121976
+    "intercept": -0.146299176373355,
+    "rsquared": 0.999992960341164,
+    "slope": 0.014021907735902058,
+    "stderr": 1.9886171574533107e-05
   },
   "physical unit": "cm",
   "samples": [
     {
-      "physical": 0.18,
+      "physical": -0.15,
       "sensor": 0
     },
     {
-      "physical": 1.21,
+      "physical": 1.24,
       "sensor": 99
     },
     {
-      "physical": 2.58,
+      "physical": 2.63,
       "sensor": 199
     },
     {
-      "physical": 3.97,
-      "sensor": 300
+      "physical": 4.05,
+      "sensor": 299
     },
     {
-      "physical": 5.41,
-      "sensor": 400
+      "physical": 5.47,
+      "sensor": 398
     },
     {
-      "physical": 6.75,
-      "sensor": 498
+      "physical": 6.84,
+      "sensor": 499
     },
     {
-      "physical": 8.18,
+      "physical": 8.24,
       "sensor": 598
     },
     {
-      "physical": 8.18,
-      "sensor": 599
+      "physical": 9.65,
+      "sensor": 699
     },
     {
-      "physical": 9.62,
-      "sensor": 701
-    },
-    {
-      "physical": 10.96,
-      "sensor": 799
-    },
-    {
-      "physical": 0.48,
-      "sensor": 55
+      "physical": 11.08,
+      "sensor": 801
     }
   ]
 }
