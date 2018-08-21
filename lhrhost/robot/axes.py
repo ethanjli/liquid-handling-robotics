@@ -98,6 +98,8 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
     async def wait_until_initialized(self):
         """Wait until the axis is ready to control."""
         await self.protocol.initialized.wait()
+        await self.protocol.position.initialized.wait()
+        await self.protocol.motor.initialized.wait()
 
     async def synchronize_values(self):
         """Request the values of all channels."""
@@ -166,39 +168,40 @@ class ContinuousRobotAxis(RobotAxis):
         """Initialize member variables."""
         super().__init__()
         self._calibration_samples = []
-        self._linear_regression = None
+        self.linear_regression = None
 
     def clear_calibration_samples(self):
         """Discard the stored calibration data."""
         self._calibration_samples = []
-        self._linear_regression = None
+        self.linear_regression = None
 
     def add_calibration_sample(self, sensor_position, physical_position):
         """Add a (sensor, physical) position pair for calibration."""
-        self._linear_regression = None
+        self.linear_regression = None
         self._calibration_samples.append((sensor_position, physical_position))
 
     def fit_calibration_linear(self):
         """Perform a linear regression on the calibration data and store results.
 
         Returns the regression slope, intercept, R-value, and standard error.
+        The regression is for physical_position = slope * sensor_position + intercept.
         """
         linear_regression = stats.linregress(self._calibration_samples)
-        self._linear_regression = (
+        self.linear_regression = [
             linear_regression[0], linear_regression[1],
             linear_regression[2], linear_regression[4]
-        )
-        return self._linear_regression
+        ]
+        return self.linear_regression
 
     @property
     def calibration_data(self):
         """Return a JSON-exportable structure of calibration data."""
         calibration_data = {
             'parameters': {
-                'slope': self._linear_regression[0],
-                'intercept': self._linear_regression[1],
-                'rsquared': self._linear_regression[2],
-                'stderr': self._linear_regression[3]
+                'slope': self.linear_regression[0],
+                'intercept': self.linear_regression[1],
+                'rsquared': self.linear_regression[2],
+                'stderr': self.linear_regression[3]
             },
             'physical unit': self.physical_unit,
             'samples': [
@@ -242,16 +245,16 @@ class ContinuousRobotAxis(RobotAxis):
     @property
     def sensor_to_physical_scaling(self):
         """Return the scaling factor from sensor to physical positions."""
-        if self._linear_regression is None:
+        if self.linear_regression is None:
             self._fit_calibration_linear()
-        return self._linear_regression[0]
+        return self.linear_regression[0]
 
     @property
     def sensor_to_physical_offset(self):
         """Return the post-scaling offset from sensor to physical positions."""
-        if self._linear_regression is None:
+        if self.linear_regression is None:
             self._fit_calibration_linear()
-        return self._linear_regression[1]
+        return self.linear_regression[1]
 
     # Implement RobotAxis
 
@@ -368,6 +371,7 @@ class DiscreteRobotAxis(RobotAxis):
         if json_path is None:
             json_path = 'calibrations/{}_discrete.json'.format(self.name)
         trees = load_from_json(json_path)
+        self.trees = trees
         self.discrete_physical_position_tree = trees['physical']
         self.discrete_sensor_position_tree = trees['sensor']
 
@@ -379,10 +383,7 @@ class DiscreteRobotAxis(RobotAxis):
         """
         if json_path is None:
             json_path = 'calibrations/{}_discrete.json'.format(self.name)
-        save_to_json({
-            'physical': self.discrete_physical_position_tree,
-            'sensor': self.discrete_sensor_position_tree
-        }, json_path)
+        save_to_json(self.trees, json_path)
 
     # Implement RobotAxis
 
@@ -393,3 +394,19 @@ class DiscreteRobotAxis(RobotAxis):
         """
         self.current_discrete_position = None
         return await super().go_to_sensor_position(sensor_position)
+
+    async def go_to_low_end_position(self, speed=-255):
+        """Go to the lowest possible sensor position at the maximum allowed speed.
+
+        Speed must be given as a signed motor duty cycle.
+        """
+        self.current_discrete_position = None
+        return await super().go_to_low_end_position(speed)
+
+    async def go_to_high_end_position(self, speed=255):
+        """Go to the highest possible sensor position at the maximum allowed speed.
+
+        Speed must be given as a signed motor duty cycle.
+        """
+        self.current_discrete_position = None
+        return await super().go_to_high_end_position(speed)

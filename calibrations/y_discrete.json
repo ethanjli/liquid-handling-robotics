@@ -1,23 +1,23 @@
 {
   "physical": {
+    "mount": 16.79,
     "cuvette": {
-      "a": 9.524,
-      "b": 8.057,
-      "c": 6.528,
-      "d": 5.000,
-      "e": 3.472,
-      "f": 1.943,
-      "g": 0.415
+      "origin": -15.69,
+      "increment": 1.456,
+      "min index": 1,
+      "max index": 8,
+      "origin index": 1
     },
     "96-well plate": {
-      "a": 8.150,
-      "b": 7.250,
-      "c": 6.350,
-      "d": 5.450,
-      "e": 4.550,
-      "f": 3.650,
-      "g": 2.750,
-      "h": 1.850
+      "origin": -15.84,
+      "increment": 0.9,
+      "min index": 1,
+      "max index": 12,
+      "origin index": 1
+    },
+    "flat surface": {
+      "origin": -16.95,
+      "end": 12
     }
   },
   "sensor": {

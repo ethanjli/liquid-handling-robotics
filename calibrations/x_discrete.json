@@ -1,0 +1,70 @@
+{
+  "physical": {
+    "mount": {
+      "odd origin": 3.56,
+      "even origin": 8,
+      "min index": 1,
+      "max index": 4,
+      "increment": 10,
+      "odd origin index": 1,
+      "even origin index": 2
+    },
+    "cuvette": {
+      "origin": -1.11,
+      "increment": 2.22,
+      "min index": "a",
+      "max index": "b",
+      "origin index": "a"
+    },
+    "96-well plate": {
+      "origin": -0.37,
+      "increment": 0.9,
+      "min index": "a",
+      "max index": "h",
+      "origin index": "a"
+    },
+    "flat surface": {
+      "origin": -1.91,
+      "end": 9.37
+    }
+  },
+  "sensor": {
+  },
+  "configurations": {
+    "standard 96-well plate": {
+      "cuvette rack": {
+        "mount": 1,
+        "type": "cuvette"
+      },
+      "96-well plate": {
+        "mount": 2,
+        "type": "96-well plate"
+      }
+    },
+    "standard flat surface": {
+      "cuvette rack": {
+        "mount": 1,
+        "type": "cuvette"
+      },
+      "surface": {
+        "mount": 2,
+        "type": "flat surface"
+      }
+    },
+    "extended 96-well plate": {
+      "cuvette rack": {
+        "mount": 1,
+        "type": "cuvette"
+      },
+      "96-well plate 1": {
+        "mount": 2,
+        "type": "96-well plate"
+      },
+      "96-well plate 2": {
+        "mount": 4,
+        "type": "96-well plate"
+      }
+    }
+  },
+  "configuration": "standard 96-well plate"
+}

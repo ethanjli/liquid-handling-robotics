@@ -35,7 +35,7 @@ class Batch():
         elif axis == 'y':
             from lhrhost.robot.y_axis import Axis
         else:
-            raise NotImplementedError('Axis {} is not supported!'.format(axis))
+            from lhrhost.robot.x_axis import Axis
         self.axis = Axis()
         if axis == 'p':
             self.axis.load_pid_json()
@@ -52,12 +52,13 @@ class Batch():
         """Run the batch execution test routine."""
         self.prompt = Prompt(end='', flush=True)
 
-        print('Running test routine...')
+        print('Waiting for axis initialization...')
         await self.axis.wait_until_initialized()
+        print('Synchronizing axis values...')
         await self.axis.synchronize_values()
 
         calibration_samples = []
-
+        print('Collecting calibration samples...')
         while True:
             sensor_position = await self.prompt.number(
                 'Move to sensor position:',

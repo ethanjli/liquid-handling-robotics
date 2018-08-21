@@ -2,6 +2,7 @@
 
 # Standard imports
 import argparse
+import asyncio
 import logging
 
 # Local package imports
@@ -37,58 +38,60 @@ class Batch:
 
     async def test_routine(self):
         """Run the batch execution test routine."""
-        print('Running test routine...')
         print('Waiting for axes to initialize...')
         await self.robot.wait_until_initialized()
         print('Synchronizing robot state with peripheral...')
         await self.robot.synchronize_values()
         print('Loading calibration data...')
         await self.robot.load_calibrations()
-        await self.robot.go_to_alignment_hole()
+        await self.robot.align_manually()
 
-        dilution_rows = ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a']
+        dilution_columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
         await self.dispense_waste()
         await self.intake_water('mid', 0.85)
-        await self.distribute_water(0.1, [1], dilution_rows)
+        await self.distribute_water(0.1, dilution_columns, [1])
         await self.dispense_waste()
         await self.intake_food_coloring(0.1)
-        for row in dilution_rows:
-            await self.dilute(1, row, 'low', 0.1, 2)
+        for column in dilution_columns:
+            await self.dilute(column, 1, 'low', 0.1, 2)
         await self.dispense_waste()
         await self.robot.z.go_to_high_end_position()
-        await self.robot.y.go_to_low_end_position()
+        await asyncio.gather(
+            self.robot.y.go_to_low_end_position(),
+            self.robot.x.go_to_low_end_position()
+        )
 
         print(batch.OUTPUT_FOOTER)
         print('Quitting...')
 
     async def intake_water(self, height, volume):
         """Intake water to distribute to wells."""
-        await self.robot.go_to_cuvette('g')
+        await self.robot.go_to_cuvette('cuvette rack', 'a', 1)
         await self.robot.dispense('cuvette', height)
         await self.robot.intake('cuvette', height, volume)
 
     async def intake_food_coloring(self, volume):
         """Intake food coloring to distribute to wells."""
-        await self.robot.go_to_cuvette('f')
+        await self.robot.go_to_cuvette('cuvette rack', 'a', 2)
         await self.robot.intake('cuvette', 'bottom', volume)
 
     async def distribute_water(self, volume, columns, rows):
         """Distribute water to wells."""
         for column in columns:
             for row in rows:
-                await self.robot.go_to_96_well_plate(column, row)
+                await self.robot.go_to_96_well_plate('96-well plate', column, row)
                 await self.robot.dispense('96-well plate', 'mid', volume)
 
     async def dilute(self, column, row, height, volume, mix_cycles):
         """Dilute food coloring in a well."""
-        await self.robot.go_to_96_well_plate(column, row)
+        await self.robot.go_to_96_well_plate('96-well plate', column, row)
         for i in range(mix_cycles):
             await self.robot.dispense('96-well plate', height, None)
             await self.robot.intake('96-well plate', height, volume)
 
     async def dispense_waste(self):
         """Dispense any leftover liquid in the pipettor."""
-        await self.robot.go_to_cuvette('a')
+        await self.robot.go_to_cuvette('cuvette rack', 'a', 3)
         await self.robot.dispense('cuvette', 'top')
 
 

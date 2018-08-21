@@ -1,7 +1,7 @@
 {
   "physical": {
     "cuvette": {
-      "far above": 4.8,
+      "far above": 5,
       "above": 4.4,
       "top": 3.75,
       "high": 3.25,
@@ -18,7 +18,7 @@
       "low": 0.25,
       "bottom": 0.1
     },
-    "alignment hole": 0.1
+    "alignment hole": 0.15
   },
   "sensor": {
   }
