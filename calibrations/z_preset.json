@@ -4,7 +4,8 @@
       "type": "implicit"
     },
     "high end": {
-      "type": "implicit"
+      "type": "constant",
+      "value": 4.8
     },
     "alignment hole": {
       "type": "constant",
@@ -12,7 +13,7 @@
     },
     "cuvette rack": {
       "type": "constants",
-      "far above": 5,
+      "far above": 4.8,
       "above": 4.4,
       "top": 4,
       "high": 3.5,

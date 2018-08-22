@@ -329,8 +329,8 @@ class PresetRobotAxis(RobotAxis):
             physical_position
         )
 
-    def parse_preset_position(self, presets_tree, preset_position):
-        """Parse a preset position tree node into an actual preset position."""
+    def get_preset_position(self, presets_tree, preset_position):
+        """Get an actual position from a preset position tree node."""
         position_node = get_from_tree(presets_tree, preset_position)
         if isinstance(position_node, dict):
             try:
@@ -359,7 +359,7 @@ class PresetRobotAxis(RobotAxis):
     def preset_to_sensor(self, preset_position, use_physical_if_needed=True):
         """Convert a preset position to a sensor position."""
         try:
-            return self.parse_preset_position(
+            return self.get_preset_position(
                 self.preset_sensor_position_tree, preset_position
             )
         except KeyError:
@@ -372,7 +372,7 @@ class PresetRobotAxis(RobotAxis):
     def preset_to_physical(self, preset_position, use_sensor_if_needed=True):
         """Convert a preset position to a physical position."""
         try:
-            return self.parse_preset_position(
+            return self.get_preset_position(
                 self.preset_physical_position_tree, preset_position
             )
         except KeyError:
@@ -435,20 +435,26 @@ class PresetRobotAxis(RobotAxis):
 
         Speed must be given as a signed motor duty cycle.
         """
-        if self.current_preset_position == ('low end',):
-            return
-        self.current_preset_position = ('low end',)
-        return await super().go_to_low_end_position(speed)
+        try:
+            return await self.go_to_preset_position('low end')
+        except (KeyError, TypeError):
+            if self.current_preset_position == ('low end',):
+                return
+            self.current_preset_position = ('low end',)
+            return await super().go_to_low_end_position(speed)
 
     async def go_to_high_end_position(self, speed=None):
         """Go to the highest possible sensor position at the maximum allowed speed.
 
         Speed must be given as a signed motor duty cycle.
         """
-        if self.current_preset_position == ('high end',):
-            return
-        self.current_preset_position = ('high end',)
-        return await super().go_to_high_end_position(speed)
+        try:
+            return await self.go_to_preset_position('high end')
+        except (KeyError, TypeError):
+            if self.current_preset_position == ('high end',):
+                return
+            self.current_preset_position = ('high end',)
+            return await super().go_to_high_end_position(speed)
 
 
 class AlignedRobotAxis(PresetRobotAxis):
@@ -481,24 +487,6 @@ class ManuallyAlignedRobotAxis(AlignedRobotAxis, ContinuousRobotAxis):
 class ModularRobotAxis(PresetRobotAxis):
     """High-level controller mixin for axes with modular sets of positions."""
 
-    def get_indexed_offset(self, module_params, index, origin_index_key='origin index'):
-        """Return the physical offset for the provided module indexed preset position."""
-        if isinstance(index, str) and len(index) == 1:
-            index = ord(index)
-        min_index = module_params['min index']
-        if isinstance(min_index, str) and len(min_index) == 1:
-            min_index = ord(min_index)
-        max_index = module_params['max index']
-        if isinstance(max_index, str) and len(max_index) == 1:
-            max_index = ord(max_index)
-        origin_index = module_params[origin_index_key]
-        if (index < min_index) or (max_index is not None and index > max_index):
-            raise IndexError(
-                'Index {} is out of the range ({}, {})!'
-                .format(index, min_index, max_index)
-            )
-        return (index - origin_index) * module_params['increment']
-
     def at_module(self, module):
         """Return whether the axis is already at the module.
 
@@ -513,30 +501,60 @@ class ModularRobotAxis(PresetRobotAxis):
         """
         return self.current_preset_position == (module, position)
 
+    def get_indexed_offset(self, module_params, index, origin_index_key='origin index'):
+        """Return the physical offset for the provided module indexed preset position."""
+        def to_num(index):
+            if isinstance(index, str) and len(index) == 1:
+                return ord(index)
+            return index
+        index = to_num(index)
+        min_index = to_num(module_params['min index'])
+        max_index = to_num(module_params['max index'])
+        origin_index = to_num(module_params[origin_index_key])
+        if (index < min_index) or (max_index is not None and index > max_index):
+            raise IndexError(
+                'Index {} is out of the range ({}, {})!'
+                .format(index, min_index, max_index)
+            )
+        return (index - origin_index) * module_params['increment']
+
+    def get_module_mount_position(self, presets_tree, module_type):
+        """Get the position of the module's mount."""
+        return self.get_preset_position(presets_tree, 'mount')
+
+    def get_module_origin_position(self, presets_tree, module_type):
+        """Get the position of the module's origin relative to its mount."""
+        return self.get_preset_position(presets_tree, (module_type, 'origin'))
+
+    def get_module_offset_position(self, presets_tree, module_params, module_type, index):
+        """Get the position on the  module relative to the module's origin."""
+        return self.get_indexed_offset(module_params, index)
+
+    def get_module_position(self, presets_tree, module_params, preset_position):
+        """Get the actual position from a preset module position tree node."""
+        (module, offset) = preset_position
+        return (
+            self.get_module_mount_position(presets_tree, module) +
+            self.get_module_origin_position(presets_tree, module) +
+            self.get_module_offset_position(presets_tree, module_params, module, offset)
+        )
+
     async def go_to_module_position(self, module, position):
         """Move to the position for the specified module."""
-        try:
-            await self.go_to_preset_position((module, position))
-        except NotImplementedError:
-            pass
+        await self.go_to_preset_position((module, position))
 
     # Implement PresetRobotAxis
 
-    def parse_preset_position(self, presets_tree, preset_position):
-        """Parse a preset position tree node into an actual preset position."""
+    def get_preset_position(self, presets_tree, preset_position):
+        """Get an actual position from a preset position tree node."""
         try:
-            return super().parse_preset_position(presets_tree, preset_position)
+            return super().get_preset_position(presets_tree, preset_position)
         except KeyError:
             module_params = get_from_tree(presets_tree, preset_position[0])
             type = module_params['type']
-            if type == 'indexed':
-                return self.parse_indexed_position(module_params, preset_position)
+            if type == 'indexed' or type == 'continuous':
+                return self.get_module_position(presets_tree, module_params, preset_position)
         raise KeyError('Unknown module {}!'.format(preset_position[0]))
-
-    # @abstractmethod
-    def parse_indexed_position(self, module_params, preset_position):
-        """Parse a preset indexed position tree node into an actual preset position."""
-        pass
 
 
 class ConfigurableRobotAxis(ModularRobotAxis):
@@ -545,6 +563,10 @@ class ConfigurableRobotAxis(ModularRobotAxis):
     def get_module_type(self, module_name):
         """Return the module type of the named module."""
         return self.configuration_tree[module_name]['type']
+
+    def get_module_mount(self, module_name):
+        """Return the module type of the named module."""
+        return self.configuration_tree[module_name]['mount']
 
     # Implement PresetRobotAxis
 
@@ -557,3 +579,18 @@ class ConfigurableRobotAxis(ModularRobotAxis):
         super().load_preset_json(json_path)
         self.configuration = self.trees['configuration']
         self.configuration_tree = self.trees['configurations'][self.configuration]
+
+    # Implement ModularRobotAxis
+
+    def get_module_origin_position(self, presets_tree, module_name):
+        """Get the position of the module's origin relative to its mount."""
+        module_type = self.get_module_type(module_name)
+        return super().get_module_origin_position(presets_tree, module_type)
+
+    def get_module_offset_position(self, presets_tree, module_params, module_name, index):
+        """Get the position on the  module relative to the module's origin."""
+        module_type = self.get_module_type(module_name)
+        module_type_params = presets_tree[module_type]
+        return super().get_module_offset_position(
+            presets_tree, module_type_params, module_type, index
+        )

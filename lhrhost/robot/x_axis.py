@@ -105,19 +105,6 @@ class Axis(ManuallyAlignedRobotAxis, ConfigurableRobotAxis):
             self.preset_physical_position_tree[module_type]['origin']
         )
 
-    def _get_module_position(self, module_name, index):
-        module_type = self.get_module_type(module_name)
-        module_params = self.preset_physical_position_tree[module_type]
-        min_index = module_params['min index']
-        max_index = module_params['max index']
-        origin_index = module_params['origin index']
-        if (ord(index) < ord(min_index)) or (ord(index) > ord(max_index)):
-            raise IndexError
-        return (
-            self._get_origin_position(module_name) +
-            (ord(index) - ord(origin_index)) * module_params['increment']
-        )
-
     # Implement RobotAxis
 
     @property
@@ -130,17 +117,23 @@ class Axis(ManuallyAlignedRobotAxis, ConfigurableRobotAxis):
         """Return a string representation of the physical units."""
         return 'cm'
 
-    async def go_to_module_position(self, module_name, position):
-        """Move to the position for the specified module."""
-        if self.at_module_position(module_name, position):
-            return
-        await self.go_to_physical_position(
-            self._get_module_position(module_name, position)
-        )
-        self.current_preset_position = (module_name, position)
-
     async def go_to_flat_surface(self, module_name, physical_position):
         """Move to the specified physical position for the flat surface."""
         await self.go_to_physical_position(
             self._get_origin_position(module_name) + physical_position
+        )
+
+    # Implement ModularRobotAxis
+
+    def get_module_mount_position(self, presets_tree, module_name):
+        """Get the position of the module's mount."""
+        module_mount = self.get_module_mount(module_name)
+        mount_type = 'even' if module_mount % 2 == 0 else 'odd'
+        mount_params = presets_tree['mount']
+        return (
+            mount_params['{} origin'.format(mount_type)] +
+            self.get_indexed_offset(
+                mount_params, module_mount,
+                origin_index_key='{} origin index'.format(mount_type)
+            )
         )
