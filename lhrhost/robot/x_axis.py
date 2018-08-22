@@ -120,7 +120,7 @@ class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
         """Return the module type of the named module."""
         return self.configuration_tree[module_name]['type']
 
-    # Extend DiscreteRobotAxis
+    # Implement DiscreteRobotAxis
 
     def load_discrete_json(self, json_path=None):
         """Load a discrete positions tree from the provided JSON file path.

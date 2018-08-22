@@ -56,6 +56,7 @@ class Robot(object):
         await self.p.synchronize_values()
         await self.z.synchronize_values()
         await self.y.synchronize_values()
+        await self.x.synchronize_values()
 
     async def load_calibrations(self):
         """Load calibration parameters from json files."""
@@ -94,7 +95,7 @@ class Robot(object):
         module_type = self.x.get_module_type(module_name)
         if (
             self.x.current_discrete_position is not None and
-            self.x.current_discrete_position[0] == module_name
+            self.x.at_module(module_name)
         ):
             await self.z.go_to_module_position(module_type, 'far above')
         else:

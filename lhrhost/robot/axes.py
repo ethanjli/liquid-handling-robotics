@@ -329,27 +329,31 @@ class DiscreteRobotAxis(RobotAxis):
             physical_position
         )
 
-    def parse_discrete_position(self, position):
+    def parse_discrete_position(self, position_node):
         """Parse a discrete position tree node into an actual discrete position."""
-        if isinstance(position, dict):
+        if isinstance(position_node, dict):
             try:
-                type = position['type']
+                type = position_node['type']
             except KeyError:
                 raise KeyError(
-                    'Type-less discrete position tree node {}!'.format(position)
+                    'Type-less discrete position tree node {}!'.format(position_node)
                 )
             if type == 'implicit':
-                raise ValueError(
+                raise TypeError(
                     'Cannot use an implicit discrete position tree node!'
                 )
             if type == 'constants':
-                raise ValueError(
+                raise TypeError(
                     'Cannot use partially-specified discrete position {}!'
-                    .format(position)
+                    .format(position_node)
                 )
             if type == 'constant':
-                return position['value']
-        return position
+                return position_node['value']
+            raise NotImplementedError(
+                'Unknown type {} for discrete position node {}!'
+                .format(type, position_node)
+            )
+        return position_node
 
     def discrete_to_sensor(self, discrete_position, use_physical_if_needed=True):
         """Convert a discrete position to a sensor position."""
@@ -379,15 +383,15 @@ class DiscreteRobotAxis(RobotAxis):
             else:
                 raise
 
-    async def go_to_discrete_position(self, discrete_position):
+    async def go_to_discrete_position(self, discrete_position, force_go=False):
         """Go to the specified discrete position.
 
         Returns the physical position error between the desired physical position
         and the final physical position.
         """
-        print('getting physical position for', discrete_position)
+        if self.current_discrete_position == discrete_position and not force_go:
+            return
         physical_position = self.discrete_to_physical(discrete_position)
-        print('physical position for', discrete_position, 'is', physical_position)
         final_physical_position = await self.go_to_physical_position(physical_position)
         if isinstance(discrete_position, str):
             discrete_position = (discrete_position,)
@@ -461,7 +465,7 @@ class AlignedRobotAxis(DiscreteRobotAxis):
             return
         try:
             await self.go_to_discrete_position('alignment hole')
-        except ValueError:
+        except TypeError:
             await self.go_to_physical_position(0)
             self.current_discrete_position = ('alignment hole',)
 
@@ -478,9 +482,35 @@ class ManuallyAlignedRobotAxis(AlignedRobotAxis, ContinuousRobotAxis):
 class ModularRobotAxis(DiscreteRobotAxis):
     """High-level controller mixin for axes with manual alignment."""
 
+    def at_module(self, module):
+        """Return whether the axis is already at the module.
+
+        Module may be the module's name or type, depending on the axis.
+        """
+        return self.current_discrete_position[0] == module
+
     def at_module_position(self, module, position):
         """Return whether the axis is already at the position for the module.
 
         Module may be the module's name or type, depending on the axis.
         """
         return self.current_discrete_position == (module, position)
+
+    async def go_to_module_position(self, module, position):
+        """Move to the position for the specified module."""
+        try:
+            await self.go_to_discrete_position((module, position))
+        except NotImplementedError:
+            pass
+
+    # Implement DiscreteRobotAxis
+
+    def parse_discrete_position(self, position_node):
+        """Parse a discrete position tree node into an actual discrete position."""
+        try:
+            return super().parse_discrete_position(position_node)
+        except NotImplementedError:
+            type = position_node['type']
+            if type == 'indexed':
+                pass
+        return position_node

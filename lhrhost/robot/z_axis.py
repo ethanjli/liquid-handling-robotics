@@ -24,10 +24,3 @@ class Axis(ModularRobotAxis, AlignedRobotAxis, ContinuousRobotAxis):
     def physical_unit(self):
         """Return a string representation of the physical units."""
         return 'cm'
-
-    async def go_to_module_position(self, module_type, position):
-        """Move to the position for the specified module."""
-        print('z-axis going to module', module_type, 'position', position)
-        if self.at_module_position(module_type, position):
-            return
-        await self.go_to_discrete_position((module_type, position))
