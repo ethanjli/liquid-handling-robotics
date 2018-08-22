@@ -522,11 +522,7 @@ class ModularRobotAxis(PresetRobotAxis):
         """Get the position of the module's mount."""
         return self.get_preset_position(presets_tree, 'mount')
 
-    def get_module_origin_position(self, presets_tree, module_type):
-        """Get the position of the module's origin relative to its mount."""
-        return self.get_preset_position(presets_tree, (module_type, 'origin'))
-
-    def get_module_offset_position(self, presets_tree, module_params, module_type, index):
+    def get_module_offset_position(self, module_params, index):
         """Get the position on the  module relative to the module's origin."""
         return self.get_indexed_offset(module_params, index)
 
@@ -535,8 +531,8 @@ class ModularRobotAxis(PresetRobotAxis):
         (module, offset) = preset_position
         return (
             self.get_module_mount_position(presets_tree, module) +
-            self.get_module_origin_position(presets_tree, module) +
-            self.get_module_offset_position(presets_tree, module_params, module, offset)
+            module_params['origin'] +
+            self.get_module_offset_position(module_params, offset)
         )
 
     async def go_to_module_position(self, module, position):
@@ -554,7 +550,6 @@ class ModularRobotAxis(PresetRobotAxis):
             type = module_params['type']
             if type == 'indexed' or type == 'continuous':
                 return self.get_module_position(presets_tree, module_params, preset_position)
-        raise KeyError('Unknown module {}!'.format(preset_position[0]))
 
 
 class ConfigurableRobotAxis(ModularRobotAxis):
@@ -580,17 +575,12 @@ class ConfigurableRobotAxis(ModularRobotAxis):
         self.configuration = self.trees['configuration']
         self.configuration_tree = self.trees['configurations'][self.configuration]
 
-    # Implement ModularRobotAxis
-
-    def get_module_origin_position(self, presets_tree, module_name):
-        """Get the position of the module's origin relative to its mount."""
-        module_type = self.get_module_type(module_name)
-        return super().get_module_origin_position(presets_tree, module_type)
-
-    def get_module_offset_position(self, presets_tree, module_params, module_name, index):
-        """Get the position on the  module relative to the module's origin."""
-        module_type = self.get_module_type(module_name)
-        module_type_params = presets_tree[module_type]
-        return super().get_module_offset_position(
-            presets_tree, module_type_params, module_type, index
-        )
+    def get_preset_position(self, presets_tree, preset_position):
+        """Get an actual position from a preset position tree node."""
+        try:
+            return super().get_preset_position(presets_tree, preset_position)
+        except KeyError:
+            module_name = preset_position[0]
+            module_type = self.get_module_type(module_name)
+            module_params = get_from_tree(presets_tree, module_type)
+            return self.get_module_position(presets_tree, module_params, preset_position)

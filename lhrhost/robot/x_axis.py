@@ -87,24 +87,6 @@ class Axis(ManuallyAlignedRobotAxis, ConfigurableRobotAxis):
         self.configuration = None
         self.configuration_tree = None
 
-    def _get_origin_position(self, module_name):
-        mount_params = self.preset_physical_position_tree['mount']
-        mount_index = self.configuration_tree[module_name]['mount']
-        min_index = mount_params['min index']
-        max_index = mount_params['max index']
-        if (mount_index < min_index) or (max_index is not None and mount_index > max_index):
-            raise IndexError
-        module_type = self.get_module_type(module_name)
-        index_type = 'even' if mount_index % 2 == 0 else 'odd'
-        origin_type = '{} origin'.format(index_type)
-        origin_index = mount_params['{} index'.format(origin_type)]
-        return (
-            mount_params[origin_type] +
-            (mount_index - origin_index) *
-            mount_params['increment'] +
-            self.preset_physical_position_tree[module_type]['origin']
-        )
-
     # Implement RobotAxis
 
     @property
