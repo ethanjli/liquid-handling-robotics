@@ -2,42 +2,16 @@
 
 # Local package imiports
 from lhrhost.protocol.linear_actuator import Protocol as LinearActuatorProtocol
-from lhrhost.robot.axes import ContinuousRobotAxis, DiscreteRobotAxis
+from lhrhost.robot.axes import ManuallyAlignedRobotAxis, ModularRobotAxis
 from lhrhost.util.cli import Prompt
 
 
-class ManualAxis(DiscreteRobotAxis):
+class ManualAxis(ManuallyAlignedRobotAxis, ModularRobotAxis):
     """High-level controller for x-axis."""
 
     def __init__(self):
         """Initialize member variables."""
         super().__init__()
-
-    def at_cuvette(self):
-        """Return whether the axis is already at the column for the cuvette rack."""
-        return self.current_discrete_position == 'the cuvette rack'
-
-    async def go_to_cuvette(self):
-        """Move to the column for the cuvette rack."""
-        if self.at_cuvette():
-            return
-        self.current_discrete_position = 'the cuvette rack'
-        await self.go_to_discrete_position(self.current_discrete_position)
-
-    def at_96_well_plate(self, plate_column):
-        """Return whether the axis is already at the column for the cuvette rack."""
-        return (
-            self.current_discrete_position ==
-            'column {} of the 96-well plate'.format(plate_column)
-        )
-
-    async def go_to_96_well_plate(self, plate_column):
-        """Move to the specified column position for the 96-well plate."""
-        if self.at_96_well_plate(plate_column):
-            return
-        self.current_discrete_position = \
-            'column {} of the 96-well plate'.format(plate_column)
-        await self.go_to_discrete_position(self.current_discrete_position)
 
     # Implement RobotAxis
 
@@ -75,14 +49,33 @@ class ManualAxis(DiscreteRobotAxis):
         Returns the sensor position error between the desired sensor position
         and the final sensor position.
         """
-        await self.prompt('Please move the sample platform to {}: '.format(
-            discrete_position
-        ))
+        await self.prompt(
+            'Please move the sample platform on the x-axis to {}: '
+            .format(discrete_position)
+        )
         self.current_discrete_position = discrete_position
         return 0
 
+    # Implement ManuallyAlignedRobotAxis
 
-class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
+    async def set_alignment(self):
+        """Update the physical calibration to align against the current position."""
+        pass
+
+    # Implement ModularRobotAxis
+
+    async def go_to_module_position(self, module_name, position):
+        """Move to the position for the specified module."""
+        await self.prompt(
+            'Please move the sample platform on the x-axis to the {} module\'s '
+            '{} position: '
+            .format(module_name, position)
+        )
+        self.current_discrete_position = (module_name, position)
+        return 0
+
+
+class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
     """High-level controller for x-axis."""
 
     def __init__(self):
@@ -99,7 +92,7 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
         max_index = mount_params['max index']
         if (mount_index < min_index) or (mount_index > max_index):
             raise IndexError
-        module_type = self.configuration_tree[module_name]['type']
+        module_type = self.get_module_type(module_name)
         index_type = 'even' if mount_index % 2 == 0 else 'odd'
         origin_type = '{} origin'.format(index_type)
         origin_index = mount_params['{} index'.format(origin_type)]
@@ -111,7 +104,7 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
         )
 
     def _get_module_position(self, module_name, index):
-        module_type = self.configuration_tree[module_name]['type']
+        module_type = self.get_module_type(module_name)
         module_params = self.discrete_physical_position_tree[module_type]
         min_index = module_params['min index']
         max_index = module_params['max index']
@@ -123,16 +116,9 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
             (ord(index) - ord(origin_index)) * module_params['increment']
         )
 
-    def _at_module(self, module_name, position):
-        return self.current_discrete_position == (module_name, position)
-
-    async def _go_to_module(self, module_name, position):
-        if self._at_module(module_name, position):
-            return
-        await self.go_to_physical_position(
-            self._get_module_position(module_name, position)
-        )
-        self.current_discrete_position = (module_name, position)
+    def get_module_type(self, module_name):
+        """Return the module type of the named module."""
+        return self.configuration_tree[module_name]['type']
 
     # Extend DiscreteRobotAxis
 
@@ -158,21 +144,14 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
         """Return a string representation of the physical units."""
         return 'cm'
 
-    def at_cuvette(self, module_name, cuvette_column):
-        """Return whether the axis is already at the column for the cuvette rack."""
-        return self._at_module(module_name, cuvette_column)
-
-    async def go_to_cuvette(self, module_name, cuvette_column):
-        """Move to the column position for the specified cuvette."""
-        await self._go_to_module(module_name, cuvette_column)
-
-    def at_96_well_plate(self, module_name, plate_column):
-        """Return whether the axis is already at the column for the cuvette rack."""
-        return self._at_module(module_name, plate_column)
-
-    async def go_to_96_well_plate(self, module_name, plate_column):
-        """Move to the specified column position for the 96-well plate."""
-        await self._go_to_module(module_name, plate_column)
+    async def go_to_module_position(self, module_name, position):
+        """Move to the position for the specified module."""
+        if self.at_module_position(module_name, position):
+            return
+        await self.go_to_physical_position(
+            self._get_module_position(module_name, position)
+        )
+        self.current_discrete_position = (module_name, position)
 
     async def go_to_flat_surface(self, module_name, physical_position):
         """Move to the specified physical position for the flat surface."""

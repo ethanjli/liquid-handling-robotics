@@ -1,6 +1,16 @@
 {
   "physical": {
+    "low end": {
+      "type": "implicit"
+    },
+    "high end": {
+      "type": "implicit"
+    },
+    "alignment hole": {
+      "type": "implicit"
+    },
     "mount": {
+      "type": "indexed",
       "odd origin": 3.56,
       "even origin": 8,
       "min index": 1,
@@ -10,6 +20,7 @@
       "even origin index": 2
     },
     "cuvette": {
+      "type": "indexed",
       "origin": -1.11,
       "increment": 2.22,
       "min index": "a",
@@ -17,6 +28,7 @@
       "origin index": "a"
     },
     "96-well plate": {
+      "type": "indexed",
       "origin": -0.37,
       "increment": 0.9,
       "min index": "a",
@@ -24,6 +36,7 @@
       "origin index": "a"
     },
     "flat surface": {
+      "type": "continuous",
       "origin": -1.91,
       "end": 9.37
     }

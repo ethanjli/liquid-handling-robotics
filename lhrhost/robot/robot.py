@@ -69,98 +69,83 @@ class Robot(object):
         self.x.load_calibration_json()
         self.x.load_discrete_json()
 
-    async def align_manually(self):
-        """Do a manual alignment of x/y positioning."""
-        await self.go_to_alignment_hole()
-        await self.prompt(
-            'Align the sample stage so that the pipette tip is in the round alignment hole: '
-        )
-        x_position = await self.x.sensor_position
-        self.x.linear_regression[1] = -self.x.linear_regression[0] * x_position
-        y_position = await self.y.sensor_position
-        self.y.linear_regression[1] = -self.y.linear_regression[0] * y_position
-        logger.info('Aligned to the zero position at the alignment hole.')
-
     async def go_to_alignment_hole(self):
         """Move the pipettor head to the alignment hole."""
         await self.z.go_to_high_end_position()
         await asyncio.gather(
-            self.y.go_to_physical_position(0), self.x.go_to_physical_position(0)
+            self.y.go_to_alignment_hole(), self.x.go_to_alignment_hole()
         )
-        await self.z.go_to_discrete_position('alignment hole')
+        await self.z.go_to_alignment_hole()
 
-    async def go_to_cuvette(self, module_name, cuvette_column, cuvette_row):
-        """Move the pipettor head to the specified cuvette of the cuvette rack."""
+    async def align_manually(self):
+        """Do a manual alignment of x/y positioning."""
+        await self.go_to_alignment_hole()
+        await self.prompt(
+            'Please move the x-axis and the y-axis so that the pipette tip is '
+            'directly over the round alignment hole: '
+        )
+        await asyncio.gather(self.x.set_alignment(), self.y.set_alignment())
+        logger.info('Aligned to the zero position at the alignment hole.')
+
+    async def go_to_module_position(
+        self, module_name, x_position, y_position, z_position=None
+    ):
+        """Move the pipettor head to the specified x/y position of the module."""
+        module_type = self.x.get_module_type(module_name)
         if (
             self.x.current_discrete_position is not None and
             self.x.current_discrete_position[0] == module_name
         ):
-            await self.z.go_to_cuvette('far above')
+            await self.z.go_to_module_position(module_type, 'far above')
         else:
             await self.z.go_to_high_end_position()
         await asyncio.gather(
-            self.x.go_to_cuvette(module_name, cuvette_column), self.y.go_to_cuvette(cuvette_row)
+            self.x.go_to_module_position(module_name, x_position),
+            self.y.go_to_module_position(module_type, y_position)
         )
+        if z_position is not None:
+            await self.z.go_to_module_position(module_type, 'far above')
 
-    async def go_to_96_well_plate(self, module_name, plate_column, plate_row):
-        """Move the pipettor head to the specified well of the 96-well plate."""
-        if (
-            self.x.current_discrete_position is not None and
-            self.x.current_discrete_position[0] == module_name
-        ):
-            await self.z.go_to_96_well_plate('far above')
-        else:
-            await self.z.go_to_high_end_position()
-        await asyncio.gather(
-            self.x.go_to_96_well_plate(module_name, plate_column),
-            self.y.go_to_96_well_plate(plate_row)
-        )
-
-    async def intake(self, container, height, volume):
+    async def intake(self, module_type, volume, height=None):
         """Intake fluid at the specified height.
 
-        Container should be either 'cuvette' or '96-well plate'.
-        Height should be a discrete z-axis position.
+        Height should be a discrete z-axis position or a physical z-axis position.
         """
-        if container == 'cuvette':
-            await self.z.go_to_cuvette(height)
-        elif container == '96-well plate':
-            await self.z.go_to_96_well_plate(height)
-        else:
-            raise NotImplementedError('Unknown container \'{}\'!'.format(container))
+        if height is not None:
+            try:
+                await self.z.go_to_module_position(module_type, height)
+            except KeyError:
+                await self.z.go_to_physical_position(height)
         await self.p.intake(volume)
 
-    async def intake_precise(self, container, height, volume):
+    async def intake_precise(self, module_type, volume, height=None):
         """Intake fluid at the specified height.
 
-        Container should be either 'cuvette' or '96-well plate'.
-        Height should be a discrete z-axis position.
+        Height should be a discrete z-axis position or a physical z-axis position.
         Volume should be either 20, 30, 40, 50, or 100.
         """
-        if container == 'cuvette':
-            z_positioner = self.z.go_to_cuvette
-        elif container == '96-well plate':
-            z_positioner = self.z.go_to_96_well_plate
-        else:
-            raise NotImplementedError('Unknown container \'{}\'!'.format(container))
-        await z_positioner('above')
+        if height is None:
+            if self.z.current_discrete_position is not None:
+                height = self.z.current_discrete_position[1]
+            else:
+                height = await self.z.physical_position
+        await self.z.go_to_module_position(module_type, 'above')
         await self.p.go_to_pre_intake(volume)
-        await z_positioner(height)
+        try:
+            await self.z.go_to_module_position(module_type, height)
+        except KeyError:
+            await self.z.go_to_physical_position(height)
         await self.p.intake(volume)
 
-    async def dispense(self, container, height, volume=None):
+    async def dispense(self, module_type, volume=None, height=None):
         """Dispense fluid at the specified height.
 
         If volume is none, dispenses all syringe contents.
-        Container should be either 'cuvette' or '96-well plate'.
-        Height should be a discrete z-axis position.
+        Height should be a discrete z-axis position or a physical z-axis position.
         """
-        if container == 'cuvette':
-            if not self.z.at_cuvette(height):
-                await self.z.go_to_cuvette(height)
-        elif container == '96-well plate':
-            if not self.z.at_96_well_plate(height):
-                await self.z.go_to_96_well_plate(height)
-        else:
-            raise NotImplementedError('Unknown container \'{}\'!'.format(container))
+        if height is not None:
+            try:
+                await self.z.go_to_module_position(module_type, height)
+            except KeyError:
+                await self.z.go_to_physical_position(height)
         await self.p.dispense(volume)

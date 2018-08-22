@@ -2,10 +2,10 @@
 
 # Local package imiports
 from lhrhost.protocol.linear_actuator import Protocol as LinearActuatorProtocol
-from lhrhost.robot.axes import ContinuousRobotAxis, DiscreteRobotAxis
+from lhrhost.robot.axes import ManuallyAlignedRobotAxis, ModularRobotAxis
 
 
-class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
+class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
     """High-level controller for y-axis."""
 
     def __init__(self):
@@ -15,7 +15,7 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
 
     def _get_origin_position(self, module_type):
         return (
-            self.discrete_physical_position_tree['mount'] +
+            self.discrete_physical_position_tree['mount']['value'] +
             self.discrete_physical_position_tree[module_type]['origin']
         )
 
@@ -43,31 +43,14 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
         """Return a string representation of the physical units."""
         return 'cm'
 
-    def at_cuvette(self, cuvette_row):
-        """Return whether the axis is already at the row for the cuvette rack."""
-        return self.current_discrete_position == ('cuvette', cuvette_row)
-
-    async def go_to_cuvette(self, cuvette_row):
-        """Move to the row position for the specified cuvette."""
-        if self.at_cuvette(cuvette_row):
+    async def go_to_module_position(self, module_type, position):
+        """Move to the position for the specified module."""
+        if self.at_module_position(module_type, position):
             return
         await self.go_to_physical_position(
-            self._get_module_position('cuvette', cuvette_row)
+            self._get_module_position(module_type, position)
         )
-        self.current_discrete_position = ('cuvette', cuvette_row)
-
-    def at_96_well_plate(self, plate_row):
-        """Return whether the axis is already at the row for the cuvette rack."""
-        return self.current_discrete_position == ('96-well plate', plate_row)
-
-    async def go_to_96_well_plate(self, plate_row):
-        """Move to the specified row position for the 96-well plate."""
-        if self.at_96_well_plate(plate_row):
-            return
-        await self.go_to_physical_position(
-            self._get_module_position('96-well plate', plate_row)
-        )
-        self.current_discrete_position = ('96-well plate', plate_row)
+        self.current_discrete_position = (module_type, position)
 
     async def go_to_flat_surface(self, physical_position):
         """Move to the specified physical position for the flat surface."""

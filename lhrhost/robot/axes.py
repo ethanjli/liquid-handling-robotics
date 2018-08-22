@@ -269,7 +269,7 @@ class ContinuousRobotAxis(RobotAxis):
     # Implement RobotAxis
 
     def physical_to_sensor(self, physical_position):
-        """Convert a position in physical units to a unitless sensor position."""
+        """Convert a position in physical units to a unitless integer sensor position."""
         return (
             (physical_position - self.sensor_to_physical_offset) /
             self.sensor_to_physical_scaling
@@ -284,7 +284,7 @@ class ContinuousRobotAxis(RobotAxis):
 
 
 class DiscreteRobotAxis(RobotAxis):
-    """High-level controller mixin for axes with continuous positions."""
+    """High-level controller mixin for axes with discrete positions."""
 
     def __init__(self):
         """Initialize member variables."""
@@ -329,17 +329,38 @@ class DiscreteRobotAxis(RobotAxis):
             physical_position
         )
 
+    def parse_discrete_position(self, position):
+        """Parse a discrete position tree node into an actual discrete position."""
+        if isinstance(position, dict):
+            try:
+                type = position['type']
+            except KeyError:
+                raise KeyError(
+                    'Type-less discrete position tree node {}!'.format(position)
+                )
+            if type == 'implicit':
+                raise ValueError(
+                    'Cannot use an implicit discrete position tree node!'
+                )
+            if type == 'constants':
+                raise ValueError(
+                    'Cannot use partially-specified discrete position {}!'
+                    .format(position)
+                )
+            if type == 'constant':
+                return position['value']
+        return position
+
     def discrete_to_sensor(self, discrete_position, use_physical_if_needed=True):
         """Convert a discrete position to a sensor position."""
         try:
-            return get_from_tree(
+            position = get_from_tree(
                 self.discrete_sensor_position_tree, discrete_position
             )
+            return self.parse_discrete_position(position)
         except KeyError:
             if use_physical_if_needed:
-                physical_position = get_from_tree(
-                    self.discrete_physical_position_tree, discrete_position
-                )
+                physical_position = self.discrete_to_physical(discrete_position, False)
                 return self.physical_to_sensor(physical_position)
             else:
                 raise
@@ -347,14 +368,13 @@ class DiscreteRobotAxis(RobotAxis):
     def discrete_to_physical(self, discrete_position, use_sensor_if_needed=True):
         """Convert a discrete position to a physical position."""
         try:
-            return get_from_tree(
+            position = get_from_tree(
                 self.discrete_physical_position_tree, discrete_position
             )
+            return self.parse_discrete_position(position)
         except KeyError:
             if use_sensor_if_needed:
-                sensor_position = get_from_tree(
-                    self.discrete_sensor_position_tree, discrete_position
-                )
+                sensor_position = self.discrete_to_sensor(discrete_position, False)
                 return self.sensor_to_physical(sensor_position)
             else:
                 raise
@@ -365,10 +385,12 @@ class DiscreteRobotAxis(RobotAxis):
         Returns the physical position error between the desired physical position
         and the final physical position.
         """
+        print('getting physical position for', discrete_position)
         physical_position = self.discrete_to_physical(discrete_position)
-        sensor_position = self.discrete_to_sensor(discrete_position)
-        final_sensor_position = await self.go_to_sensor_position(sensor_position)
-        final_physical_position = self.sensor_to_physical(final_sensor_position)
+        print('physical position for', discrete_position, 'is', physical_position)
+        final_physical_position = await self.go_to_physical_position(physical_position)
+        if isinstance(discrete_position, str):
+            discrete_position = (discrete_position,)
         self.current_discrete_position = discrete_position
         return physical_position - final_physical_position
 
@@ -410,9 +432,9 @@ class DiscreteRobotAxis(RobotAxis):
 
         Speed must be given as a signed motor duty cycle.
         """
-        if self.current_discrete_position == 'low end':
+        if self.current_discrete_position == ('low end',):
             return
-        self.current_discrete_position = 'low end'
+        self.current_discrete_position = ('low end',)
         return await super().go_to_low_end_position(speed)
 
     async def go_to_high_end_position(self, speed=None):
@@ -420,7 +442,45 @@ class DiscreteRobotAxis(RobotAxis):
 
         Speed must be given as a signed motor duty cycle.
         """
-        if self.current_discrete_position == 'high end':
+        if self.current_discrete_position == ('high end',):
             return
-        self.current_discrete_position = 'high end'
+        self.current_discrete_position = ('high end',)
         return await super().go_to_high_end_position(speed)
+
+
+class AlignedRobotAxis(DiscreteRobotAxis):
+    """High-level controller mixin for axes with alignment."""
+
+    def at_alignment_hole(self):
+        """Return whether the axis is already at the alignment hole."""
+        return self.current_discrete_position == ('alignment hole',)
+
+    async def go_to_alignment_hole(self):
+        """Move to the alignment hole."""
+        if self.at_alignment_hole():
+            return
+        try:
+            await self.go_to_discrete_position('alignment hole')
+        except ValueError:
+            await self.go_to_physical_position(0)
+            self.current_discrete_position = ('alignment hole',)
+
+
+class ManuallyAlignedRobotAxis(AlignedRobotAxis, ContinuousRobotAxis):
+    """High-level controller mixin for axes with manual alignment."""
+
+    async def set_alignment(self):
+        """Update the physical calibration to align against the current position."""
+        position = await self.sensor_position
+        self.linear_regression[1] = -self.linear_regression[0] * position
+
+
+class ModularRobotAxis(DiscreteRobotAxis):
+    """High-level controller mixin for axes with manual alignment."""
+
+    def at_module_position(self, module, position):
+        """Return whether the axis is already at the position for the module.
+
+        Module may be the module's name or type, depending on the axis.
+        """
+        return self.current_discrete_position == (module, position)

@@ -49,7 +49,7 @@ class Batch:
         dilution_columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
         await self.dispense_waste()
         await self.intake_water('mid', 0.85)
-        await self.distribute_water(0.1, dilution_columns, [1])
+        await self.distribute_water(dilution_columns, [1], 0.1)
         await self.dispense_waste()
         await self.intake_food_coloring(0.1)
         for column in dilution_columns:
@@ -66,33 +66,32 @@ class Batch:
 
     async def intake_water(self, height, volume):
         """Intake water to distribute to wells."""
-        await self.robot.go_to_cuvette('cuvette rack', 'a', 1)
-        await self.robot.dispense('cuvette', height)
-        await self.robot.intake('cuvette', height, volume)
+        await self.robot.go_to_module_position('cuvette rack', 'a', 1)
+        await self.robot.intake('cuvette', volume=volume, height=height)
 
     async def intake_food_coloring(self, volume):
         """Intake food coloring to distribute to wells."""
-        await self.robot.go_to_cuvette('cuvette rack', 'a', 2)
-        await self.robot.intake('cuvette', 'bottom', volume)
+        await self.robot.go_to_module_position('cuvette rack', 'a', 2)
+        await self.robot.intake('cuvette', volume=volume, height='bottom')
 
-    async def distribute_water(self, volume, columns, rows):
+    async def distribute_water(self, columns, rows, volume):
         """Distribute water to wells."""
         for column in columns:
             for row in rows:
-                await self.robot.go_to_96_well_plate('96-well plate', column, row)
-                await self.robot.dispense('96-well plate', 'mid', volume)
+                await self.robot.go_to_module_position('96-well plate', column, row)
+                await self.robot.dispense('96-well plate', volume=volume, height='mid')
 
     async def dilute(self, column, row, height, volume, mix_cycles):
         """Dilute food coloring in a well."""
-        await self.robot.go_to_96_well_plate('96-well plate', column, row)
+        await self.robot.go_to_module_position('96-well plate', column, row)
         for i in range(mix_cycles):
-            await self.robot.dispense('96-well plate', height, None)
-            await self.robot.intake('96-well plate', height, volume)
+            await self.robot.dispense('96-well plate', height=height)
+            await self.robot.intake('96-well plate', volume=volume, height=height)
 
     async def dispense_waste(self):
         """Dispense any leftover liquid in the pipettor."""
-        await self.robot.go_to_cuvette('cuvette rack', 'a', 3)
-        await self.robot.dispense('cuvette', 'top')
+        await self.robot.go_to_module_position('cuvette rack', 'a', 3)
+        await self.robot.dispense('cuvette', height='top')
 
 
 def main():
