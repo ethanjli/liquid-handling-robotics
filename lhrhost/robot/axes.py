@@ -588,7 +588,8 @@ class ConfigurableRobotAxis(ModularRobotAxis):
         axis name.
         """
         super().load_preset_json(json_path)
-        self.configuration = self.trees['configuration']
+        if self.configuration is None:
+            self.configuration = self.trees['default configuration']
         self.configuration_tree = self.trees['configurations'][self.configuration]
 
     def get_preset_position(self, presets_tree, preset_position):

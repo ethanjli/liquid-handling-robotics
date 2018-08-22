@@ -80,5 +80,5 @@
       }
     }
   },
-  "configuration": "standard 96-well plate"
+  "default configuration": "standard 96-well plate"
 }

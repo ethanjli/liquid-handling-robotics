@@ -38,6 +38,7 @@ class Batch:
 
     async def test_routine(self):
         """Run the batch execution test routine."""
+        await self.robot.ensure_sample_platform_configuration('standard flat surface')
         print('Waiting for axes to initialize...')
         await self.robot.wait_until_initialized()
         print('Synchronizing robot state with peripheral...')

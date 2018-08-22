@@ -70,6 +70,14 @@ class Robot(object):
         self.x.load_calibration_json()
         self.x.load_preset_json()
 
+    async def ensure_sample_platform_configuration(self, configuration):
+        """Ensure that the sample platform is configured as speified."""
+        await self.prompt(
+            'Please ensure that the sample platform modules are configured '
+            'following the "{}" configurationn:'.format(configuration)
+        )
+        self.x.configuration = configuration
+
     async def go_to_alignment_hole(self):
         """Move the pipettor head to the alignment hole."""
         await self.z.go_to_high_end_position()
