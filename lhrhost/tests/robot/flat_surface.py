@@ -46,14 +46,13 @@ class Batch:
         await self.robot.load_calibrations()
         await self.robot.align_manually()
 
-        dilution_columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+        X = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5]
         await self.dispense_waste()
         await self.intake_water('mid', 0.85)
-        await self.distribute_water(dilution_columns, [1], 0.1)
+        await self.distribute_water(X, [0], 'above', 0.1)
         await self.dispense_waste()
-        await self.intake_food_coloring(0.1)
-        for column in dilution_columns:
-            await self.dilute(column, 1, 'low', 0.1, 2)
+        await self.intake_water('low', 0.85)
+        await self.distribute_water(X, [1], 'top', 0.1)
         await self.dispense_waste()
         await self.robot.z.go_to_high_end_position()
         await asyncio.gather(
@@ -69,24 +68,12 @@ class Batch:
         await self.robot.go_to_module_position('cuvettes', 'a', 1)
         await self.robot.intake('cuvettes', volume=volume, height=height)
 
-    async def intake_food_coloring(self, volume):
-        """Intake food coloring to distribute to wells."""
-        await self.robot.go_to_module_position('cuvettes', 'a', 2)
-        await self.robot.intake('cuvettes', volume=volume, height='bottom')
-
-    async def distribute_water(self, columns, rows, volume):
+    async def distribute_water(self, X, Y, height, volume):
         """Distribute water to wells."""
-        for column in columns:
-            for row in rows:
-                await self.robot.go_to_module_position('plate', column, row)
-                await self.robot.dispense('plate', volume=volume, height='mid')
-
-    async def dilute(self, column, row, height, volume, mix_cycles):
-        """Dilute food coloring in a well."""
-        await self.robot.go_to_module_position('plate', column, row)
-        for i in range(mix_cycles):
-            await self.robot.dispense('plate', height=height)
-            await self.robot.intake('plate', volume=volume, height=height)
+        for x in X:
+            for y in Y:
+                await self.robot.go_to_module_position('surface', x, y)
+                await self.robot.dispense('surface', volume=volume, height=height)
 
     async def dispense_waste(self):
         """Dispense any leftover liquid in the pipettor."""

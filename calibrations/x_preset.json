@@ -38,24 +38,25 @@
     "flat surface": {
       "type": "continuous",
       "origin": -1.91,
-      "end": 9.37
+      "min": 0,
+      "max": 9.37
     }
   },
   "sensor": {
   },
   "configurations": {
     "standard 96-well plate": {
-      "cuvette rack": {
+      "cuvettes": {
         "mount": 1,
         "type": "cuvette rack"
       },
-      "96-well plate": {
+      "plate": {
         "mount": 2,
         "type": "96-well plate"
       }
     },
     "standard flat surface": {
-      "cuvette rack": {
+      "cuvettes": {
         "mount": 1,
         "type": "cuvette rack"
       },
@@ -65,15 +66,15 @@
       }
     },
     "extended 96-well plate": {
-      "cuvette rack": {
+      "cuvettes": {
         "mount": 1,
         "type": "cuvette rack"
       },
-      "96-well plate 1": {
+      "plate 1": {
         "mount": 2,
         "type": "96-well plate"
       },
-      "96-well plate 2": {
+      "plate 2": {
         "mount": 4,
         "type": "96-well plate"
       }

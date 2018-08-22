@@ -518,13 +518,31 @@ class ModularRobotAxis(PresetRobotAxis):
             )
         return (index - origin_index) * module_params['increment']
 
+    def get_continuous_offset(self, module_params, offset):
+        """Return the physical offset for the provided module continuous preset position."""
+        min = module_params['min']
+        max = module_params['max']
+        if (offset < min) or (max is not None and offset > max):
+            raise ValueError(
+                'Offset {} is out of the range ({}, {})!'
+                .format(offset, min, max)
+            )
+        return offset
+
     def get_module_mount_position(self, presets_tree, module_type):
         """Get the position of the module's mount."""
         return self.get_preset_position(presets_tree, 'mount')
 
-    def get_module_offset_position(self, module_params, index):
+    def get_module_offset_position(self, module_params, offset):
         """Get the position on the  module relative to the module's origin."""
-        return self.get_indexed_offset(module_params, index)
+        if module_params['type'] == 'indexed':
+            return self.get_indexed_offset(module_params, offset)
+        elif module_params['type'] == 'continuous':
+            return self.get_continuous_offset(module_params, offset)
+        else:
+            raise NotImplementedError(
+                'Unknown module type {}!'.format(module_params['type'])
+            )
 
     def get_module_position(self, presets_tree, module_params, preset_position):
         """Get the actual position from a preset module position tree node."""
@@ -547,9 +565,7 @@ class ModularRobotAxis(PresetRobotAxis):
             return super().get_preset_position(presets_tree, preset_position)
         except KeyError:
             module_params = get_from_tree(presets_tree, preset_position[0])
-            type = module_params['type']
-            if type == 'indexed' or type == 'continuous':
-                return self.get_module_position(presets_tree, module_params, preset_position)
+            return self.get_module_position(presets_tree, module_params, preset_position)
 
 
 class ConfigurableRobotAxis(ModularRobotAxis):

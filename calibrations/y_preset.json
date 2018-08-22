@@ -32,7 +32,8 @@
     "flat surface": {
       "type": "continuous",
       "origin": -16.95,
-      "end": 12
+      "min": 0,
+      "max": 12
     }
   },
   "sensor": {

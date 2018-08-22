@@ -30,6 +30,12 @@
       "mid": 0.75,
       "low": 0.5,
       "bottom": 0.25
+    },
+    "flat surface": {
+      "type": "constants",
+      "far above": 1,
+      "above": 0.5,
+      "top": 0.2
     }
   },
   "sensor": {

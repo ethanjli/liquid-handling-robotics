@@ -107,11 +107,12 @@ class Robot(object):
         if z_position is not None:
             await self.z.go_to_module_position(module_type, 'far above')
 
-    async def intake(self, module_type, volume, height=None):
+    async def intake(self, module_name, volume, height=None):
         """Intake fluid at the specified height.
 
         Height should be a preset z-axis position or a physical z-axis position.
         """
+        module_type = self.x.get_module_type(module_name)
         if height is not None:
             try:
                 await self.z.go_to_module_position(module_type, height)
@@ -119,12 +120,13 @@ class Robot(object):
                 await self.z.go_to_physical_position(height)
         await self.p.intake(volume)
 
-    async def intake_precise(self, module_type, volume, height=None):
+    async def intake_precise(self, module_name, volume, height=None):
         """Intake fluid at the specified height.
 
         Height should be a preset z-axis position or a physical z-axis position.
         Volume should be either 20, 30, 40, 50, or 100.
         """
+        module_type = self.x.get_module_type(module_name)
         if height is None:
             if self.z.current_preset_position is not None:
                 height = self.z.current_preset_position[1]
@@ -138,12 +140,13 @@ class Robot(object):
             await self.z.go_to_physical_position(height)
         await self.p.intake(volume)
 
-    async def dispense(self, module_type, volume=None, height=None):
+    async def dispense(self, module_name, volume=None, height=None):
         """Dispense fluid at the specified height.
 
         If volume is none, dispenses all syringe contents.
         Height should be a preset z-axis position or a physical z-axis position.
         """
+        module_type = self.x.get_module_type(module_name)
         if height is not None:
             try:
                 await self.z.go_to_module_position(module_type, height)
