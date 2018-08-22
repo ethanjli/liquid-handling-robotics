@@ -67,12 +67,12 @@ class Batch:
     async def intake_water(self, height, volume):
         """Intake water to distribute to wells."""
         await self.robot.go_to_module_position('cuvette rack', 'a', 1)
-        await self.robot.intake('cuvette', volume=volume, height=height)
+        await self.robot.intake('cuvette rack', volume=volume, height=height)
 
     async def intake_food_coloring(self, volume):
         """Intake food coloring to distribute to wells."""
         await self.robot.go_to_module_position('cuvette rack', 'a', 2)
-        await self.robot.intake('cuvette', volume=volume, height='bottom')
+        await self.robot.intake('cuvette rack', volume=volume, height='bottom')
 
     async def distribute_water(self, columns, rows, volume):
         """Distribute water to wells."""
@@ -91,7 +91,7 @@ class Batch:
     async def dispense_waste(self):
         """Dispense any leftover liquid in the pipettor."""
         await self.robot.go_to_module_position('cuvette rack', 'a', 3)
-        await self.robot.dispense('cuvette', height='top')
+        await self.robot.dispense('cuvette rack', height='top')
 
 
 def main():

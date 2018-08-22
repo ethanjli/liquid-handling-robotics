@@ -2,7 +2,9 @@
 
 # Local package imiports
 from lhrhost.protocol.linear_actuator import Protocol as LinearActuatorProtocol
-from lhrhost.robot.axes import ManuallyAlignedRobotAxis, ModularRobotAxis
+from lhrhost.robot.axes import (
+    ConfigurableRobotAxis, ManuallyAlignedRobotAxis, ModularRobotAxis
+)
 from lhrhost.util.cli import Prompt
 
 
@@ -75,7 +77,7 @@ class ManualAxis(ManuallyAlignedRobotAxis, ModularRobotAxis):
         return 0
 
 
-class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
+class Axis(ManuallyAlignedRobotAxis, ConfigurableRobotAxis):
     """High-level controller for x-axis."""
 
     def __init__(self):
@@ -90,7 +92,7 @@ class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
         mount_index = self.configuration_tree[module_name]['mount']
         min_index = mount_params['min index']
         max_index = mount_params['max index']
-        if (mount_index < min_index) or (mount_index > max_index):
+        if (mount_index < min_index) or (max_index is not None and mount_index > max_index):
             raise IndexError
         module_type = self.get_module_type(module_name)
         index_type = 'even' if mount_index % 2 == 0 else 'odd'
@@ -115,22 +117,6 @@ class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
             self._get_origin_position(module_name) +
             (ord(index) - ord(origin_index)) * module_params['increment']
         )
-
-    def get_module_type(self, module_name):
-        """Return the module type of the named module."""
-        return self.configuration_tree[module_name]['type']
-
-    # Implement PresetRobotAxis
-
-    def load_preset_json(self, json_path=None):
-        """Load a preset positions tree from the provided JSON file path.
-
-        Default path: 'calibrations/{}_preset.json' where {} is replaced with the
-        axis name.
-        """
-        super().load_preset_json(json_path)
-        self.configuration = self.trees['configuration']
-        self.configuration_tree = self.trees['configurations'][self.configuration]
 
     # Implement RobotAxis
 

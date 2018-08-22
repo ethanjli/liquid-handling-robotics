@@ -19,18 +19,6 @@ class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
             self.preset_physical_position_tree[module_type]['origin']
         )
 
-    def _get_module_position(self, module_type, index):
-        module_params = self.preset_physical_position_tree[module_type]
-        min_index = module_params['min index']
-        max_index = module_params['max index']
-        origin_index = module_params['origin index']
-        if (index < min_index) or (index > max_index):
-            raise IndexError
-        return (
-            self._get_origin_position(module_type) +
-            (index - origin_index) * module_params['increment']
-        )
-
     # Implement RobotAxis
 
     @property
@@ -45,15 +33,20 @@ class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
 
     async def go_to_module_position(self, module_type, position):
         """Move to the position for the specified module."""
-        if self.at_module_position(module_type, position):
-            return
-        await self.go_to_physical_position(
-            self._get_module_position(module_type, position)
-        )
-        self.current_preset_position = (module_type, position)
+        await self.go_to_preset_position((module_type, position))
 
     async def go_to_flat_surface(self, physical_position):
         """Move to the specified physical position for the flat surface."""
         await self.go_to_physical_position(
             self._get_origin_position('flat surface') + physical_position
+        )
+
+    # Implement ModularRobotAxis
+
+    def parse_indexed_position(self, module_params, preset_position):
+        """Parse a preset indexed position tree node into an actual preset position."""
+        (module_type, index) = preset_position
+        return (
+            self._get_origin_position(module_type) +
+            self.get_indexed_offset(module_params, index)
         )

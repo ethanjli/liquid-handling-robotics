@@ -329,39 +329,39 @@ class PresetRobotAxis(RobotAxis):
             physical_position
         )
 
-    def parse_preset_position(self, position_node):
+    def parse_preset_position(self, presets_tree, preset_position):
         """Parse a preset position tree node into an actual preset position."""
+        position_node = get_from_tree(presets_tree, preset_position)
         if isinstance(position_node, dict):
             try:
                 type = position_node['type']
             except KeyError:
-                raise KeyError(
-                    'Type-less preset position tree node {}!'.format(position_node)
+                raise TypeError(
+                    'Type-less preset position {}!'.format(preset_position)
                 )
             if type == 'implicit':
                 raise TypeError(
-                    'Cannot use an implicit preset position tree node!'
+                    'Cannot use implicit preset position {}!'.format(preset_position)
                 )
             if type == 'constants':
                 raise TypeError(
                     'Cannot use partially-specified preset position {}!'
-                    .format(position_node)
+                    .format(preset_position)
                 )
             if type == 'constant':
                 return position_node['value']
             raise NotImplementedError(
-                'Unknown type {} for preset position node {}!'
-                .format(type, position_node)
+                'Unknown type {} for preset position {}!'
+                .format(type, preset_position)
             )
         return position_node
 
     def preset_to_sensor(self, preset_position, use_physical_if_needed=True):
         """Convert a preset position to a sensor position."""
         try:
-            position = get_from_tree(
+            return self.parse_preset_position(
                 self.preset_sensor_position_tree, preset_position
             )
-            return self.parse_preset_position(position)
         except KeyError:
             if use_physical_if_needed:
                 physical_position = self.preset_to_physical(preset_position, False)
@@ -372,10 +372,9 @@ class PresetRobotAxis(RobotAxis):
     def preset_to_physical(self, preset_position, use_sensor_if_needed=True):
         """Convert a preset position to a physical position."""
         try:
-            position = get_from_tree(
+            return self.parse_preset_position(
                 self.preset_physical_position_tree, preset_position
             )
-            return self.parse_preset_position(position)
         except KeyError:
             if use_sensor_if_needed:
                 sensor_position = self.preset_to_sensor(preset_position, False)
@@ -480,7 +479,25 @@ class ManuallyAlignedRobotAxis(AlignedRobotAxis, ContinuousRobotAxis):
 
 
 class ModularRobotAxis(PresetRobotAxis):
-    """High-level controller mixin for axes with manual alignment."""
+    """High-level controller mixin for axes with modular sets of positions."""
+
+    def get_indexed_offset(self, module_params, index, origin_index_key='origin index'):
+        """Return the physical offset for the provided module indexed preset position."""
+        if isinstance(index, str) and len(index) == 1:
+            index = ord(index)
+        min_index = module_params['min index']
+        if isinstance(min_index, str) and len(min_index) == 1:
+            min_index = ord(min_index)
+        max_index = module_params['max index']
+        if isinstance(max_index, str) and len(max_index) == 1:
+            max_index = ord(max_index)
+        origin_index = module_params[origin_index_key]
+        if (index < min_index) or (max_index is not None and index > max_index):
+            raise IndexError(
+                'Index {} is out of the range ({}, {})!'
+                .format(index, min_index, max_index)
+            )
+        return (index - origin_index) * module_params['increment']
 
     def at_module(self, module):
         """Return whether the axis is already at the module.
@@ -505,12 +522,38 @@ class ModularRobotAxis(PresetRobotAxis):
 
     # Implement PresetRobotAxis
 
-    def parse_preset_position(self, position_node):
+    def parse_preset_position(self, presets_tree, preset_position):
         """Parse a preset position tree node into an actual preset position."""
         try:
-            return super().parse_preset_position(position_node)
-        except NotImplementedError:
-            type = position_node['type']
+            return super().parse_preset_position(presets_tree, preset_position)
+        except KeyError:
+            module_params = get_from_tree(presets_tree, preset_position[0])
+            type = module_params['type']
             if type == 'indexed':
-                pass
-        return position_node
+                return self.parse_indexed_position(module_params, preset_position)
+        raise KeyError('Unknown module {}!'.format(preset_position[0]))
+
+    # @abstractmethod
+    def parse_indexed_position(self, module_params, preset_position):
+        """Parse a preset indexed position tree node into an actual preset position."""
+        pass
+
+
+class ConfigurableRobotAxis(ModularRobotAxis):
+    """High-level controller mixin for axes with reconfigurable sets of modules."""
+
+    def get_module_type(self, module_name):
+        """Return the module type of the named module."""
+        return self.configuration_tree[module_name]['type']
+
+    # Implement PresetRobotAxis
+
+    def load_preset_json(self, json_path=None):
+        """Load a preset positions tree from the provided JSON file path.
+
+        Default path: 'calibrations/{}_preset.json' where {} is replaced with the
+        axis name.
+        """
+        super().load_preset_json(json_path)
+        self.configuration = self.trees['configuration']
+        self.configuration_tree = self.trees['configurations'][self.configuration]

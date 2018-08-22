@@ -13,7 +13,7 @@
       "type": "constant",
       "value": 16.79
     },
-    "cuvette": {
+    "cuvette rack": {
       "type": "indexed",
       "origin": -15.69,
       "increment": 1.456,

@@ -10,7 +10,7 @@
       "type": "constant",
       "value": 0.15
     },
-    "cuvette": {
+    "cuvette rack": {
       "type": "constants",
       "far above": 5,
       "above": 4.4,

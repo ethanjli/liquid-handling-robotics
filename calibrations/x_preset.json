@@ -14,12 +14,12 @@
       "odd origin": 3.56,
       "even origin": 8,
       "min index": 1,
-      "max index": 4,
+      "max index": null,
       "increment": 10,
       "odd origin index": 1,
       "even origin index": 2
     },
-    "cuvette": {
+    "cuvette rack": {
       "type": "indexed",
       "origin": -1.11,
       "increment": 2.22,
@@ -47,7 +47,7 @@
     "standard 96-well plate": {
       "cuvette rack": {
         "mount": 1,
-        "type": "cuvette"
+        "type": "cuvette rack"
       },
       "96-well plate": {
         "mount": 2,
@@ -57,7 +57,7 @@
     "standard flat surface": {
       "cuvette rack": {
         "mount": 1,
-        "type": "cuvette"
+        "type": "cuvette rack"
       },
       "surface": {
         "mount": 2,
@@ -67,7 +67,7 @@
     "extended 96-well plate": {
       "cuvette rack": {
         "mount": 1,
-        "type": "cuvette"
+        "type": "cuvette rack"
       },
       "96-well plate 1": {
         "mount": 2,
