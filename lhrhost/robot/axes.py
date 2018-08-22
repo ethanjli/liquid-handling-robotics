@@ -283,142 +283,142 @@ class ContinuousRobotAxis(RobotAxis):
         )
 
 
-class DiscreteRobotAxis(RobotAxis):
-    """High-level controller mixin for axes with discrete positions."""
+class PresetRobotAxis(RobotAxis):
+    """High-level controller mixin for axes with preset positions."""
 
     def __init__(self):
         """Initialize member variables."""
         super().__init__()
-        self.discrete_sensor_position_tree = {}
-        self.discrete_physical_position_tree = {}
-        self.current_discrete_position = None
+        self.preset_sensor_position_tree = {}
+        self.preset_physical_position_tree = {}
+        self.current_preset_position = None
 
-    def set_discrete_sensor_position(self, discrete_position, sensor_position):
-        """Associate a discrete position with a sensor position."""
+    def set_preset_sensor_position(self, preset_position, sensor_position):
+        """Associate a preset position with a sensor position."""
         try:
-            physical_position = self.discrete_to_physical(
-                discrete_position, use_sensor_if_needed=False
+            physical_position = self.preset_to_physical(
+                preset_position, use_sensor_if_needed=False
             )
         except (AttributeError, KeyError):
             physical_position = None
         if physical_position is not None:
             raise KeyError(
-                'Discrete position {} is already set to physical position {} {}!'
-                .format(discrete_position, physical_position, self.physical_units)
+                'Preset position {} is already set to physical position {} {}!'
+                .format(preset_position, physical_position, self.physical_units)
             )
         add_to_tree(
-            self.discrete_sensor_position_tree, discrete_position,
+            self.preset_sensor_position_tree, preset_position,
             sensor_position
         )
 
-    def set_discrete_physical_position(self, discrete_position, physical_position):
-        """Associate a discrete position with a physical position."""
+    def set_preset_physical_position(self, preset_position, physical_position):
+        """Associate a preset position with a physical position."""
         try:
-            sensor_position = self.discrete_to_sensor(
-                discrete_position, use_physical_if_needed=False
+            sensor_position = self.preset_to_sensor(
+                preset_position, use_physical_if_needed=False
             )
         except KeyError:
             sensor_position = None
         if sensor_position is not None:
             raise KeyError(
-                'Discrete position {} is already set to sensor position {}!'
-                .format(discrete_position, sensor_position)
+                'Preset position {} is already set to sensor position {}!'
+                .format(preset_position, sensor_position)
             )
         add_to_tree(
-            self.discrete_physical_position_tree, discrete_position,
+            self.preset_physical_position_tree, preset_position,
             physical_position
         )
 
-    def parse_discrete_position(self, position_node):
-        """Parse a discrete position tree node into an actual discrete position."""
+    def parse_preset_position(self, position_node):
+        """Parse a preset position tree node into an actual preset position."""
         if isinstance(position_node, dict):
             try:
                 type = position_node['type']
             except KeyError:
                 raise KeyError(
-                    'Type-less discrete position tree node {}!'.format(position_node)
+                    'Type-less preset position tree node {}!'.format(position_node)
                 )
             if type == 'implicit':
                 raise TypeError(
-                    'Cannot use an implicit discrete position tree node!'
+                    'Cannot use an implicit preset position tree node!'
                 )
             if type == 'constants':
                 raise TypeError(
-                    'Cannot use partially-specified discrete position {}!'
+                    'Cannot use partially-specified preset position {}!'
                     .format(position_node)
                 )
             if type == 'constant':
                 return position_node['value']
             raise NotImplementedError(
-                'Unknown type {} for discrete position node {}!'
+                'Unknown type {} for preset position node {}!'
                 .format(type, position_node)
             )
         return position_node
 
-    def discrete_to_sensor(self, discrete_position, use_physical_if_needed=True):
-        """Convert a discrete position to a sensor position."""
+    def preset_to_sensor(self, preset_position, use_physical_if_needed=True):
+        """Convert a preset position to a sensor position."""
         try:
             position = get_from_tree(
-                self.discrete_sensor_position_tree, discrete_position
+                self.preset_sensor_position_tree, preset_position
             )
-            return self.parse_discrete_position(position)
+            return self.parse_preset_position(position)
         except KeyError:
             if use_physical_if_needed:
-                physical_position = self.discrete_to_physical(discrete_position, False)
+                physical_position = self.preset_to_physical(preset_position, False)
                 return self.physical_to_sensor(physical_position)
             else:
                 raise
 
-    def discrete_to_physical(self, discrete_position, use_sensor_if_needed=True):
-        """Convert a discrete position to a physical position."""
+    def preset_to_physical(self, preset_position, use_sensor_if_needed=True):
+        """Convert a preset position to a physical position."""
         try:
             position = get_from_tree(
-                self.discrete_physical_position_tree, discrete_position
+                self.preset_physical_position_tree, preset_position
             )
-            return self.parse_discrete_position(position)
+            return self.parse_preset_position(position)
         except KeyError:
             if use_sensor_if_needed:
-                sensor_position = self.discrete_to_sensor(discrete_position, False)
+                sensor_position = self.preset_to_sensor(preset_position, False)
                 return self.sensor_to_physical(sensor_position)
             else:
                 raise
 
-    async def go_to_discrete_position(self, discrete_position, force_go=False):
-        """Go to the specified discrete position.
+    async def go_to_preset_position(self, preset_position, force_go=False):
+        """Go to the specified preset position.
 
         Returns the physical position error between the desired physical position
         and the final physical position.
         """
-        if self.current_discrete_position == discrete_position and not force_go:
+        if self.current_preset_position == preset_position and not force_go:
             return
-        physical_position = self.discrete_to_physical(discrete_position)
+        physical_position = self.preset_to_physical(preset_position)
         final_physical_position = await self.go_to_physical_position(physical_position)
-        if isinstance(discrete_position, str):
-            discrete_position = (discrete_position,)
-        self.current_discrete_position = discrete_position
+        if isinstance(preset_position, str):
+            preset_position = (preset_position,)
+        self.current_preset_position = preset_position
         return physical_position - final_physical_position
 
-    def load_discrete_json(self, json_path=None):
-        """Load a discrete positions tree from the provided JSON file path.
+    def load_preset_json(self, json_path=None):
+        """Load a preset positions tree from the provided JSON file path.
 
-        Default path: 'calibrations/{}_discrete.json' where {} is replaced with the
+        Default path: 'calibrations/{}_preset.json' where {} is replaced with the
         axis name.
         """
         if json_path is None:
-            json_path = 'calibrations/{}_discrete.json'.format(self.name)
+            json_path = 'calibrations/{}_preset.json'.format(self.name)
         trees = load_from_json(json_path)
         self.trees = trees
-        self.discrete_physical_position_tree = trees['physical']
-        self.discrete_sensor_position_tree = trees['sensor']
+        self.preset_physical_position_tree = trees['physical']
+        self.preset_sensor_position_tree = trees['sensor']
 
-    def save_discrete_json(self, json_path=None):
-        """Save a discrete positions tree to the provided JSON file path.
+    def save_preset_json(self, json_path=None):
+        """Save a preset positions tree to the provided JSON file path.
 
         Default path: 'calibrations/{}_physical.json' where {} is replaced with the
         axis name.
         """
         if json_path is None:
-            json_path = 'calibrations/{}_discrete.json'.format(self.name)
+            json_path = 'calibrations/{}_preset.json'.format(self.name)
         save_to_json(self.trees, json_path)
 
     # Implement RobotAxis
@@ -428,7 +428,7 @@ class DiscreteRobotAxis(RobotAxis):
 
         Returns the final sensor position.
         """
-        self.current_discrete_position = None
+        self.current_preset_position = None
         return await super().go_to_sensor_position(sensor_position)
 
     async def go_to_low_end_position(self, speed=None):
@@ -436,9 +436,9 @@ class DiscreteRobotAxis(RobotAxis):
 
         Speed must be given as a signed motor duty cycle.
         """
-        if self.current_discrete_position == ('low end',):
+        if self.current_preset_position == ('low end',):
             return
-        self.current_discrete_position = ('low end',)
+        self.current_preset_position = ('low end',)
         return await super().go_to_low_end_position(speed)
 
     async def go_to_high_end_position(self, speed=None):
@@ -446,28 +446,28 @@ class DiscreteRobotAxis(RobotAxis):
 
         Speed must be given as a signed motor duty cycle.
         """
-        if self.current_discrete_position == ('high end',):
+        if self.current_preset_position == ('high end',):
             return
-        self.current_discrete_position = ('high end',)
+        self.current_preset_position = ('high end',)
         return await super().go_to_high_end_position(speed)
 
 
-class AlignedRobotAxis(DiscreteRobotAxis):
+class AlignedRobotAxis(PresetRobotAxis):
     """High-level controller mixin for axes with alignment."""
 
     def at_alignment_hole(self):
         """Return whether the axis is already at the alignment hole."""
-        return self.current_discrete_position == ('alignment hole',)
+        return self.current_preset_position == ('alignment hole',)
 
     async def go_to_alignment_hole(self):
         """Move to the alignment hole."""
         if self.at_alignment_hole():
             return
         try:
-            await self.go_to_discrete_position('alignment hole')
+            await self.go_to_preset_position('alignment hole')
         except TypeError:
             await self.go_to_physical_position(0)
-            self.current_discrete_position = ('alignment hole',)
+            self.current_preset_position = ('alignment hole',)
 
 
 class ManuallyAlignedRobotAxis(AlignedRobotAxis, ContinuousRobotAxis):
@@ -479,7 +479,7 @@ class ManuallyAlignedRobotAxis(AlignedRobotAxis, ContinuousRobotAxis):
         self.linear_regression[1] = -self.linear_regression[0] * position
 
 
-class ModularRobotAxis(DiscreteRobotAxis):
+class ModularRobotAxis(PresetRobotAxis):
     """High-level controller mixin for axes with manual alignment."""
 
     def at_module(self, module):
@@ -487,28 +487,28 @@ class ModularRobotAxis(DiscreteRobotAxis):
 
         Module may be the module's name or type, depending on the axis.
         """
-        return self.current_discrete_position[0] == module
+        return self.current_preset_position[0] == module
 
     def at_module_position(self, module, position):
         """Return whether the axis is already at the position for the module.
 
         Module may be the module's name or type, depending on the axis.
         """
-        return self.current_discrete_position == (module, position)
+        return self.current_preset_position == (module, position)
 
     async def go_to_module_position(self, module, position):
         """Move to the position for the specified module."""
         try:
-            await self.go_to_discrete_position((module, position))
+            await self.go_to_preset_position((module, position))
         except NotImplementedError:
             pass
 
-    # Implement DiscreteRobotAxis
+    # Implement PresetRobotAxis
 
-    def parse_discrete_position(self, position_node):
-        """Parse a discrete position tree node into an actual discrete position."""
+    def parse_preset_position(self, position_node):
+        """Parse a preset position tree node into an actual preset position."""
         try:
-            return super().parse_discrete_position(position_node)
+            return super().parse_preset_position(position_node)
         except NotImplementedError:
             type = position_node['type']
             if type == 'indexed':

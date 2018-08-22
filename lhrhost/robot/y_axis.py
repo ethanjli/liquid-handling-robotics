@@ -15,12 +15,12 @@ class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
 
     def _get_origin_position(self, module_type):
         return (
-            self.discrete_physical_position_tree['mount']['value'] +
-            self.discrete_physical_position_tree[module_type]['origin']
+            self.preset_physical_position_tree['mount']['value'] +
+            self.preset_physical_position_tree[module_type]['origin']
         )
 
     def _get_module_position(self, module_type, index):
-        module_params = self.discrete_physical_position_tree[module_type]
+        module_params = self.preset_physical_position_tree[module_type]
         min_index = module_params['min index']
         max_index = module_params['max index']
         origin_index = module_params['origin index']
@@ -50,7 +50,7 @@ class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
         await self.go_to_physical_position(
             self._get_module_position(module_type, position)
         )
-        self.current_discrete_position = (module_type, position)
+        self.current_preset_position = (module_type, position)
 
     async def go_to_flat_surface(self, physical_position):
         """Move to the specified physical position for the flat surface."""

@@ -37,23 +37,23 @@ class ManualAxis(ManuallyAlignedRobotAxis, ModularRobotAxis):
         """Return a string representation of the physical units."""
         return None
 
-    # Implement DiscreteRobotAxis
+    # Implement PresetRobotAxis
 
-    def discrete_to_physical(self, physical_position):
+    def preset_to_physical(self, physical_position):
         """Convert a position in physical units to a physical position."""
         return 0
 
-    async def go_to_discrete_position(self, discrete_position):
-        """Go to the specified discrete position.
+    async def go_to_preset_position(self, preset_position):
+        """Go to the specified preset position.
 
         Returns the sensor position error between the desired sensor position
         and the final sensor position.
         """
         await self.prompt(
             'Please move the sample platform on the x-axis to {}: '
-            .format(discrete_position)
+            .format(preset_position)
         )
-        self.current_discrete_position = discrete_position
+        self.current_preset_position = preset_position
         return 0
 
     # Implement ManuallyAlignedRobotAxis
@@ -71,7 +71,7 @@ class ManualAxis(ManuallyAlignedRobotAxis, ModularRobotAxis):
             '{} position: '
             .format(module_name, position)
         )
-        self.current_discrete_position = (module_name, position)
+        self.current_preset_position = (module_name, position)
         return 0
 
 
@@ -86,7 +86,7 @@ class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
         self.configuration_tree = None
 
     def _get_origin_position(self, module_name):
-        mount_params = self.discrete_physical_position_tree['mount']
+        mount_params = self.preset_physical_position_tree['mount']
         mount_index = self.configuration_tree[module_name]['mount']
         min_index = mount_params['min index']
         max_index = mount_params['max index']
@@ -100,12 +100,12 @@ class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
             mount_params[origin_type] +
             (mount_index - origin_index) *
             mount_params['increment'] +
-            self.discrete_physical_position_tree[module_type]['origin']
+            self.preset_physical_position_tree[module_type]['origin']
         )
 
     def _get_module_position(self, module_name, index):
         module_type = self.get_module_type(module_name)
-        module_params = self.discrete_physical_position_tree[module_type]
+        module_params = self.preset_physical_position_tree[module_type]
         min_index = module_params['min index']
         max_index = module_params['max index']
         origin_index = module_params['origin index']
@@ -120,15 +120,15 @@ class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
         """Return the module type of the named module."""
         return self.configuration_tree[module_name]['type']
 
-    # Implement DiscreteRobotAxis
+    # Implement PresetRobotAxis
 
-    def load_discrete_json(self, json_path=None):
-        """Load a discrete positions tree from the provided JSON file path.
+    def load_preset_json(self, json_path=None):
+        """Load a preset positions tree from the provided JSON file path.
 
-        Default path: 'calibrations/{}_discrete.json' where {} is replaced with the
+        Default path: 'calibrations/{}_preset.json' where {} is replaced with the
         axis name.
         """
-        super().load_discrete_json(json_path)
+        super().load_preset_json(json_path)
         self.configuration = self.trees['configuration']
         self.configuration_tree = self.trees['configurations'][self.configuration]
 
@@ -151,7 +151,7 @@ class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
         await self.go_to_physical_position(
             self._get_module_position(module_name, position)
         )
-        self.current_discrete_position = (module_name, position)
+        self.current_preset_position = (module_name, position)
 
     async def go_to_flat_surface(self, module_name, physical_position):
         """Move to the specified physical position for the flat surface."""
