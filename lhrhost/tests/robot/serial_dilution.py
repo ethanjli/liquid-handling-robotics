@@ -73,7 +73,7 @@ class Batch:
     async def intake_food_coloring(self, volume):
         """Intake food coloring to distribute to wells."""
         await self.robot.go_to_module_position('cuvettes', 'a', 2)
-        await self.robot.intake('cuvettes', volume=volume, height='bottom')
+        await self.robot.intake('cuvettes', volume=volume, height='mid')
 
     async def distribute_water(self, columns, rows, volume):
         """Distribute water to wells."""

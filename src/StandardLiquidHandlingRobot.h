@@ -58,7 +58,7 @@
   /* motorPort, angleSensorId */ M4, 1,\
   /* minPosition, maxPosition */ 0, 1445,\
   /* minDuty, maxDuty */ -120, 120,\
-  /* pidKp, pidKd, pidKi, pidSampleTime */ 45, 1.25, 0, 10,\
+  /* pidKp, pidKd, pidKi, pidSampleTime */ 40, 1.5, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -110, 110,\
   /* swapSensorDirection, swapMotorPolarity */ false, true,\
