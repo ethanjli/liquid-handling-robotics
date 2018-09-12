@@ -47,7 +47,7 @@
   /* pidKp, pidKd, pidKi, pidSampleTime */ 45, 1.25, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -110, 110,\
-  /* swapSensorDirection, swapMotorPolarity */ true, true,\
+  /* swapSensorDirection, swapMotorPolarity */ false, true,\
   /* convergenceTimeout, stallTimeout, timerTimeout */ 150, 150, 5000,\
   /* smootherSnapMultiplier, smootherMax */ 0.01, 800,\
   /* smootherEnableSleep, smootherActivityThreshold */ true, 2.0
