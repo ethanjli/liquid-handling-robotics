@@ -47,7 +47,7 @@
   /* pidKp, pidKd, pidKi, pidSampleTime */ 30, 2, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -80, 80,\
-  /* swapSensorDirection, swapMotorPolarity */ true, true,\
+  /* swapSensorDirection, swapMotorPolarity */ false, true,\
   /* convergenceTimeout, stallTimeout, timerTimeout */ 150, 150, 5000,\
   /* smootherSnapMultiplier, smootherMax */ 0.01, 1023,\
   /* smootherEnableSleep, smootherActivityThreshold */ true, 2.0
@@ -61,7 +61,7 @@
   /* pidKp, pidKd, pidKi, pidSampleTime */ 40, 1.5, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -110, 110,\
-  /* swapSensorDirection, swapMotorPolarity */ false, true,\
+  /* swapSensorDirection, swapMotorPolarity */ true, true,\
   /* convergenceTimeout, stallTimeout, timerTimeout */ 150, 150, 10000,\
   /* smootherSnapMultiplier, smootherMax */ 0.01, 1460,\
   /* smootherEnableSleep, smootherActivityThreshold */ true, 2.0
