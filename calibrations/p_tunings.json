@@ -7,12 +7,12 @@
     "limits": {
       "motor": {
         "forwards": {
-          "min": 110,
-          "max": 120
+          "min": 150,
+          "max": 255
         },
         "backwards": {
-          "min": 110,
-          "max": 120
+          "min": 150,
+          "max": 255
         }
       }
     }
@@ -28,12 +28,12 @@
       "limits": {
         "motor": {
           "forwards": {
-            "min": null,
-            "max": null
+            "min": 150,
+            "max": 255
           },
           "backwards": {
-            "min": null,
-            "max": null
+            "min": 150,
+            "max": 255
           }
         }
       }
@@ -48,12 +48,12 @@
       "limits": {
         "motor": {
           "forwards": {
-            "min": null,
-            "max": null
+            "min": 150,
+            "max": 255
           },
           "backwards": {
-            "min": null,
-            "max": null
+            "min": 150,
+            "max": 255
           }
         }
       }
@@ -68,12 +68,12 @@
       "limits": {
         "motor": {
           "forwards": {
-            "min": null,
-            "max": null
+            "min": 150,
+            "max": 255
           },
           "backwards": {
-            "min": null,
-            "max": null
+            "min": 150,
+            "max": 255
           }
         }
       }

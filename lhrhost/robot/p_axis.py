@@ -28,23 +28,23 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
         """Return a string representation of the physical units."""
         return 'mL mark'
 
-    def load_pid_json(self, json_path=None):
+    def load_tunings_json(self, json_path=None):
         """Load a discrete positions tree from the provided JSON file path.
 
         Default path: 'calibrations/{}_discrete.json' where {} is replaced with the
         axis name.
         """
-        trees = super().load_pid_json(json_path)
+        trees = super().load_tunings_json(json_path)
         self.volume_tunings = trees['volumes']
 
-    def save_pid_json(self, json_path=None):
+    def save_tunings_json(self, json_path=None):
         """Save a discrete positions tree to the provided JSON file path.
 
         Default path: 'calibrations/{}_physical.json' where {} is replaced with the
         axis name.
         """
         if json_path is None:
-            json_path = 'calibrations/{}_pid.json'.format(self.name)
+            json_path = 'calibrations/{}_tunings.json'.format(self.name)
         save_to_json({
             'default': self.default_tuning,
             'target positions': self.target_position_tunings,
