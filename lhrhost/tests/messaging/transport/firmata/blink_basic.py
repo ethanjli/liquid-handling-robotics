@@ -3,14 +3,22 @@
 import asyncio
 import logging
 
+# Local package imports
+from lhrhost.messaging.transport import firmata
+
 # External imports
-from pymata_aio.pymata_core import PymataCore
 from pymata_aio.constants import Constants
+from pymata_aio.pymata_core import PymataCore
 
 # Logging
 logging.basicConfig(level=logging.INFO)
 
 BOARD_LED = 13
+
+
+async def discard(sysex_data):
+    """Discard received sysex data."""
+    pass
 
 
 async def main(board):
@@ -27,6 +35,7 @@ async def main(board):
 
 if __name__ == '__main__':
     board = PymataCore()
+    board.command_dictionary[firmata.MESSAGE_SYSEX_COMMAND] = discard
     board.start()
     try:
         loop = asyncio.get_event_loop()
