@@ -56,11 +56,13 @@ class Robot(object):
         """Load calibration parameters from json files."""
         self.p.load_calibration_json()
         self.p.load_discrete_json()
-        self.p.load_pid_json()
+        self.p.load_tunings_json()
         self.z.load_calibration_json()
         self.z.load_discrete_json()
+        self.z.load_tunings_json()
         self.y.load_calibration_json()
         self.y.load_discrete_json()
+        self.y.load_tunings_json()
 
     async def go_to_alignment_hole(self):
         """Move the pipettor head to the alignment hole."""

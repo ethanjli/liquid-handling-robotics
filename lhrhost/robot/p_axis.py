@@ -28,40 +28,14 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
         """Return a string representation of the physical units."""
         return 'mL mark'
 
-    async def go_to_sensor_position(self, sensor_position):
-        """Go to the specified sensor position.
-
-        Adjusts Kp and Kd. Returns the final sensor position.
-        """
-        for pid_tuning in self.position_pid_params:
-            if (
-                sensor_position >= pid_tuning['min'] and
-                sensor_position < pid_tuning['max']
-            ):
-                kp = pid_tuning['kp']
-                kd = pid_tuning['kd']
-                break
-        else:
-            raise NotImplementedError(
-                'PID tunings for sensor position {} unspecified!'
-                .format(sensor_position)
-            )
-        (prev_kp, prev_kd, _) = await self.set_pid_gains(kp=kp, kd=kd)
-        sensor_position = await super().go_to_sensor_position(sensor_position)
-        await self.set_pid_gains(kp=prev_kp, kd=prev_kd)
-        return sensor_position
-
     def load_pid_json(self, json_path=None):
         """Load a discrete positions tree from the provided JSON file path.
 
         Default path: 'calibrations/{}_discrete.json' where {} is replaced with the
         axis name.
         """
-        if json_path is None:
-            json_path = 'calibrations/{}_pid.json'.format(self.name)
-        trees = load_from_json(json_path)
-        self.position_pid_params = trees['positions']
-        self.volume_pid_params = trees['volumes']
+        trees = super().load_pid_json(json_path)
+        self.volume_tunings = trees['volumes']
 
     def save_pid_json(self, json_path=None):
         """Save a discrete positions tree to the provided JSON file path.
@@ -72,8 +46,9 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
         if json_path is None:
             json_path = 'calibrations/{}_pid.json'.format(self.name)
         save_to_json({
-            'positions': self.position_pid_params,
-            'volumes': self.volume_pid_params
+            'default': self.default_tuning,
+            'target positions': self.target_position_tunings,
+            'volumes': self.volume_tunings
         }, json_path)
 
     async def go_to_pre_intake(self, volume):

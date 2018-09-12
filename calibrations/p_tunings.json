@@ -1,0 +1,104 @@
+{
+  "default": {
+    "pid": {
+      "kp": 27.5,
+      "kd": 0.3
+    },
+    "limits": {
+      "motor": {
+        "forwards": {
+          "min": 110,
+          "max": 120
+        },
+        "backwards": {
+          "min": 110,
+          "max": 120
+        }
+      }
+    }
+  },
+  "target positions": [
+    {
+      "min": 500,
+      "max": 1024,
+      "pid": {
+        "kp": 35,
+        "kd": 0.7
+      },
+      "limits": {
+        "motor": {
+          "forwards": {
+            "min": null,
+            "max": null
+          },
+          "backwards": {
+            "min": null,
+            "max": null
+          }
+        }
+      }
+    },
+    {
+      "min": 120,
+      "max": 500,
+      "pid": {
+        "kp": 32.5,
+        "kd": 0.4
+      },
+      "limits": {
+        "motor": {
+          "forwards": {
+            "min": null,
+            "max": null
+          },
+          "backwards": {
+            "min": null,
+            "max": null
+          }
+        }
+      }
+    },
+    {
+      "min": 0,
+      "max": 120,
+      "pid": {
+        "kp": 27.5,
+        "kd": 0.3
+      },
+      "limits": {
+        "motor": {
+          "forwards": {
+            "min": null,
+            "max": null
+          },
+          "backwards": {
+            "min": null,
+            "max": null
+          }
+        }
+      }
+    }
+  ],
+  "volumes": {
+    "20": {
+      "kp": 32.5,
+      "kd": 1
+    },
+    "30": {
+      "kp": 32.5,
+      "kd": 0.9
+    },
+    "40": {
+      "kp": 32.5,
+      "kd": 0.9
+    },
+    "50": {
+      "kp": 32.5,
+      "kd": 0.5
+    },
+    "100": {
+      "kp": 32.5,
+      "kd": 0.4
+    }
+  }
+}

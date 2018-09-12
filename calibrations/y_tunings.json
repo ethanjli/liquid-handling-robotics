@@ -1,0 +1,22 @@
+{
+  "default": {
+    "pid": {
+      "kp": 45,
+      "kd": 1.25
+    },
+    "limits": {
+      "motor": {
+        "forwards": {
+          "min": 110,
+          "max": 120
+        },
+        "backwards": {
+          "min": 110,
+          "max": 120
+        }
+      }
+    }
+  },
+  "target positions": [
+  ]
+}
