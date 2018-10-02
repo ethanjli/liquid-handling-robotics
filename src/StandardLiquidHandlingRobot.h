@@ -41,7 +41,7 @@
   /* smootherEnableSleep, smootherActivityThreshold */ true, 4.0
 #define LHR_kYPositionerParams\
   /* actuatorChannelPrefix */ 'y',\
-  /* motorPort, angleSensorId */ M3, 0,\
+  /* motorPort, angleSensorId */ M3, 8,\
   /* minPosition, maxPosition */ 0, 1008,\
   /* minDuty, maxDuty */ -90, 90,\
   /* pidKp, pidKd, pidKi, pidSampleTime */ 30, 2, 0, 10,\
@@ -55,7 +55,7 @@
   /* calibrationSpeed */ 150
 #define LHR_kXPositionerParams\
   /* actuatorChannelPrefix */ 'x',\
-  /* motorPort, angleSensorId */ M4, 1,\
+  /* motorPort, angleSensorId */ M4, 9,\
   /* minPosition, maxPosition */ 0, 1445,\
   /* minDuty, maxDuty */ -120, 120,\
   /* pidKp, pidKd, pidKi, pidSampleTime */ 40, 1.5, 0, 10,\
