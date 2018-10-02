@@ -495,9 +495,9 @@ class PresetRobotAxis(RobotAxis):
         if json_path is None:
             json_path = 'calibrations/{}_preset.json'.format(self.name)
         trees = load_from_json(json_path)
-        self.trees = trees
         self.preset_physical_position_tree = trees['physical']
         self.preset_sensor_position_tree = trees['sensor']
+        return trees
 
     def save_preset_json(self, json_path=None):
         """Save a preset positions tree to the provided JSON file path.
@@ -507,7 +507,10 @@ class PresetRobotAxis(RobotAxis):
         """
         if json_path is None:
             json_path = 'calibrations/{}_preset.json'.format(self.name)
-        save_to_json(self.trees, json_path)
+        save_to_json({
+            'physical': self.preset_physical_position_tree,
+            'sensor': self.preset_sensor_position_tree
+        }, json_path)
 
     # Implement RobotAxis
 
@@ -676,10 +679,26 @@ class ConfigurableRobotAxis(ModularRobotAxis):
         Default path: 'calibrations/{}_preset.json' where {} is replaced with the
         axis name.
         """
-        super().load_preset_json(json_path)
+        trees = super().load_preset_json(json_path)
         if self.configuration is None:
-            self.configuration = self.trees['default configuration']
-        self.configuration_tree = self.trees['configurations'][self.configuration]
+            self.configuration = trees['default configuration']
+        self.configurations = trees['configurations']
+        self.configuration_tree = trees['configurations'][self.configuration]
+
+    def save_preset_json(self, json_path=None):
+        """Save a preset positions tree to the provided JSON file path.
+
+        Default path: 'calibrations/{}_physical.json' where {} is replaced with the
+        axis name.
+        """
+        if json_path is None:
+            json_path = 'calibrations/{}_preset.json'.format(self.name)
+        save_to_json({
+            'physical': self.preset_physical_position_tree,
+            'sensor': self.preset_sensor_position_tree,
+            'default configuration': self.configuration,
+            'configurations': self.configurations
+        }, json_path)
 
     def get_preset_position(self, presets_tree, preset_position):
         """Get an actual position from a preset position tree node."""
@@ -690,3 +709,4 @@ class ConfigurableRobotAxis(ModularRobotAxis):
             module_type = self.get_module_type(module_name)
             module_params = get_from_tree(presets_tree, module_type)
             return self.get_module_position(presets_tree, module_params, preset_position)
+
