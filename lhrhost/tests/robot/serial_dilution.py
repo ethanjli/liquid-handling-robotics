@@ -48,13 +48,14 @@ class Batch:
         await self.robot.align_manually()
 
         dilution_columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+        dilution_row = 1
         await self.dispense_waste()
         await self.intake_water('mid', 0.85)
-        await self.distribute_water(dilution_columns, [1], 0.1)
+        await self.distribute_water(dilution_columns, [dilution_row], 0.1)
         await self.dispense_waste()
         await self.intake_food_coloring(0.1)
         for column in dilution_columns:
-            await self.dilute(column, 1, 'low', 0.1, 2)
+            await self.dilute(column, dilution_row, 'mid', 0.1, 2)
         await self.dispense_waste()
         await self.robot.z.go_to_high_end_position()
         await asyncio.gather(
@@ -73,7 +74,7 @@ class Batch:
     async def intake_food_coloring(self, volume):
         """Intake food coloring to distribute to wells."""
         await self.robot.go_to_module_position('cuvettes', 'a', 2)
-        await self.robot.intake('cuvettes', volume=volume, height='mid')
+        await self.robot.intake('cuvettes', volume=volume, height='high')
 
     async def distribute_water(self, columns, rows, volume):
         """Distribute water to wells."""
