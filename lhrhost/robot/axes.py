@@ -1,6 +1,7 @@
 """Abstractions for the axes of a liquid-handling robot."""
 
 # Standard imports
+import logging
 from abc import abstractmethod
 
 # Local package imiports
@@ -11,6 +12,10 @@ from lhrhost.util.interfaces import InterfaceClass
 
 # External imports
 import scipy.stats as stats
+
+# Logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
@@ -38,14 +43,69 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
         """Return a string representation of the physical units."""
         pass
 
-    async def go_to_sensor_position(self, sensor_position):
+    def load_tunings_json(self, json_path=None):
+        """Load localized controller tunings from the provided JSON file path.
+
+        Default path: 'calibrations/{}_tunings.json' where {} is replaced with
+        the axis name.
+        """
+        if json_path is None:
+            json_path = 'calibrations/{}_tunings.json'.format(self.name)
+        trees = load_from_json(json_path)
+        self.default_tuning = trees['default']
+        self.target_position_tunings = trees['target positions']
+        return trees
+
+    def save_tunings_json(self, json_path=None):
+        """Save a localized controller tunings tree to the provided JSON file path."""
+        if json_path is None:
+            json_path = 'calibrations/{}_tunings.json'.format(self.name)
+        save_to_json({
+            'default': self.default_tuning,
+            'target positions': self.target_position_tunings
+        }, json_path)
+
+    async def go_to_sensor_position(
+        self, sensor_position, apply_tunings=True, restore_tunings=True
+    ):
         """Go to the specified sensor position.
 
         Returns the final sensor position.
         """
+        if apply_tunings:
+            current_tuning = self.default_tuning
+            for tuning in self.target_position_tunings:
+                if sensor_position >= tuning['min'] and sensor_position < tuning['max']:
+                    current_tuning = tuning
+            else:
+                logger.debug(
+                    'PID tunings for sensor position {} unspecified, using defaults.'
+                    .format(int(sensor_position))
+                )
+            kp = current_tuning['pid']['kp']
+            kd = current_tuning['pid']['kd']
+            motor_limits = current_tuning['limits']['motor']
+            duty_forwards_max = motor_limits['forwards']['max']
+            duty_forwards_min = motor_limits['forwards']['min']
+            duty_backwards_max = motor_limits['backwards']['max']
+            duty_backwards_min = motor_limits['backwards']['min']
+            (prev_kp, prev_kd, prev_ki) = await self.set_pid_gains(kp=kp, kd=kd)
+            (
+                prev_duty_forwards_max, prev_duty_forwards_min,
+                prev_duty_backwards_max, prev_duty_backwards_min
+            ) = await self.set_motor_limits(
+                forwards_max=duty_forwards_max, forwards_min=duty_forwards_min,
+                backwards_max=duty_backwards_max, backwards_min=duty_backwards_min
+            )
         await self.protocol.feedback_controller.request_complete(
             int(sensor_position)
         )
+        if apply_tunings and restore_tunings:
+            await self.set_pid_gains(kp=prev_kp, kd=prev_kd, ki=prev_ki)
+            await self.set_motor_limits(
+                forwards_max=duty_forwards_max, forwards_min=duty_forwards_min,
+                backwards_max=duty_backwards_max, backwards_min=duty_backwards_min
+            )
         return self.protocol.position.last_response_payload
 
     async def go_to_low_end_position(self, speed=None):
@@ -150,7 +210,7 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
         """Get the last received physical position of the axis."""
         return self.sensor_to_physical(self.last_sensor_position)
 
-    async def set_pid_gains(self, kp=None, kd=None, ki=None):
+    async def set_pid_gains(self, kp=None, kd=None, ki=None, floating_point=True):
         """Set values for the PID gains whose values are specified.
 
         Returns the previous values of the gains.
@@ -159,13 +219,42 @@ class RobotAxis(LinearActuatorReceiver, metaclass=InterfaceClass):
         prev_kp = pid_protocol.kp.last_response_payload
         prev_kd = pid_protocol.kd.last_response_payload
         prev_ki = pid_protocol.ki.last_response_payload
-        if kp is not None:
-            await pid_protocol.kp.request(int(kp * 100))
-        if kd is not None:
-            await pid_protocol.kd.request(int(kd * 100))
-        if ki is not None:
-            await pid_protocol.ki.request(int(ki * 100))
-        return (prev_kp, prev_kd, prev_ki)
+        if kp is not None and prev_kp != int(kp * 100 if floating_point else kp):
+            await pid_protocol.kp.request(int(kp * 100 if floating_point else kp))
+        if kd is not None and prev_kd != int(kd * 100 if floating_point else kp):
+            await pid_protocol.kd.request(int(kd * 100 if floating_point else kp))
+        if ki is not None and prev_ki != int(ki * 100 if floating_point else kp):
+            await pid_protocol.ki.request(int(ki * 100 if floating_point else kp))
+        return (
+            prev_kp / 100 if floating_point else prev_kp,
+            prev_kd / 100 if floating_point else prev_kd,
+            prev_ki / 100 if floating_point else prev_ki
+        )
+
+    async def set_motor_limits(
+        self, forwards_max=None, forwards_min=None, backwards_max=None, backwards_min=None
+    ):
+        """Set values for the motor duty cycle limits where specified.
+
+        Returns the previous values of the limits.
+        """
+        limits_protocol = self.protocol.feedback_controller.limits.motor
+        prev_forwards_max = limits_protocol.forwards.high.last_response_payload
+        prev_forwards_min = limits_protocol.forwards.low.last_response_payload
+        prev_backwards_max = -limits_protocol.backwards.high.last_response_payload
+        prev_backwards_min = -limits_protocol.backwards.low.last_response_payload
+        if forwards_max is not None and prev_forwards_max != int(forwards_max):
+            await limits_protocol.forwards.high.request(int(forwards_max))
+        if forwards_min is not None and prev_forwards_min != int(forwards_min):
+            await limits_protocol.forwards.high.request(int(forwards_min))
+        if backwards_max is not None and prev_backwards_max != int(backwards_max):
+            await limits_protocol.backwards.high.request(int(-backwards_max))
+        if backwards_min is not None and prev_backwards_min != int(backwards_min):
+            await limits_protocol.backwards.high.request(int(-backwards_min))
+        return (
+            prev_forwards_max, prev_forwards_min,
+            prev_backwards_max, prev_backwards_min
+        )
 
 
 class ContinuousRobotAxis(RobotAxis):

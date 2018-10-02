@@ -62,13 +62,16 @@ class Robot(object):
         """Load calibration parameters from json files."""
         self.p.load_calibration_json()
         self.p.load_preset_json()
-        self.p.load_pid_json()
+        self.p.load_tunings_json()
         self.z.load_calibration_json()
         self.z.load_preset_json()
+        self.z.load_tunings_json()
         self.y.load_calibration_json()
         self.y.load_preset_json()
+        self.y.load_tunings_json()
         self.x.load_calibration_json()
         self.x.load_preset_json()
+        self.x.load_tunings_json()
 
     async def ensure_sample_platform_configuration(self, configuration):
         """Ensure that the sample platform is configured as speified."""

@@ -119,13 +119,13 @@ class TransportConnectionManager(transport.TransportConnectionManager):
         # Connect board
         logger.info('Please plug in the device now...')
         self._board = PymataCore(**self._board_kwargs)
+        self.transport = Transport(self._board, **self.transport_kwargs)
+        self.transport.register_message_listener(self._on_sysex_message)
         await self._board.start_aio()
         logger.debug('Established datalink-layer connection!')
         self._handshake_started = False
         self._connected = False
         # Establish mutual handshake
-        self.transport = Transport(self._board, **self.transport_kwargs)
-        self.transport.register_message_listener(self._on_sysex_message)
         logger.debug('Initiating handshake for transport-layer connection...')
         while self.transport is not None and not self._connected:
             if self._handshake_started:
