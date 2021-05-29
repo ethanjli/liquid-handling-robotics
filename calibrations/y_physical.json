@@ -1,147 +1,47 @@
 {
   "parameters": {
-    "intercept": -0.052636119240182744,
-    "rsquared": 0.9999476050159181,
-    "slope": 0.013987999397906056,
-    "stderr": 2.5313811200423965e-05
+    "intercept": -0.146299176373355,
+    "rsquared": 0.999992960341164,
+    "slope": 0.014021907735902058,
+    "stderr": 1.9886171574533107e-05
   },
   "physical unit": "cm",
   "samples": [
     {
-      "physical": 0.0,
+      "physical": -0.15,
       "sensor": 0
     },
     {
-      "physical": 10.0,
-      "sensor": 718
+      "physical": 1.24,
+      "sensor": 99
     },
     {
-      "physical": 5.0,
-      "sensor": 361
+      "physical": 2.63,
+      "sensor": 199
     },
     {
-      "physical": 8.59,
-      "sensor": 619
+      "physical": 4.05,
+      "sensor": 299
     },
     {
-      "physical": 2.48,
-      "sensor": 180
+      "physical": 5.47,
+      "sensor": 398
     },
     {
-      "physical": 7.48,
-      "sensor": 539
+      "physical": 6.84,
+      "sensor": 499
     },
     {
-      "physical": 8.45,
-      "sensor": 608
+      "physical": 8.24,
+      "sensor": 598
     },
     {
-      "physical": 4.45,
-      "sensor": 328
+      "physical": 9.65,
+      "sensor": 699
     },
     {
-      "physical": 6.72,
-      "sensor": 485
-    },
-    {
-      "physical": 2.39,
-      "sensor": 174
-    },
-    {
-      "physical": 4.2,
-      "sensor": 307
-    },
-    {
-      "physical": 9.63,
-      "sensor": 691
-    },
-    {
-      "physical": 0.58,
-      "sensor": 47
-    },
-    {
-      "physical": 3.14,
-      "sensor": 230
-    },
-    {
-      "physical": 9.86,
-      "sensor": 709
-    },
-    {
-      "physical": 9.9,
-      "sensor": 712
-    },
-    {
-      "physical": 4.6,
-      "sensor": 334
-    },
-    {
-      "physical": 5.16,
-      "sensor": 374
-    },
-    {
-      "physical": 5.1,
-      "sensor": 368
-    },
-    {
-      "physical": 8.62,
-      "sensor": 622
-    },
-    {
-      "physical": 8.1,
-      "sensor": 574
-    },
-    {
-      "physical": 0.7,
-      "sensor": 54
-    },
-    {
-      "physical": 6.3,
-      "sensor": 454
-    },
-    {
-      "physical": 3.64,
-      "sensor": 264
-    },
-    {
-      "physical": 8.78,
-      "sensor": 633
-    },
-    {
-      "physical": 2.56,
-      "sensor": 186
-    },
-    {
-      "physical": 4.43,
-      "sensor": 320
-    },
-    {
-      "physical": 1.12,
-      "sensor": 81
-    },
-    {
-      "physical": 0.15,
-      "sensor": 13
-    },
-    {
-      "physical": 9.28,
-      "sensor": 665
-    },
-    {
-      "physical": 3.1,
-      "sensor": 227
-    },
-    {
-      "physical": 3.4,
-      "sensor": 247
-    },
-    {
-      "physical": 5.04,
-      "sensor": 365
-    },
-    {
-      "physical": 9.86,
-      "sensor": 708
+      "physical": 11.08,
+      "sensor": 801
     }
   ]
 }

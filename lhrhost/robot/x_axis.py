@@ -1,42 +1,19 @@
-"""Abstractions for the pipettor axis of a liquid-handling robot."""
+"""Abstractions for the x-axis (sample stage positioner) of a liquid-handling robot."""
 
 # Local package imiports
-from lhrhost.robot.axes import DiscreteRobotAxis
+from lhrhost.protocol.linear_actuator import Protocol as LinearActuatorProtocol
+from lhrhost.robot.axes import (
+    ConfigurableRobotAxis, ManuallyAlignedRobotAxis, ModularRobotAxis
+)
 from lhrhost.util.cli import Prompt
 
 
-class ManualAxis(DiscreteRobotAxis):
+class ManualAxis(ManuallyAlignedRobotAxis, ModularRobotAxis):
     """High-level controller for x-axis."""
 
     def __init__(self):
         """Initialize member variables."""
         super().__init__()
-
-    def at_cuvette(self):
-        """Return whether the axis is already at the column for the cuvette rack."""
-        return self.current_discrete_position == 'the cuvette rack'
-
-    async def go_to_cuvette(self):
-        """Move to the column for the cuvette rack."""
-        if self.at_cuvette():
-            return
-        self.current_discrete_position = 'the cuvette rack'
-        await self.go_to_discrete_position(self.current_discrete_position)
-
-    def at_96_well_plate(self, plate_column):
-        """Return whether the axis is already at the column for the cuvette rack."""
-        return (
-            self.current_discrete_position ==
-            'column {} of the 96-well plate'.format(plate_column)
-        )
-
-    async def go_to_96_well_plate(self, plate_column):
-        """Move to the specified row position for the 96-well plate."""
-        if self.at_96_well_plate(plate_column):
-            return
-        self.current_discrete_position = \
-            'column {} of the 96-well plate'.format(plate_column)
-        await self.go_to_discrete_position(self.current_discrete_position)
 
     # Implement RobotAxis
 
@@ -62,20 +39,83 @@ class ManualAxis(DiscreteRobotAxis):
         """Return a string representation of the physical units."""
         return None
 
-    # Implement DiscreteRobotAxis
+    # Implement PresetRobotAxis
 
-    def discrete_to_physical(self, physical_position):
+    def preset_to_physical(self, physical_position):
         """Convert a position in physical units to a physical position."""
         return 0
 
-    async def go_to_discrete_position(self, discrete_position):
-        """Go to the specified discrete position.
+    async def go_to_preset_position(self, preset_position):
+        """Go to the specified preset position.
 
         Returns the sensor position error between the desired sensor position
         and the final sensor position.
         """
-        await self.prompt('Please move the sample platform to {}: '.format(
-            discrete_position
-        ))
-        self.current_discrete_position = discrete_position
+        await self.prompt(
+            'Please move the sample platform on the x-axis to {}: '
+            .format(preset_position)
+        )
+        self.current_preset_position = preset_position
         return 0
+
+    # Implement ManuallyAlignedRobotAxis
+
+    async def set_alignment(self):
+        """Update the physical calibration to align against the current position."""
+        pass
+
+    # Implement ModularRobotAxis
+
+    async def go_to_module_position(self, module_name, position):
+        """Move to the position for the specified module."""
+        await self.prompt(
+            'Please move the sample platform on the x-axis to the {} module\'s '
+            '{} position: '
+            .format(module_name, position)
+        )
+        self.current_preset_position = (module_name, position)
+        return 0
+
+
+class Axis(ManuallyAlignedRobotAxis, ConfigurableRobotAxis):
+    """High-level controller for x-axis."""
+
+    def __init__(self):
+        """Initialize member variables.."""
+        super().__init__()
+        self._protocol = LinearActuatorProtocol('XAxis', 'x')
+        self.configuration = None
+        self.configuration_tree = None
+
+    # Implement RobotAxis
+
+    @property
+    def protocol(self):
+        """Return the associated linear actuator protocol."""
+        return self._protocol
+
+    @property
+    def physical_unit(self):
+        """Return a string representation of the physical units."""
+        return 'cm'
+
+    async def go_to_flat_surface(self, module_name, physical_position):
+        """Move to the specified physical position for the flat surface."""
+        await self.go_to_physical_position(
+            self._get_origin_position(module_name) + physical_position
+        )
+
+    # Implement ModularRobotAxis
+
+    def get_module_mount_position(self, presets_tree, module_name):
+        """Get the position of the module's mount."""
+        module_mount = self.get_module_mount(module_name)
+        mount_type = 'even' if module_mount % 2 == 0 else 'odd'
+        mount_params = presets_tree['mount']
+        return (
+            mount_params['{} origin'.format(mount_type)] +
+            self.get_indexed_offset(
+                mount_params, module_mount,
+                origin_index_key='{} origin index'.format(mount_type)
+            )
+        )

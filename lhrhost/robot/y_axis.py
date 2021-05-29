@@ -1,11 +1,11 @@
-"""Abstractions for the pipettor axis of a liquid-handling robot."""
+"""Abstractions for the y-axis (pipettor head positioner) of a liquid-handling robot."""
 
 # Local package imiports
 from lhrhost.protocol.linear_actuator import Protocol as LinearActuatorProtocol
-from lhrhost.robot.axes import ContinuousRobotAxis, DiscreteRobotAxis
+from lhrhost.robot.axes import ManuallyAlignedRobotAxis, ModularRobotAxis
 
 
-class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
+class Axis(ManuallyAlignedRobotAxis, ModularRobotAxis):
     """High-level controller for y-axis."""
 
     def __init__(self):
@@ -25,20 +25,9 @@ class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
         """Return a string representation of the physical units."""
         return 'cm'
 
-    def at_cuvette(self, cuvette_row):
-        """Return whether the axis is already at the row for the cuvette rack."""
-        return self.current_discrete_position == ('cuvette', cuvette_row)
+    async def go_to_flat_surface(self, physical_position):
+        """Move to the specified physical position for the flat surface."""
+        await self.go_to_physical_position(
+            self._get_origin_position('flat surface') + physical_position
+        )
 
-    async def go_to_cuvette(self, cuvette_row):
-        """Move to the row position for the specified cuvette."""
-        if not self.at_cuvette(cuvette_row):
-            await self.go_to_discrete_position(('cuvette', cuvette_row))
-
-    def at_96_well_plate(self, plate_row):
-        """Return whether the axis is already at the row for the cuvette rack."""
-        return self.current_discrete_position == ('96-well plate', plate_row)
-
-    async def go_to_96_well_plate(self, plate_row):
-        """Move to the specified row position for the 96-well plate."""
-        if not self.at_96_well_plate(plate_row):
-            await self.go_to_discrete_position(('96-well plate', plate_row))

@@ -1,0 +1,20 @@
+{
+  "physical": {
+    "low end": {
+      "type": "implicit"
+    },
+    "high end": {
+      "type": "implicit"
+    }
+  },
+  "sensor": {
+    "pre-intake": {
+      "type": "constants",
+      "20": 380,
+      "30": 365,
+      "40": 365,
+      "50": 350,
+      "100": 325
+    }
+  }
+}

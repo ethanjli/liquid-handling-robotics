@@ -2,11 +2,11 @@
 
 # Local package imports
 from lhrhost.protocol.linear_actuator import Protocol as LinearActuatorProtocol
-from lhrhost.robot.axes import ContinuousRobotAxis, DiscreteRobotAxis
-from lhrhost.util.files import load_from_json, save_to_json
+from lhrhost.robot.axes import ContinuousRobotAxis, PresetRobotAxis
+from lhrhost.util.files import save_to_json
 
 
-class Axis(ContinuousRobotAxis, DiscreteRobotAxis):
+class Axis(ContinuousRobotAxis, PresetRobotAxis):
     """High-level controller for pipettor axis."""
 
     def __init__(self):

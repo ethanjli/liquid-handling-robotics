@@ -32,7 +32,11 @@ class BatchExecutionManager(BatchExecutionManager):
     async def on_execution_ready(self):
         """Run the test routine when execution becomes possible."""
         await super().on_execution_ready()
-        await self._test_routine()
+        try:
+            await self._test_routine()
+        except Exception as e:
+            logging.fatal(e)
+            raise
 
 
 class Batch:

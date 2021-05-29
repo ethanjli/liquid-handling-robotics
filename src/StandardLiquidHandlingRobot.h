@@ -41,18 +41,32 @@
   /* smootherEnableSleep, smootherActivityThreshold */ true, 4.0
 #define LHR_kYPositionerParams\
   /* actuatorChannelPrefix */ 'y',\
-  /* motorPort, angleSensorId */ M3, 0,\
-  /* minPosition, maxPosition */ 0, 720,\
+  /* motorPort, angleSensorId */ M3, 8,\
+  /* minPosition, maxPosition */ 0, 1008,\
+  /* minDuty, maxDuty */ -90, 90,\
+  /* pidKp, pidKd, pidKi, pidSampleTime */ 30, 2, 0, 10,\
+  /* feedforward */ 0,\
+  /* brakeLowerThreshold, brakeUpperThreshold */ -80, 80,\
+  /* swapSensorDirection, swapMotorPolarity */ false, true,\
+  /* convergenceTimeout, stallTimeout, timerTimeout */ 150, 150, 5000,\
+  /* smootherSnapMultiplier, smootherMax */ 0.01, 1023,\
+  /* smootherEnableSleep, smootherActivityThreshold */ true, 2.0
+#define LHR_kYPositionerCalibrationParams\
+  /* calibrationSpeed */ 150
+#define LHR_kXPositionerParams\
+  /* actuatorChannelPrefix */ 'x',\
+  /* motorPort, angleSensorId */ M4, 9,\
+  /* minPosition, maxPosition */ 0, 1445,\
   /* minDuty, maxDuty */ -120, 120,\
-  /* pidKp, pidKd, pidKi, pidSampleTime */ 45, 1.25, 0, 10,\
+  /* pidKp, pidKd, pidKi, pidSampleTime */ 40, 1.5, 0, 10,\
   /* feedforward */ 0,\
   /* brakeLowerThreshold, brakeUpperThreshold */ -110, 110,\
   /* swapSensorDirection, swapMotorPolarity */ true, true,\
-  /* convergenceTimeout, stallTimeout, timerTimeout */ 150, 150, 5000,\
-  /* smootherSnapMultiplier, smootherMax */ 0.01, 800,\
+  /* convergenceTimeout, stallTimeout, timerTimeout */ 150, 150, 10000,\
+  /* smootherSnapMultiplier, smootherMax */ 0.01, 1460,\
   /* smootherEnableSleep, smootherActivityThreshold */ true, 2.0
-#define LHR_kYPositionerCalibrationParams\
-  /* calibrationSpeed */ 120
+#define LHR_kXPositionerCalibrationParams\
+  /* calibrationSpeed */ 150
 
 // Define convenience macros for instantiating, setting up, connecting, and updating messaging system
 
@@ -260,7 +274,7 @@
       LHR_updateMessaging(transport, messager);\
       LHR_updateBasics(core, board);\
       LHR_updateAbsoluteAxes(pipettorAxis, zAxis);\
-      xAxis.update();\
+      yAxis.update();\
       xAxisCalibrator.update();\
     }\
     xAxis.onConnect();

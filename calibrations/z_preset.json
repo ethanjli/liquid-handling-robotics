@@ -1,0 +1,43 @@
+{
+  "physical": {
+    "low end": {
+      "type": "implicit"
+    },
+    "high end": {
+      "type": "constant",
+      "value": 4.8
+    },
+    "alignment hole": {
+      "type": "constant",
+      "value": 0.15
+    },
+    "cuvette rack": {
+      "type": "constants",
+      "far above": 4.8,
+      "above": 4.4,
+      "top": 4,
+      "high": 3.5,
+      "mid": 2.5,
+      "low": 1,
+      "bottom": 0.1
+    },
+    "96-well plate": {
+      "type": "constants",
+      "far above": 1.75,
+      "above": 1.5,
+      "top": 1.25,
+      "high": 1,
+      "mid": 0.75,
+      "low": 0.5,
+      "bottom": 0.25
+    },
+    "flat surface": {
+      "type": "constants",
+      "far above": 1,
+      "above": 0.5,
+      "top": 0.2
+    }
+  },
+  "sensor": {
+  }
+}

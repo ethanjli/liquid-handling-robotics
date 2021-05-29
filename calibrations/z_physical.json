@@ -1,79 +1,43 @@
 {
   "parameters": {
-    "intercept": -0.24332762954358333,
-    "rsquared": 0.9999259582329909,
-    "slope": 0.005398523311677348,
-    "stderr": 1.6963163758578976e-05
+    "intercept": -0.5391824575483812,
+    "rsquared": 0.9998758826704667,
+    "slope": 0.005495824500969845,
+    "stderr": 3.535321142495916e-05
   },
   "physical unit": "cm",
   "samples": [
     {
-      "physical": 0.0,
-      "sensor": 46
+      "physical": 1.3,
+      "sensor": 330
     },
     {
-      "physical": 5.0,
-      "sensor": 968
+      "physical": 2.15,
+      "sensor": 498
     },
     {
-      "physical": 0.62,
-      "sensor": 157
+      "physical": 2.75,
+      "sensor": 597
     },
     {
-      "physical": 1.75,
-      "sensor": 367
+      "physical": 3.32,
+      "sensor": 701
     },
     {
-      "physical": 2.32,
-      "sensor": 474
+      "physical": 3.87,
+      "sensor": 799
     },
     {
-      "physical": 3.0,
-      "sensor": 599
+      "physical": 4.37,
+      "sensor": 896
     },
     {
-      "physical": 4.1,
-      "sensor": 804
+      "physical": 4.83,
+      "sensor": 976
     },
     {
-      "physical": 4.58,
-      "sensor": 890
-    },
-    {
-      "physical": 2.92,
-      "sensor": 590
-    },
-    {
-      "physical": 0.86,
-      "sensor": 205
-    },
-    {
-      "physical": 2.79,
-      "sensor": 560
-    },
-    {
-      "physical": 3.92,
-      "sensor": 772
-    },
-    {
-      "physical": 0.98,
-      "sensor": 221
-    },
-    {
-      "physical": 2.46,
-      "sensor": 504
-    },
-    {
-      "physical": 2.0,
-      "sensor": 420
-    },
-    {
-      "physical": 2.7,
-      "sensor": 551
-    },
-    {
-      "physical": 3.5,
-      "sensor": 696
+      "physical": 0.79,
+      "sensor": 242
     }
   ]
 }

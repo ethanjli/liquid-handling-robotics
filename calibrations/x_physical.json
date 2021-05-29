@@ -1,0 +1,47 @@
+{
+  "parameters": {
+    "intercept": -0.50534348079539,
+    "rsquared": 0.9999489798048571,
+    "slope": 0.013723760791316984,
+    "stderr": 5.239945789180571e-05
+  },
+  "physical unit": "cm",
+  "samples": [
+    {
+      "physical": -0.47,
+      "sensor": 0
+    },
+    {
+      "physical": 0.85,
+      "sensor": 100
+    },
+    {
+      "physical": 2.21,
+      "sensor": 199
+    },
+    {
+      "physical": 3.63,
+      "sensor": 299
+    },
+    {
+      "physical": 4.94,
+      "sensor": 401
+    },
+    {
+      "physical": 6.39,
+      "sensor": 500
+    },
+    {
+      "physical": 7.66,
+      "sensor": 599
+    },
+    {
+      "physical": 9.1,
+      "sensor": 699
+    },
+    {
+      "physical": 10.52,
+      "sensor": 801
+    }
+  ]
+}

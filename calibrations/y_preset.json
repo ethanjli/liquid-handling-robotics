@@ -1,0 +1,41 @@
+{
+  "physical": {
+    "low end": {
+      "type": "implicit"
+    },
+    "high end": {
+      "type": "implicit"
+    },
+    "alignment hole": {
+      "type": "implicit"
+    },
+    "mount": {
+      "type": "constant",
+      "value": 16.79
+    },
+    "cuvette rack": {
+      "type": "indexed",
+      "origin": -15.69,
+      "increment": 1.456,
+      "min index": 1,
+      "max index": 8,
+      "origin index": 1
+    },
+    "96-well plate": {
+      "type": "indexed",
+      "origin": -15.84,
+      "increment": 0.9,
+      "min index": 1,
+      "max index": 12,
+      "origin index": 1
+    },
+    "flat surface": {
+      "type": "continuous",
+      "origin": -16.95,
+      "min": 0,
+      "max": 12
+    }
+  },
+  "sensor": {
+  }
+}
